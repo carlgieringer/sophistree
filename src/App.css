@@ -1,0 +1,49 @@
+.sophistree-sidebar {
+  width: 300px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: Arial, sans-serif;
+}
+
+header {
+  background-color: #4a4a4a;
+  color: white;
+  padding: 10px;
+  text-align: center;
+}
+
+main {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+section {
+  margin-bottom: 20px;
+}
+
+h2 {
+  font-size: 1.2em;
+  margin-bottom: 10px;
+}
+
+button {
+  background-color: #4CAF50;
+  border: none;
+  color: white;
+  padding: 10px 20px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  cursor: pointer;
+}
+
+footer {
+  background-color: #f1f1f1;
+  padding: 10px;
+  display: flex;
+  justify-content: space-around;
+}

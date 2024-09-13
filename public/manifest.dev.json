@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "Sophistree",
+  "name": "Sophistree (Dev)",
   "version": "1.0",
   "description": "A browser extension for mapping arguments",
-  "permissions": ["activeTab", "sidePanel", "storage"],
+  "permissions": ["activeTab", "management", "sidePanel", "storage"],
   "action": {
-    "default_title": "Sophistree"
+    "default_title": "Sophistree (Dev)"
   },
   "background": {
     "service_worker": "background.js"
