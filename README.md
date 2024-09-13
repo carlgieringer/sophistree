@@ -4,12 +4,6 @@ Sophistree is a browser extension for mapping arguments, built with React, Redux
 
 ## Development Setup
 
-### Prerequisites
-
-- Node.js (v14 or later recommended)
-- npm (comes with Node.js)
-- A Chromium-based browser (e.g., Google Chrome, Microsoft Edge)
-
 ### Installation
 
 1. Clone the repository:
@@ -29,15 +23,23 @@ Sophistree is a browser extension for mapping arguments, built with React, Redux
 
 #### Running development build
 
+This continuously builds the javascript:
+
 ```sh
 npm run build:dev
 ```
+
+If you change the manifest you must restart this command.
 
 #### Loading the Extension in Chrome
 
 1. Open Chrome and navigate to `chrome://extensions`.
 2. Enable "Developer mode" in the top right corner.
 3. Click "Load unpacked" and select the `dist` folder created in the previous step.
+
+You'll need to reload the extension any time the code changes. I couldn't figure
+out how to do hot reload in a Chrome extension (I got permissions errors I didn't
+figure out how to fix.)
 
 ### Building for Production
 
