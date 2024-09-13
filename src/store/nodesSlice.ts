@@ -1,34 +1,49 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { v4 as uuidv4 } from "uuid";
+import * as domAnchorTextQuote from "dom-anchor-text-quote";
+import { DomAnchor } from "../anchors";
 
 interface BaseNode {
   id: string;
-  content: string;
-  selected?: boolean;
+  // PropositionCompounds and Justifications don't need content?
+  content?: string;
 }
 
-type Node = PropositionNode | JustificationNode | MediaExcerptNode;
+export type Node =
+  | PropositionNode
+  | PropositionCompoundNode
+  | JustificationNode
+  | MediaExcerptNode;
 
 interface PropositionNode extends BaseNode {
   type: "Proposition";
 }
 
-interface JustificationNode extends BaseNode {
-  type: "Justification";
-  basis: string;
-  target: string;
+interface PropositionCompoundNode extends BaseNode {
+  type: "PropositionCompound";
+  atomIds: string[];
 }
 
-interface MediaExcerptNode extends BaseNode {
+interface JustificationNode extends BaseNode {
+  type: "Justification";
+  basisId: string;
+  targetId: string;
+}
+
+export interface MediaExcerptNode extends BaseNode, AddMediaExcerptData {
   type: "MediaExcerpt";
-  quotation: string;
-  url: string;
-  sourceName: string;
 }
 
 interface Edge {
   source: string;
   target: string;
+}
+
+interface DragPayload {
+  sourceId: string;
+  targetId: string;
+  // Since a target may appear in multiple places, include its parent for context
+  targetParentId: string | undefined;
 }
 
 const initialState = {
@@ -37,11 +52,15 @@ const initialState = {
   selectedNodeId: undefined as string | undefined,
 };
 
+type NodesState = typeof initialState;
+
 export interface AddMediaExcerptData {
   id: string;
   quotation: string;
   url: string;
+  canonicalUrl?: string;
   sourceName: string;
+  domAnchor: DomAnchor;
 }
 
 export const nodesSlice = createSlice({
@@ -76,8 +95,79 @@ export const nodesSlice = createSlice({
         };
       }
     },
-    addEdge(state, action: PayloadAction<Edge>) {
-      state.edges.push(action.payload);
+    completeDrag(state, action: PayloadAction<DragPayload>) {
+      const { sourceId, targetId } = action.payload;
+
+      const source = state.nodes.find((n) => n.id === sourceId);
+      if (!source) {
+        console.error(`Drag source node with id ${sourceId} not found`);
+        return;
+      }
+      const target = state.nodes.find((n) => n.id === targetId);
+      if (!target) {
+        console.error(`Drag target node with id ${targetId} not found`);
+        return;
+      }
+
+      let basisId: string;
+      switch (source.type) {
+        case "Proposition": {
+          switch (target.type) {
+            case "Justification": {
+              addPropositionToJustification(state, source, target);
+              return;
+            }
+            case "PropositionCompound": {
+              target.atomIds.push(sourceId);
+              return;
+            }
+            case "Proposition": {
+              const propositionCompound = {
+                type: "PropositionCompound" as const,
+                id: uuidv4(),
+                content: "",
+                atomIds: [sourceId],
+              };
+              state.nodes.push(propositionCompound);
+              basisId = propositionCompound.id;
+              break;
+            }
+            default: {
+              console.error(
+                `Invalid target type ${target.type} for source type ${source.type}`
+              );
+              return;
+            }
+          }
+          break;
+        }
+        case "MediaExcerpt": {
+          switch (target.type) {
+            case "MediaExcerpt":
+            case "PropositionCompound":
+              console.error(
+                `Invalid target type ${target.type} for source type ${source.type}`
+              );
+              return;
+          }
+          basisId = sourceId;
+          break;
+        }
+        default:
+          console.error(`Invalid drag source type type: ${source.type}`);
+          return;
+      }
+
+      const newJustificationId = uuidv4();
+      const newJustification: JustificationNode = {
+        id: newJustificationId,
+        type: "Justification",
+        content: "",
+        targetId,
+        basisId,
+      };
+      state.nodes.push(newJustification);
+      state.edges.push({ source: newJustificationId, target: targetId });
     },
     removeEdge(state, action: PayloadAction<Edge>) {
       state.edges = state.edges.filter(
@@ -89,13 +179,10 @@ export const nodesSlice = createSlice({
       );
     },
     selectNode(state, action: PayloadAction<string>) {
-      const node = state.nodes.find((node) => node.id === action.payload);
-      if (node) {
-        node.selected = true;
-        state.selectedNodeId = action.payload;
-      } else {
-        state.selectedNodeId = undefined;
-      }
+      state.selectedNodeId = action.payload;
+    },
+    resetSelection(state) {
+      state.selectedNodeId = undefined;
     },
     deleteNode(state, action: PayloadAction<string>) {
       state.nodes = state.nodes.filter((node) => node.id !== action.payload);
@@ -103,20 +190,52 @@ export const nodesSlice = createSlice({
         (edge) =>
           edge.source !== action.payload && edge.target !== action.payload
       );
-      if (state.selectedNodeId === action.payload) {
+      if ((state.selectedNodeId = action.payload)) {
         state.selectedNodeId = undefined;
       }
     },
   },
 });
 
+function addPropositionToJustification(
+  state: NodesState,
+  source: PropositionNode,
+  target: JustificationNode
+) {
+  const basis = state.nodes.find((n) => n.id === target.basisId);
+  if (!basis) {
+    console.error(
+      `Could not find basis node having id ${target.basisId} for justification having node ID ${target.id}`
+    );
+    return;
+  }
+  switch (basis.type) {
+    case "MediaExcerpt": {
+      console.error(
+        "Cannot add a roposition to a media excerpt-based Justification."
+      );
+      break;
+    }
+    case "PropositionCompound": {
+      basis.atomIds.push(source.id);
+      break;
+    }
+    default:
+      console.error(
+        `Invalid Justification basis type ${basis.type} for justification ID ${target.id}`
+      );
+      break;
+  }
+}
+
 export const {
   addNode,
   addMediaExcerpt,
   updateNode,
   deleteNode,
-  addEdge,
+  completeDrag,
   removeEdge,
+  resetSelection,
   selectNode,
 } = nodesSlice.actions;
 

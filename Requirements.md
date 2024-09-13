@@ -38,7 +38,6 @@ this extension and use that in place of Sophistree?
 
 TODO:
 
-- Create Justification or Proposition from MediaExcerpt
-- Highlight MediaExcerpts upon loading page
-- Put bases as children of Justification node
-- Enforce acceptable edges
+- Add Justification polarity
+- Retrieve MediaExcerpts from background scripts instead of sidebar?
+- Show icon in Prop/Just nodes for MediaExcerpts; clicking on it navigates to URL and scrolls to highlight.

@@ -1,5 +1,11 @@
 import { v4 as uuidv4 } from "uuid";
-import { AddMediaExcerptData } from "./store/nodesSlice";
+
+import { AddMediaExcerptData, MediaExcerptNode } from "./store/nodesSlice";
+import {
+  DomAnchor,
+  makeDomAnchorFromSelection,
+  getRangeFromDomAnchor,
+} from "./anchors";
 
 interface AddMediaExcerptMessage {
   action: "addMediaExcerpt";
@@ -13,52 +19,158 @@ interface SelectMediaExcerptMessage {
   };
 }
 
+interface GetMediaExcerptsMessage {
+  action: "getMediaExcerpts";
+  data: {
+    url: string;
+    canonicalUrl?: string;
+  };
+}
+
 export type ChromeRuntimeMessage =
   | AddMediaExcerptMessage
-  | SelectMediaExcerptMessage;
+  | SelectMediaExcerptMessage
+  | GetMediaExcerptsMessage;
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action !== "createMediaExcerpt") {
     return;
   }
-  const title =
-    document
-      .querySelector('meta[property="og:title"]')
-      ?.getAttribute("content") || document.title;
+
   const id = uuidv4();
-  highlightSelection(id);
+  const quotation = message.selectedText;
+  const url = getUrl();
+  const canonicalUrl = getCanonicalUrl();
+  const sourceName = getTitle();
+  const domAnchor = getDomAnchorFromCurrentSelection();
+
+  if (!quotation) {
+    console.error(`Cannot createMediaExcerpt for empty quotation`);
+    return;
+  }
+  if (!domAnchor) {
+    console.error(`Cannot createMediaExcerpt for empty domAnchor`);
+    return;
+  }
+
   const data: AddMediaExcerptData = {
     id,
-    quotation: message.selectionText,
-    url: message.url,
-    sourceName: title,
+    quotation,
+    url,
+    canonicalUrl,
+    sourceName,
+    domAnchor,
   };
   const sidebarMessage: ChromeRuntimeMessage = {
     action: "addMediaExcerpt",
     data,
   };
   chrome.runtime.sendMessage(sidebarMessage);
+
+  highlightCurrentSelection(id);
 });
 
-function highlightSelection(mediaExcerptId: string) {
-  const selection = window.getSelection();
-  if (selection && !selection.isCollapsed) {
-    const range = selection.getRangeAt(0);
-    const span = document.createElement("span");
-    span.style.backgroundColor = "yellow";
-    span.dataset.mediaExcerptId = mediaExcerptId;
-    span.onclick = function highlightOnClick() {
-      const message: SelectMediaExcerptMessage = {
-        action: "selectMediaExcerpt",
-        data: { mediaExcerptId },
-      };
-      chrome.runtime.sendMessage(message);
-    };
+function getUrl() {
+  return window.location.href;
+}
 
-    try {
-      range.surroundContents(span);
-    } catch (e) {
-      console.error("Failed to highlight selection:", e);
+function getCanonicalUrl() {
+  return (
+    document.querySelector('link[rel="canonical"]')?.getAttribute("href") ||
+    undefined
+  );
+}
+
+function getTitle() {
+  return (
+    document
+      .querySelector('meta[property="og:title"]')
+      ?.getAttribute("content") || document.title
+  );
+}
+
+type GetMediaExcerptsMessageResponse = {
+  mediaExcerpts: MediaExcerptNode[];
+};
+
+function getMediaExcerpts() {
+  const url = getUrl();
+  const canonicalUrl = getCanonicalUrl();
+  chrome.runtime.sendMessage(
+    {
+      action: "getMediaExcerpts",
+      data: {
+        url,
+        canonicalUrl,
+      },
+    },
+    function getMediaExcerptsCallback(
+      response?: GetMediaExcerptsMessageResponse
+    ) {
+      if (!response) {
+        return;
+      }
+      const { mediaExcerpts } = response;
+      mediaExcerpts.forEach(({ id, domAnchor }) =>
+        highlightDomAnchor(domAnchor, id)
+      );
     }
+  );
+}
+getMediaExcerpts();
+
+function getDomAnchorFromCurrentSelection() {
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed) {
+    return undefined;
+  }
+  return makeDomAnchorFromSelection(selection);
+}
+
+function highlightCurrentSelection(mediaExcerptId: string) {
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed) {
+    return;
+  }
+  const ranges = [];
+  for (let i = 0; i < selection.rangeCount; i++) {
+    ranges.push(selection.getRangeAt(i));
+  }
+  highlightRanges(ranges, mediaExcerptId);
+}
+
+function highlightDomAnchor(domAnchor: DomAnchor, mediaExcerptId: string) {
+  const ranges = getRangeFromDomAnchor(window.document.body, domAnchor);
+  if (!ranges.length) {
+    console.error(
+      `Unable to highlight domAnchor for mediaExcerptId ${mediaExcerptId}: ${JSON.stringify(
+        domAnchor
+      )}`
+    );
+    return;
+  }
+  highlightRanges(ranges, mediaExcerptId);
+}
+
+function highlightRanges(ranges: Range[], mediaExcerptId: string) {
+  ranges.forEach((range) => highlightRange(range, mediaExcerptId));
+}
+
+function highlightRange(range: Range, mediaExcerptId: string) {
+  const span = document.createElement("span");
+  span.style.backgroundColor = "yellow";
+  span.dataset.mediaExcerptId = mediaExcerptId;
+  span.onclick = function highlightOnClick() {
+    const message: SelectMediaExcerptMessage = {
+      action: "selectMediaExcerpt",
+      data: { mediaExcerptId },
+    };
+    chrome.runtime.sendMessage(message);
+  };
+
+  try {
+    range.surroundContents(span);
+  } catch (e) {
+    console.error("Failed to highlight selection:", e);
   }
 }

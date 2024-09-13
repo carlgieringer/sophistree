@@ -7,9 +7,11 @@
     "activeTab",
     "contextMenus",
     "management",
+    "scripting",
     "sidePanel",
     "storage"
   ],
+  "host_permissions": ["content.js"],
   "action": {
     "default_title": "Sophistree (Dev)"
   },

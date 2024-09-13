@@ -18,13 +18,19 @@
   "dependencies": {
     "@reduxjs/toolkit": "^2.2.7",
     "cytoscape": "^3.30.2",
+    "cytoscape-cola": "^2.5.1",
     "cytoscape-context-menus": "^4.2.1",
+    "cytoscape-cose-bilkent": "^4.1.0",
     "cytoscape-dagre": "^2.5.0",
+    "cytoscape-elk": "^2.2.0",
+    "dom-anchor-text-position": "^5.0.0",
+    "dom-anchor-text-quote": "^4.0.2",
     "react": "^18.3.1",
     "react-cytoscapejs": "^2.0.0",
     "react-dom": "^18.3.1",
     "react-redux": "^9.1.2",
     "redux-persist": "^6.0.0",
+    "text-fragments-polyfill": "^5.7.0",
     "uuid": "^10.0.0"
   },
   "devDependencies": {

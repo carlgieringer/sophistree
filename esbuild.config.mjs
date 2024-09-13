@@ -8,6 +8,8 @@ const options = {
   entryPoints: ["src/main.tsx", "src/background.ts", "src/content.ts"],
   bundle: true,
   minify: true,
+  // Required by cytoscape-elk
+  external: ["web-worker"],
   sourcemap: prod ? false : "inline",
   target: ["chrome58", "firefox57"],
   outdir: "dist",

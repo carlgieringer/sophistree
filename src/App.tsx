@@ -1,7 +1,7 @@
 // src/App.tsx
 import React, { useEffect } from "react";
-import { Provider, useDispatch } from "react-redux";
-import { store } from "./store";
+import { Provider, useDispatch, useSelector } from "react-redux";
+import { RootState, store } from "./store";
 import { addMediaExcerpt, selectNode } from "./store/nodesSlice";
 import NodeList from "./components/NodeList";
 import GraphView from "./components/GraphView";
@@ -12,8 +12,14 @@ import { ChromeRuntimeMessage } from "./content";
 const AppContent: React.FC = () => {
   const dispatch = useDispatch();
 
+  const nodes = useSelector((state: RootState) => state.nodes.nodes);
+
   useEffect(() => {
-    function handleChromeRuntimeMessage(message: ChromeRuntimeMessage) {
+    function handleChromeRuntimeMessage(
+      message: ChromeRuntimeMessage,
+      sender: chrome.runtime.MessageSender,
+      sendResponse: (response: any) => void
+    ) {
       switch (message.action) {
         case "addMediaExcerpt": {
           dispatch(addMediaExcerpt(message.data));
@@ -21,6 +27,18 @@ const AppContent: React.FC = () => {
         }
         case "selectMediaExcerpt": {
           dispatch(selectNode(message.data.mediaExcerptId));
+          break;
+        }
+        case "getMediaExcerpts": {
+          const { url, canonicalUrl } = message.data;
+          const mediaExcerpts = nodes.filter(
+            (node) =>
+              node.type === "MediaExcerpt" &&
+              (node.canonicalUrl
+                ? node.canonicalUrl === canonicalUrl
+                : node.url === url)
+          );
+          sendResponse({ mediaExcerpts });
           break;
         }
       }
@@ -41,12 +59,7 @@ const AppContent: React.FC = () => {
         <h1>Sophistree</h1>
       </header>
       <main>
-        <section className="node-list">
-          <h2>Nodes</h2>
-          <NodeList />
-        </section>
         <section className="graph-view">
-          <h2>Argument Map</h2>
           <GraphView />
         </section>
         <section className="node-editor">

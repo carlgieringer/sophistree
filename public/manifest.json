@@ -3,7 +3,14 @@
   "name": "Sophistree",
   "version": "1.0",
   "description": "A browser extension for mapping arguments",
-  "permissions": ["activeTab", "contextMenus", "sidePanel", "storage"],
+  "permissions": [
+    "activeTab",
+    "contextMenus",
+    "scripting",
+    "sidePanel",
+    "storage"
+  ],
+  "host_permissions": ["content.js"],
   "action": {
     "default_title": "Sophistree"
   },
