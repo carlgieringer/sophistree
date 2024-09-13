@@ -95,19 +95,27 @@ const GraphView: React.FC = () => {
   };
   const elkLayout = {
     name: "elk",
+    // All options are available at http://www.eclipse.org/elk/reference.html
+    //
+    // 'org.eclipse.' can be dropped from the identifier. The subsequent identifier has to be used as property key in quotes.
+    // E.g. for 'org.eclipse.elk.direction' use:
+    // 'elk.direction'
+    //
+    // Enums use the name of the enum as string e.g. instead of Direction.DOWN use:
+    // 'elk.direction': 'DOWN'
+    //
+    // The main field to set is `algorithm`, which controls which particular layout algorithm is used.
+    // Example (downwards layered layout):
     elk: {
-      // All options are available at http://www.eclipse.org/elk/reference.html
-      //
-      // 'org.eclipse.' can be dropped from the identifier. The subsequent identifier has to be used as property key in quotes.
-      // E.g. for 'org.eclipse.elk.direction' use:
-      // 'elk.direction'
-      //
-      // Enums use the name of the enum as string e.g. instead of Direction.DOWN use:
-      // 'elk.direction': 'DOWN'
-      //
-      // The main field to set is `algorithm`, which controls which particular layout algorithm is used.
-      // Example (downwards layered layout):
-      algorithm: "mrtree",
+      algorithm: "layered",
+      "elk.direction": "UP",
+      "elk.spacing.nodeNode": "50",
+      "elk.layered.spacing.nodeNodeBetweenLayers": "100",
+      "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+      "elk.aspectRatio": "1.5",
+      "elk.padding": "[top=50,left=50,bottom=50,right=50]",
+      "elk.edgeRouting": "ORTHOGONAL",
+      "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
     },
   };
 
@@ -175,11 +183,12 @@ const GraphView: React.FC = () => {
     {
       selector: "edge",
       style: {
-        width: 3,
+        width: 2,
         "line-color": "#ccc",
         "target-arrow-color": "#ccc",
         "target-arrow-shape": "triangle",
-        "curve-style": "bezier",
+        "curve-style": "straight",
+        "arrow-scale": 1.5,
       },
     },
     {
@@ -363,6 +372,12 @@ const GraphView: React.FC = () => {
       });
     }
   }, [dispatch]);
+
+  useEffect(() => {
+    if (cyRef.current) {
+      cyRef.current.layout(getLayout()).run();
+    }
+  }, [nodes, edges]);
 
   return (
     <CytoscapeComponent
