@@ -7,11 +7,11 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "vite",
     "clean": "rm -rf dist/*",
-    "build": "npm run clean && npm run type-check && npm run copy-manifest && vite build",
+    "build": "npm run clean && npm run type-check && npm run copy-manifest && NODE_ENV=production node esbuild.config.mjs",
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
     "copy-manifest": "cp public/manifest.json dist/",
-    "build:dev": "npm run clean && npm run type-check && npm run copy-dev-manifest && vite build --mode development --watch",
+    "build:dev": "npm run clean && npm run type-check && npm run copy-dev-manifest && NODE_ENV=development node esbuild.config.mjs --watch",
     "copy-dev-manifest": "cp public/manifest.dev.json dist/manifest.json"
   },
   "keywords": [],
@@ -24,15 +24,21 @@
     "react": "^18.3.1",
     "react-cytoscapejs": "^2.0.0",
     "react-dom": "^18.3.1",
-    "react-redux": "^9.1.2"
+    "react-redux": "^9.1.2",
+    "redux-persist": "^6.0.0",
+    "uuid": "^10.0.0"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.270",
     "@types/cytoscape-dagre": "^2.3.3",
+    "@types/node": "^22.5.4",
     "@types/react": "^18.3.5",
     "@types/react-cytoscapejs": "^1.2.5",
     "@types/react-dom": "^18.3.0",
+    "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^4.3.1",
+    "esbuild": "^0.23.1",
+    "esbuild-plugin-copy": "^2.1.1",
     "typescript": "^5.6.2",
     "vite": "^5.4.3"
   }

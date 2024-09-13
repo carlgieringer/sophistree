@@ -4,9 +4,10 @@ import { useSelector, useDispatch } from "react-redux";
 import cytoscape from "cytoscape";
 import CytoscapeComponent from "react-cytoscapejs";
 import dagre from "cytoscape-dagre";
+import { v4 as uuidv4 } from "uuid";
 
 import { RootState } from "../store";
-import { addNode, addEdge, setSelectedNode } from "../store/nodesSlice";
+import { addNode, addEdge, selectNode } from "../store/nodesSlice";
 
 cytoscape.use(dagre);
 
@@ -14,11 +15,16 @@ const GraphView: React.FC = () => {
   const nodes = useSelector((state: RootState) => state.nodes.nodes);
   const edges = useSelector((state: RootState) => state.nodes.edges);
   const dispatch = useDispatch();
-  const cyRef = useRef<any>(null);
+  const cyRef = useRef<cytoscape.Core | undefined>(undefined);
 
   const elements = [
     ...nodes.map((node) => ({
-      data: { id: node.id, label: node.content, type: node.type },
+      data: {
+        id: node.id,
+        label: node.content,
+        type: node.type,
+        selected: node.selected,
+      },
     })),
     ...edges.map((edge) => ({
       data: { source: edge.source, target: edge.target },
@@ -37,10 +43,12 @@ const GraphView: React.FC = () => {
       style: {
         "background-color": "#666",
         label: "data(label)",
+        width: "label",
+        height: "label",
         "text-valign": "center",
         "text-halign": "center",
         "text-wrap": "wrap",
-        "text-max-width": "100px",
+        "text-max-width": "200px",
       } as const,
     },
     {
@@ -89,14 +97,14 @@ const GraphView: React.FC = () => {
 
       cy.on("tap", "node", (event: any) => {
         const nodeId = event.target.id();
-        dispatch(setSelectedNode(nodeId));
+        dispatch(selectNode(nodeId));
       });
 
       cy.on("dbltap", (event: any) => {
         if (event.target === cy) {
           const pos = event.position;
           const newNode = {
-            id: Date.now().toString(),
+            id: uuidv4(),
             type: "Proposition",
             content: "New Node",
           } as const;
@@ -128,6 +136,14 @@ const GraphView: React.FC = () => {
         if (event.target === cy) {
           sourceNode = null;
         }
+      });
+
+      cy.on("zoom", (event: any) => {
+        const zoom = cy.zoom();
+        cy.zoom({
+          level: zoom,
+          renderedPosition: event.position,
+        });
       });
     }
   }, [dispatch]);

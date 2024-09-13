@@ -17,7 +17,7 @@ const NodeEditor: React.FC = () => {
     return <div>No node selected</div>;
   }
 
-  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleContentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     dispatch(
       updateNode({ id: selectedNode.id, updates: { content: e.target.value } })
     );
@@ -25,7 +25,11 @@ const NodeEditor: React.FC = () => {
 
   return (
     <div>
-      <textarea value={selectedNode.content} onChange={handleContentChange} />
+      <input
+        type="text"
+        value={selectedNode.content}
+        onChange={handleContentChange}
+      />
     </div>
   );
 };

@@ -3,7 +3,7 @@
   "name": "Sophistree",
   "version": "1.0",
   "description": "A browser extension for mapping arguments",
-  "permissions": ["activeTab", "sidePanel", "storage"],
+  "permissions": ["activeTab", "contextMenus", "sidePanel", "storage"],
   "action": {
     "default_title": "Sophistree"
   },
@@ -17,6 +17,6 @@
     }
   ],
   "side_panel": {
-    "default_path": "public/sidebar.html"
+    "default_path": "sidebar.html"
   }
 }

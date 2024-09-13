@@ -1,10 +1,29 @@
-// src/store/nodesSlice.ts
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { v4 as uuidv4 } from "uuid";
 
-interface Node {
+interface BaseNode {
   id: string;
-  type: "Proposition" | "Justification" | "MediaExcerpt";
   content: string;
+  selected?: boolean;
+}
+
+type Node = PropositionNode | JustificationNode | MediaExcerptNode;
+
+interface PropositionNode extends BaseNode {
+  type: "Proposition";
+}
+
+interface JustificationNode extends BaseNode {
+  type: "Justification";
+  basis: string;
+  target: string;
+}
+
+interface MediaExcerptNode extends BaseNode {
+  type: "MediaExcerpt";
+  quotation: string;
+  url: string;
+  sourceName: string;
 }
 
 interface Edge {
@@ -12,29 +31,45 @@ interface Edge {
   target: string;
 }
 
-interface NodesState {
-  nodes: Node[];
-  edges: Edge[];
-  selectedNodeId: string | null;
-}
-
-const initialState: NodesState = {
-  nodes: [],
-  edges: [],
-  selectedNodeId: null,
+const initialState = {
+  nodes: [] as Node[],
+  edges: [] as Edge[],
+  selectedNodeId: undefined as string | undefined,
 };
+
+export interface AddMediaExcerptData {
+  id: string;
+  quotation: string;
+  url: string;
+  sourceName: string;
+}
 
 export const nodesSlice = createSlice({
   name: "nodes",
   initialState,
   reducers: {
-    addNode: (state, action: PayloadAction<Node>) => {
+    addNode(state, action: PayloadAction<Node>) {
       state.nodes.push(action.payload);
     },
-    updateNode: (
+    addMediaExcerpt(
       state,
-      action: PayloadAction<{ id: string; updates: Partial<Node> }>
-    ) => {
+      action: PayloadAction<Omit<AddMediaExcerptData, "id">>
+    ) {
+      const newNode: MediaExcerptNode = {
+        id: uuidv4(),
+        type: "MediaExcerpt",
+        content: action.payload.quotation,
+        ...action.payload,
+      };
+      state.nodes.push(newNode);
+    },
+    updateNode(
+      state,
+      action: PayloadAction<{
+        id: string;
+        updates: Partial<Omit<Node, "type">>;
+      }>
+    ) {
       const index = state.nodes.findIndex(
         (node) => node.id === action.payload.id
       );
@@ -45,20 +80,17 @@ export const nodesSlice = createSlice({
         };
       }
     },
-    deleteNode: (state, action: PayloadAction<string>) => {
+    deleteNode(state, action: PayloadAction<string>) {
       state.nodes = state.nodes.filter((node) => node.id !== action.payload);
       state.edges = state.edges.filter(
         (edge) =>
           edge.source !== action.payload && edge.target !== action.payload
       );
     },
-    setSelectedNode: (state, action: PayloadAction<string | null>) => {
-      state.selectedNodeId = action.payload;
-    },
-    addEdge: (state, action: PayloadAction<Edge>) => {
+    addEdge(state, action: PayloadAction<Edge>) {
       state.edges.push(action.payload);
     },
-    removeEdge: (state, action: PayloadAction<Edge>) => {
+    removeEdge(state, action: PayloadAction<Edge>) {
       state.edges = state.edges.filter(
         (edge) =>
           !(
@@ -67,16 +99,26 @@ export const nodesSlice = createSlice({
           )
       );
     },
+    selectNode(state, action: PayloadAction<string>) {
+      const node = state.nodes.find((node) => node.id === action.payload);
+      if (node) {
+        node.selected = true;
+        state.selectedNodeId = action.payload;
+      } else {
+        state.selectedNodeId = undefined;
+      }
+    },
   },
 });
 
 export const {
   addNode,
+  addMediaExcerpt,
   updateNode,
   deleteNode,
-  setSelectedNode,
   addEdge,
   removeEdge,
+  selectNode,
 } = nodesSlice.actions;
 
 export default nodesSlice.reducer;

@@ -12,14 +12,14 @@ export default defineConfig({
         content: resolve(__dirname, "src/content.ts"),
       },
       output: {
-        entryFileNames: "[name].js",
-        chunkFileNames: "[name].[hash].js",
-        assetFileNames: "[name].[hash].[ext]",
+        format: "iife",
+        inlineDynamicImports: false,
       },
     },
     outDir: "dist",
     // Don't remove the manifest file
     emptyOutDir: false,
+    sourcemap: true,
   },
   // Don't overwrite the manifest file
   publicDir: false,
