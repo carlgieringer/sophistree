@@ -51,12 +51,8 @@ export const nodesSlice = createSlice({
     addNode(state, action: PayloadAction<Node>) {
       state.nodes.push(action.payload);
     },
-    addMediaExcerpt(
-      state,
-      action: PayloadAction<Omit<AddMediaExcerptData, "id">>
-    ) {
+    addMediaExcerpt(state, action: PayloadAction<AddMediaExcerptData>) {
       const newNode: MediaExcerptNode = {
-        id: uuidv4(),
         type: "MediaExcerpt",
         content: action.payload.quotation,
         ...action.payload,

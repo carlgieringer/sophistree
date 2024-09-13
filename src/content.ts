@@ -1,6 +1,22 @@
 import { v4 as uuidv4 } from "uuid";
 import { AddMediaExcerptData } from "./store/nodesSlice";
 
+interface AddMediaExcerptMessage {
+  action: "addMediaExcerpt";
+  data: AddMediaExcerptData;
+}
+
+interface SelectMediaExcerptMessage {
+  action: "selectMediaExcerpt";
+  data: {
+    mediaExcerptId: string;
+  };
+}
+
+export type ChromeRuntimeMessage =
+  | AddMediaExcerptMessage
+  | SelectMediaExcerptMessage;
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action !== "createMediaExcerpt") {
     return;
@@ -17,10 +33,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     url: message.url,
     sourceName: title,
   };
-  chrome.runtime.sendMessage({
+  const sidebarMessage: ChromeRuntimeMessage = {
     action: "addMediaExcerpt",
     data,
-  });
+  };
+  chrome.runtime.sendMessage(sidebarMessage);
 });
 
 function highlightSelection(mediaExcerptId: string) {
@@ -29,9 +46,9 @@ function highlightSelection(mediaExcerptId: string) {
     const range = selection.getRangeAt(0);
     const span = document.createElement("span");
     span.style.backgroundColor = "yellow";
-    span.dataset.excerptId = mediaExcerptId;
+    span.dataset.mediaExcerptId = mediaExcerptId;
     span.onclick = function highlightOnClick() {
-      const message = {
+      const message: SelectMediaExcerptMessage = {
         action: "selectMediaExcerpt",
         data: { mediaExcerptId },
       };
@@ -45,5 +62,3 @@ function highlightSelection(mediaExcerptId: string) {
     }
   }
 }
-
-export {};

@@ -8,11 +8,12 @@ import GraphView from "./components/GraphView";
 import NodeEditor from "./components/NodeEditor";
 
 import "./App.css";
+import { ChromeRuntimeMessage } from "./content";
 const AppContent: React.FC = () => {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    function handleChromeRuntimeMessage(message: ChromeRuntimeMessage) {
       switch (message.action) {
         case "addMediaExcerpt": {
           dispatch(addMediaExcerpt(message.data));
@@ -23,7 +24,11 @@ const AppContent: React.FC = () => {
           break;
         }
       }
-    });
+    }
+    chrome.runtime.onMessage.addListener(handleChromeRuntimeMessage);
+    return () => {
+      chrome.runtime.onMessage.removeListener(handleChromeRuntimeMessage);
+    };
   }, [dispatch]);
 
   const handleReload = () => {

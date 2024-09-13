@@ -35,3 +35,10 @@ We have already created the basic structure of the extension and the graph view.
 Is there anything I should clarify or any questions you need answered to create this browser
 extension? Above I have used THE_EXT to refer to the extension. Can you also suggest a good name for
 this extension and use that in place of Sophistree?
+
+TODO:
+
+- Create Justification or Proposition from MediaExcerpt
+- Highlight MediaExcerpts upon loading page
+- Put bases as children of Justification node
+- Enforce acceptable edges
