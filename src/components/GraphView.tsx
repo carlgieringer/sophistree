@@ -1,4 +1,3 @@
-// src/components/GraphView.tsx
 import React, { useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import cytoscape, {
@@ -10,10 +9,10 @@ import cytoscape, {
 import CytoscapeComponent from "react-cytoscapejs";
 import contextMenus from "cytoscape-context-menus";
 import { v4 as uuidv4 } from "uuid";
-import cola from "cytoscape-cola";
-import coseBilkent from "cytoscape-cose-bilkent";
-import dagre from "cytoscape-dagre";
 import elk from "cytoscape-elk";
+
+import { Node, MediaExcerptNode } from "../store/nodesSlice";
+import htmlNode from "../cytoscape/htmlNode";
 
 import "cytoscape-context-menus/cytoscape-context-menus.css";
 
@@ -26,11 +25,9 @@ import {
   resetSelection,
 } from "../store/nodesSlice";
 
-cytoscape.use(cola);
-cytoscape.use(coseBilkent);
-cytoscape.use(dagre);
 cytoscape.use(elk);
 cytoscape.use(contextMenus);
+cytoscape.use(htmlNode);
 
 const GraphView: React.FC = () => {
   const nodes = useSelector((state: RootState) => state.nodes.nodes);
@@ -55,17 +52,30 @@ const GraphView: React.FC = () => {
     return acc;
   }, {} as { [key: string]: string });
 
+  function makeData(node: Node) {
+    switch (node.type) {
+      case "MediaExcerpt":
+        return {
+          label: node.quotation,
+          parent: nodeIdToParentId[node.id],
+          ...node,
+        };
+      default:
+        return {
+          id: node.id,
+          label: node.content,
+          type: node.type,
+          parent: nodeIdToParentId[node.id],
+        };
+    }
+  }
+
   const elements = [
     ...nodes.map((node) => ({
-      data: {
-        id: node.id,
-        label: node.content,
-        type: node.type,
-        parent: nodeIdToParentId[node.id],
-      },
+      data: makeData(node),
     })),
     ...edges.map((edge) => ({
-      data: { source: edge.source, target: edge.target },
+      data: { ...edge },
     })),
   ];
 
@@ -74,25 +84,6 @@ const GraphView: React.FC = () => {
     cyRef.current?.nodes(`#${selectedNodeId}`).select();
   }, [selectedNodeId]);
 
-  // https://github.com/cytoscape/cytoscape.js-cola?tab=readme-ov-file#api
-  const colaLayout = {
-    name: "cola",
-    flow: { axis: "y", minSeparation: 30 },
-    unconstrIter: 10,
-    userConstIter: 20,
-  };
-  const coseBilkentLayout = { name: "cose-bilkent" };
-  const dagreLayout = { name: "dagre" };
-  const breadthfirstLayout = {
-    name: "breadthfirst",
-    directed: true,
-    grid: false, // whether to create an even grid into which the DAG is placed (circle:false only)
-    roots: undefined, // the roots of the trees
-    depthSort: undefined, // a sorting function to order nodes at equal depth. e.g. function(a, b){ return a.data('weight') - b.data('weight') }
-    animate: true,
-    animationDuration: 500, // duration of animation in ms if enabled
-    animationEasing: undefined, // easing of animation if enabled,
-  };
   const elkLayout = {
     name: "elk",
     // All options are available at http://www.eclipse.org/elk/reference.html
@@ -114,37 +105,18 @@ const GraphView: React.FC = () => {
       "elk.hierarchyHandling": "INCLUDE_CHILDREN",
       "elk.aspectRatio": "1.5",
       "elk.padding": "[top=50,left=50,bottom=50,right=50]",
-      "elk.edgeRouting": "ORTHOGONAL",
       "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
     },
   };
 
-  const layoutType = "elk" as
-    | "elk"
-    | "breadthfirst"
-    | "dagre"
-    | "cola"
-    | "cose-bilkent";
   function getLayout() {
-    switch (layoutType) {
-      case "elk":
-        return elkLayout;
-      case "breadthfirst":
-        return breadthfirstLayout;
-      case "dagre":
-        return dagreLayout;
-      case "cola":
-        return colaLayout;
-      case "cose-bilkent":
-        return coseBilkentLayout;
-    }
+    return elkLayout;
   }
 
   const stylesheet = [
     {
       selector: "node",
       style: {
-        "background-color": "#666",
         label: "data(label)",
         width: "label",
         height: "label",
@@ -157,14 +129,14 @@ const GraphView: React.FC = () => {
     {
       selector: 'node[type="Proposition"]',
       style: {
-        "background-color": "#6FB1FC",
+        "background-color": "#3498db",
         shape: "roundrectangle",
       },
     },
     {
       selector: 'node[type="Justification"]',
       style: {
-        "background-color": "#EDA1ED",
+        "background-color": "#34495e",
         shape: "rectangle",
         "compound-sizing-wrt-labels": "include",
         "padding-left": "10px",
@@ -174,14 +146,21 @@ const GraphView: React.FC = () => {
       },
     },
     {
-      selector: 'node[type="MediaExcerpt"]',
+      selector: `node[type="MediaExcerpt"]`,
       style: {
-        "background-color": "#F5A45D",
+        shape: "rectangle",
+        opacity: 0,
+      },
+    },
+    {
+      selector: `node[type="PropositionCompound"]`,
+      style: {
+        "background-color": "#2980b9",
         shape: "rectangle",
       },
     },
     {
-      selector: "edge",
+      selector: `edge`,
       style: {
         width: 2,
         "line-color": "#ccc",
@@ -189,6 +168,22 @@ const GraphView: React.FC = () => {
         "target-arrow-shape": "triangle",
         "curve-style": "straight",
         "arrow-scale": 1.5,
+      },
+    },
+    {
+      selector: `edge[polarity="Positive"]`,
+      style: {
+        width: 2,
+        "line-color": "#27ae60",
+        "target-arrow-color": "#27ae60",
+      },
+    },
+    {
+      selector: `edge[polarity="Negative"]`,
+      style: {
+        width: 2,
+        "line-color": "#c0392b",
+        "target-arrow-color": "#c0392b",
       },
     },
     {
@@ -216,6 +211,18 @@ const GraphView: React.FC = () => {
   useEffect(() => {
     if (cyRef.current) {
       const cy = cyRef.current;
+
+      cy.htmlNode({
+        query: `node[type="MediaExcerpt"]`,
+        template: function (data: cytoscape.NodeDataDefinition) {
+          const d = data as MediaExcerptNode;
+          return `<p>${d.quotation}<p>
+            <a href="${d.canonicalUrl}">${d.sourceName}<a>`;
+        },
+        containerCSS: {
+          backgroundColor: "#3498db",
+        },
+      });
 
       cy.contextMenus({
         menuItems: [
@@ -254,7 +261,7 @@ const GraphView: React.FC = () => {
         }
       });
 
-      cy.on("dbltap", (event: any) => {
+      cy.on("dbltap", (event: EventObject) => {
         if (event.target === cy) {
           const pos = event.position;
           const newNode = {

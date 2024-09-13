@@ -18,10 +18,7 @@
   "dependencies": {
     "@reduxjs/toolkit": "^2.2.7",
     "cytoscape": "^3.30.2",
-    "cytoscape-cola": "^2.5.1",
     "cytoscape-context-menus": "^4.2.1",
-    "cytoscape-cose-bilkent": "^4.1.0",
-    "cytoscape-dagre": "^2.5.0",
     "cytoscape-elk": "^2.2.0",
     "dom-anchor-text-position": "^5.0.0",
     "dom-anchor-text-quote": "^4.0.2",
@@ -36,7 +33,6 @@
   "devDependencies": {
     "@types/chrome": "^0.0.270",
     "@types/cytoscape-context-menus": "^4.1.4",
-    "@types/cytoscape-dagre": "^2.3.3",
     "@types/node": "^22.5.4",
     "@types/react": "^18.3.5",
     "@types/react-cytoscapejs": "^1.2.5",

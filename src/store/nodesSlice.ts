@@ -24,10 +24,13 @@ interface PropositionCompoundNode extends BaseNode {
   atomIds: string[];
 }
 
+type Polarity = "Positive" | "Negative";
+
 interface JustificationNode extends BaseNode {
   type: "Justification";
   basisId: string;
   targetId: string;
+  polarity: Polarity;
 }
 
 export interface MediaExcerptNode extends BaseNode, AddMediaExcerptData {
@@ -37,6 +40,7 @@ export interface MediaExcerptNode extends BaseNode, AddMediaExcerptData {
 interface Edge {
   source: string;
   target: string;
+  polarity: Polarity;
 }
 
 interface DragPayload {
@@ -44,6 +48,7 @@ interface DragPayload {
   targetId: string;
   // Since a target may appear in multiple places, include its parent for context
   targetParentId: string | undefined;
+  polarity?: Polarity;
 }
 
 const initialState = {
@@ -96,7 +101,7 @@ export const nodesSlice = createSlice({
       }
     },
     completeDrag(state, action: PayloadAction<DragPayload>) {
-      const { sourceId, targetId } = action.payload;
+      const { sourceId, targetId, polarity: actionPolarity } = action.payload;
 
       const source = state.nodes.find((n) => n.id === sourceId);
       if (!source) {
@@ -113,14 +118,11 @@ export const nodesSlice = createSlice({
       switch (source.type) {
         case "Proposition": {
           switch (target.type) {
-            case "Justification": {
-              addPropositionToJustification(state, source, target);
-              return;
-            }
             case "PropositionCompound": {
               target.atomIds.push(sourceId);
               return;
             }
+            case "Justification":
             case "Proposition": {
               const propositionCompound = {
                 type: "PropositionCompound" as const,
@@ -159,15 +161,25 @@ export const nodesSlice = createSlice({
       }
 
       const newJustificationId = uuidv4();
+      const polarity =
+        // Counter justifications must be negative
+        target.type === "Justification"
+          ? "Negative"
+          : actionPolarity ?? "Positive";
       const newJustification: JustificationNode = {
         id: newJustificationId,
         type: "Justification",
         content: "",
         targetId,
         basisId,
+        polarity,
       };
       state.nodes.push(newJustification);
-      state.edges.push({ source: newJustificationId, target: targetId });
+      state.edges.push({
+        source: newJustificationId,
+        target: targetId,
+        polarity,
+      });
     },
     removeEdge(state, action: PayloadAction<Edge>) {
       state.edges = state.edges.filter(
@@ -185,46 +197,48 @@ export const nodesSlice = createSlice({
       state.selectedNodeId = undefined;
     },
     deleteNode(state, action: PayloadAction<string>) {
-      state.nodes = state.nodes.filter((node) => node.id !== action.payload);
+      const nodeIdToDelete = action.payload;
+      const nodesById = new Map(state.nodes.map((node) => [node.id, node]));
+      const nodeIdsToDelete = new Set([nodeIdToDelete]);
+      state.nodes.forEach((node) => {
+        // Process PropositionCompounds first since they may delete justifications
+        if (node.type === "PropositionCompound") {
+          updatePropositionCompound(node, nodeIdToDelete, nodeIdsToDelete);
+        }
+        if (
+          node.type === "Justification" &&
+          (nodeIdsToDelete.has(node.basisId) ||
+            nodeIdsToDelete.has(node.targetId))
+        ) {
+          nodeIdsToDelete.add(node.id);
+          const basis = nodesById.get(node.basisId);
+          if (basis && basis.type === "PropositionCompound") {
+            nodeIdsToDelete.add(basis.id);
+          }
+        }
+      });
+
+      state.nodes = state.nodes.filter((node) => !nodeIdsToDelete.has(node.id));
       state.edges = state.edges.filter(
         (edge) =>
-          edge.source !== action.payload && edge.target !== action.payload
+          !nodeIdsToDelete.has(edge.source) && !nodeIdsToDelete.has(edge.target)
       );
-      if ((state.selectedNodeId = action.payload)) {
+
+      if (state.selectedNodeId && nodeIdsToDelete.has(state.selectedNodeId)) {
         state.selectedNodeId = undefined;
       }
     },
   },
 });
 
-function addPropositionToJustification(
-  state: NodesState,
-  source: PropositionNode,
-  target: JustificationNode
+function updatePropositionCompound(
+  node: PropositionCompoundNode,
+  nodeIdToDelete: string,
+  nodeIdsToDelete: Set<string>
 ) {
-  const basis = state.nodes.find((n) => n.id === target.basisId);
-  if (!basis) {
-    console.error(
-      `Could not find basis node having id ${target.basisId} for justification having node ID ${target.id}`
-    );
-    return;
-  }
-  switch (basis.type) {
-    case "MediaExcerpt": {
-      console.error(
-        "Cannot add a roposition to a media excerpt-based Justification."
-      );
-      break;
-    }
-    case "PropositionCompound": {
-      basis.atomIds.push(source.id);
-      break;
-    }
-    default:
-      console.error(
-        `Invalid Justification basis type ${basis.type} for justification ID ${target.id}`
-      );
-      break;
+  node.atomIds = node.atomIds.filter((id) => id !== nodeIdToDelete);
+  if (node.atomIds.length === 0) {
+    nodeIdsToDelete.add(node.id);
   }
 }
 

@@ -39,5 +39,8 @@ this extension and use that in place of Sophistree?
 TODO:
 
 - Add Justification polarity
-- Retrieve MediaExcerpts from background scripts instead of sidebar?
+  - https://github.com/cytoscape/cytoscape.js-popper for polarity targets?
+- Show URL and sourceName on MediaExcerpt
 - Show icon in Prop/Just nodes for MediaExcerpts; clicking on it navigates to URL and scrolls to highlight.
+- Retrieve MediaExcerpts from background scripts instead of sidebar?
+- Collapsing
