@@ -80,13 +80,6 @@ export const nodesSlice = createSlice({
         };
       }
     },
-    deleteNode(state, action: PayloadAction<string>) {
-      state.nodes = state.nodes.filter((node) => node.id !== action.payload);
-      state.edges = state.edges.filter(
-        (edge) =>
-          edge.source !== action.payload && edge.target !== action.payload
-      );
-    },
     addEdge(state, action: PayloadAction<Edge>) {
       state.edges.push(action.payload);
     },
@@ -105,6 +98,16 @@ export const nodesSlice = createSlice({
         node.selected = true;
         state.selectedNodeId = action.payload;
       } else {
+        state.selectedNodeId = undefined;
+      }
+    },
+    deleteNode(state, action: PayloadAction<string>) {
+      state.nodes = state.nodes.filter((node) => node.id !== action.payload);
+      state.edges = state.edges.filter(
+        (edge) =>
+          edge.source !== action.payload && edge.target !== action.payload
+      );
+      if (state.selectedNodeId === action.payload) {
         state.selectedNodeId = undefined;
       }
     },

@@ -4,12 +4,15 @@ import { useSelector, useDispatch } from "react-redux";
 import cytoscape from "cytoscape";
 import CytoscapeComponent from "react-cytoscapejs";
 import dagre from "cytoscape-dagre";
+import contextMenus from "cytoscape-context-menus";
+import "cytoscape-context-menus/cytoscape-context-menus.css";
 import { v4 as uuidv4 } from "uuid";
 
 import { RootState } from "../store";
-import { addNode, addEdge, selectNode } from "../store/nodesSlice";
+import { addNode, addEdge, selectNode, deleteNode } from "../store/nodesSlice";
 
 cytoscape.use(dagre);
+cytoscape.use(contextMenus);
 
 const GraphView: React.FC = () => {
   const nodes = useSelector((state: RootState) => state.nodes.nodes);
@@ -94,6 +97,22 @@ const GraphView: React.FC = () => {
   useEffect(() => {
     if (cyRef.current) {
       const cy = cyRef.current;
+
+      cy.contextMenus({
+        menuItems: [
+          {
+            id: "delete",
+            content: "Delete",
+            tooltipText: "Delete node",
+            selector: "node",
+            onClickFunction: function (event) {
+              var target = event.target;
+              dispatch(deleteNode(target.id()));
+            },
+            hasTrailingDivider: true,
+          },
+        ],
+      });
 
       cy.on("tap", "node", (event: any) => {
         const nodeId = event.target.id();

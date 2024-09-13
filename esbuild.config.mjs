@@ -25,10 +25,18 @@ const options = {
       },
     },
     copy({
-      assets: {
-        from: ["./public/sidebar.html"],
-        to: ["."],
-      },
+      assets: [
+        {
+          from: [
+            prod ? "./public/manifest.json" : "./public/manifest.dev.json",
+          ],
+          to: ["manifest.json"],
+        },
+        {
+          from: ["./public/sidebar.html"],
+          to: ["."],
+        },
+      ],
       verbose: true,
       watch,
     }),
