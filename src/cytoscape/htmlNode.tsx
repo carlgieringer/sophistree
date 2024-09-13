@@ -1,4 +1,6 @@
 import cytoscape from "cytoscape";
+import ReactDOM from "react-dom/client";
+import { sunflower } from "../colors";
 
 declare module "cytoscape" {
   interface Core {
@@ -10,7 +12,7 @@ const defaultOptions: HtmlNodeOptions = {
   query: "node", // selector for nodes to apply HTML to
   template: function (data: cytoscape.NodeDataDefinition) {
     // function to generate HTML
-    return "<div>" + data.id + "</div>";
+    return <div>{data.id}</div>;
   },
   containerCSS: {
     // CSS for the HTML container
@@ -22,7 +24,7 @@ const defaultOptions: HtmlNodeOptions = {
 
 interface HtmlNodeOptions {
   query: string;
-  template: (data: cytoscape.NodeDataDefinition) => string;
+  template: (data: cytoscape.NodeDataDefinition) => JSX.Element;
   containerCSS?: Partial<CSSStyleDeclaration>;
 }
 
@@ -38,11 +40,11 @@ function htmlNode(this: cytoscape.Core, options: HtmlNodeOptions) {
   // Function to create and update HTML nodes
   function createHtmlNode(node: cytoscape.NodeSingular) {
     var data = node.data();
-    var htmlContent = options.template(data);
+    var jsxElement = options.template(data);
 
     var htmlElement = document.createElement("div");
-    htmlElement.id = "html-node-" + data.id;
-    htmlElement.innerHTML = htmlContent;
+    ReactDOM.createRoot(htmlElement).render(jsxElement);
+    // htmlElement.innerHTML = jsxElement;
     Object.assign(htmlElement.style, options.containerCSS);
 
     htmlElement.style.position = "absolute";
@@ -77,7 +79,7 @@ function htmlNode(this: cytoscape.Core, options: HtmlNodeOptions) {
     });
     node.on("select unselect", function () {
       if (node.selected()) {
-        htmlElement.style.border = "1px solid red";
+        htmlElement.style.border = `5px solid ${sunflower}`;
       } else {
         htmlElement.style.border = "";
       }

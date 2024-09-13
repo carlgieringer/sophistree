@@ -24,7 +24,7 @@ interface PropositionCompoundNode extends BaseNode {
   atomIds: string[];
 }
 
-type Polarity = "Positive" | "Negative";
+export type Polarity = "Positive" | "Negative";
 
 interface JustificationNode extends BaseNode {
   type: "Justification";
@@ -97,6 +97,42 @@ export const nodesSlice = createSlice({
         state.nodes[index] = {
           ...state.nodes[index],
           ...action.payload.updates,
+        };
+      }
+    },
+    updateJustificationNode(
+      state,
+      action: PayloadAction<{
+        id: string;
+        updates: Partial<Omit<JustificationNode, "type">>;
+      }>
+    ) {
+      const index = state.nodes.findIndex(
+        (node) => node.id === action.payload.id
+      );
+      if (index === -1) {
+        console.error(
+          `Cannot update Justification node because no node has ID ${action.payload.id}`
+        );
+        return;
+      }
+      state.nodes[index] = {
+        ...state.nodes[index],
+        ...action.payload.updates,
+      };
+      if (action.payload.updates.polarity) {
+        const edgeIndex = state.edges.findIndex(
+          (edge) => edge.source === action.payload.id
+        );
+        if (edgeIndex === -1) {
+          console.error(
+            `Cannot update Justification edge because no edge has source ID ${action.payload.updates.basisId}`
+          );
+          return;
+        }
+        state.edges[edgeIndex] = {
+          ...state.edges[edgeIndex],
+          polarity: action.payload.updates.polarity,
         };
       }
     },
@@ -246,6 +282,7 @@ export const {
   addNode,
   addMediaExcerpt,
   updateNode,
+  updateJustificationNode,
   deleteNode,
   completeDrag,
   removeEdge,

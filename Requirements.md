@@ -40,7 +40,9 @@ TODO:
 
 - Add Justification polarity
   - https://github.com/cytoscape/cytoscape.js-popper for polarity targets?
-- Show URL and sourceName on MediaExcerpt
+- Clicking on URL scrolls to the highlight
+- Message origin checks
 - Show icon in Prop/Just nodes for MediaExcerpts; clicking on it navigates to URL and scrolls to highlight.
 - Retrieve MediaExcerpts from background scripts instead of sidebar?
 - Collapsing
+- Layout proposition compound atoms vertically.

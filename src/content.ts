@@ -6,6 +6,7 @@ import {
   makeDomAnchorFromSelection,
   getRangeFromDomAnchor,
 } from "./anchors";
+import { sunflower } from "./colors";
 
 interface AddMediaExcerptMessage {
   action: "addMediaExcerpt";
@@ -33,10 +34,21 @@ export type ChromeRuntimeMessage =
   | GetMediaExcerptsMessage;
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action !== "createMediaExcerpt") {
-    return;
+  switch (message.action) {
+    case "createMediaExcerpt":
+      createMediaExcerpt(message);
+      break;
+    case "openUrl":
+      openUrl(message.url);
+      break;
   }
+});
 
+function openUrl(url: string) {
+  window.location.href = url;
+}
+
+function createMediaExcerpt(message: any) {
   const id = uuidv4();
   const quotation = message.selectedText;
   const url = getUrl();
@@ -68,7 +80,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   chrome.runtime.sendMessage(sidebarMessage);
 
   highlightCurrentSelection(id);
-});
+}
 
 function getUrl() {
   return window.location.href;
@@ -158,7 +170,7 @@ function highlightRanges(ranges: Range[], mediaExcerptId: string) {
 
 function highlightRange(range: Range, mediaExcerptId: string) {
   const span = document.createElement("span");
-  span.style.backgroundColor = "yellow";
+  span.style.backgroundColor = sunflower;
   span.dataset.mediaExcerptId = mediaExcerptId;
   span.onclick = function highlightOnClick() {
     const message: SelectMediaExcerptMessage = {

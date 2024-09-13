@@ -24,6 +24,7 @@ import {
   deleteNode,
   resetSelection,
 } from "../store/nodesSlice";
+import { url } from "inspector";
 
 cytoscape.use(elk);
 cytoscape.use(contextMenus);
@@ -216,8 +217,25 @@ const GraphView: React.FC = () => {
         query: `node[type="MediaExcerpt"]`,
         template: function (data: cytoscape.NodeDataDefinition) {
           const d = data as MediaExcerptNode;
-          return `<p>${d.quotation}<p>
-            <a href="${d.canonicalUrl}">${d.sourceName}<a>`;
+          return (
+            <div>
+              <p>{d.quotation}</p>
+              <a
+                href={d.canonicalUrl}
+                onClick={(event) => {
+                  if (!d.canonicalUrl) {
+                    return;
+                  }
+                  event.preventDefault();
+                  event.stopPropagation();
+                  openUrlInActiveTab(d.canonicalUrl);
+                  return false;
+                }}
+              >
+                {d.sourceName}
+              </a>
+            </div>
+          );
         },
         containerCSS: {
           backgroundColor: "#3498db",
@@ -402,5 +420,22 @@ const GraphView: React.FC = () => {
     />
   );
 };
+
+function openUrlInActiveTab(url: string) {
+  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+    const activeTab = tabs[0];
+    if (!activeTab.id) {
+      return;
+    }
+    chrome.tabs
+      .sendMessage(activeTab.id, {
+        action: "openUrl",
+        url,
+      })
+      .catch((reason) => {
+        console.error(`Failed to open URL in active tab`, reason);
+      });
+  });
+}
 
 export default GraphView;

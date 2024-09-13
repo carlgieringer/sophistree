@@ -2,7 +2,11 @@
 import React from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../store";
-import { updateNode } from "../store/nodesSlice";
+import {
+  updateNode,
+  updateJustificationNode,
+  Polarity,
+} from "../store/nodesSlice";
 
 const NodeEditor: React.FC = () => {
   const selectedNodeId = useSelector(
@@ -23,6 +27,22 @@ const NodeEditor: React.FC = () => {
     );
   };
 
+  const handlePolarityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    dispatch(
+      updateJustificationNode({
+        id: selectedNode.id,
+        updates: { polarity: e.target.value as Polarity },
+      })
+    );
+  };
+
+  const polarityDropdown = selectedNode.type === "Justification" && (
+    <select onChange={handlePolarityChange} value={selectedNode.polarity}>
+      <option value="Positive">Positive</option>
+      <option value="Negative">Negative</option>
+    </select>
+  );
+
   return (
     <div>
       <input
@@ -30,6 +50,7 @@ const NodeEditor: React.FC = () => {
         value={selectedNode.content}
         onChange={handleContentChange}
       />
+      {polarityDropdown}
     </div>
   );
 };
