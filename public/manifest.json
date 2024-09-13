@@ -25,5 +25,9 @@
   ],
   "side_panel": {
     "default_path": "sidebar.html"
+  },
+  "icons": {
+    "32": "logo-32.png",
+    "512": "logo-512.png"
   }
 }

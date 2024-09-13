@@ -38,6 +38,10 @@ const options = {
           from: ["./public/sidebar.html"],
           to: ["."],
         },
+        {
+          from: ["./public/logo*.png"],
+          to: ["."],
+        },
       ],
       verbose: true,
       watch,

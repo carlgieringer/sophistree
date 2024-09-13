@@ -56,6 +56,7 @@ const AppContent: React.FC = () => {
   return (
     <div className="sophistree-sidebar">
       <header>
+        <img className="logo" src="./logo-32.png" alt="Sophistree Logo" />
         <h1>Sophistree</h1>
       </header>
       <main>

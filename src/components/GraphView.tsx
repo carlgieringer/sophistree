@@ -25,6 +25,7 @@ import {
   resetSelection,
 } from "../store/nodesSlice";
 import { url } from "inspector";
+import { sunflower } from "../colors";
 
 cytoscape.use(elk);
 cytoscape.use(contextMenus);
@@ -191,7 +192,7 @@ const GraphView: React.FC = () => {
       selector: "node:selected",
       style: {
         "border-width": 3,
-        "border-color": "#333",
+        "border-color": sunflower,
       },
     },
     {
@@ -425,6 +426,11 @@ function openUrlInActiveTab(url: string) {
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     const activeTab = tabs[0];
     if (!activeTab.id) {
+      return;
+    }
+    // chrome:// tabs e.g. have no URL
+    if (!activeTab.url) {
+      window.open(url);
       return;
     }
     chrome.tabs

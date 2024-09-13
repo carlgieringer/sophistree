@@ -10,6 +10,15 @@ header {
   color: white;
   padding: 10px;
   text-align: center;
+
+  display: flex;
+  flex-wrap: nowrap;
+  flex-direction: row;
+  align-items: center;
+}
+
+header h1 {
+  flex: 1;
 }
 
 .sophistree-sidebar main {
