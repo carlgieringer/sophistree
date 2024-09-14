@@ -5,6 +5,7 @@ import cytoscape, {
   EventObjectNode,
   Position,
   EventObject,
+  EdgeSingular,
 } from "cytoscape";
 import CytoscapeComponent from "react-cytoscapejs";
 import contextMenus from "cytoscape-context-menus";
@@ -168,8 +169,21 @@ const GraphView: React.FC = () => {
         "line-color": "#ccc",
         "target-arrow-color": "#ccc",
         "target-arrow-shape": "triangle",
-        "curve-style": "straight",
         "arrow-scale": 1.5,
+        "curve-style": "straight",
+        "target-endpoint": (ele: EdgeSingular) => {
+          const target = ele.target();
+          const parent = target.parent();
+          if (
+            parent.data("type") === "PropositionCompound" &&
+            parent.children().length > 1
+          ) {
+            const isSourceLeftOfTarget =
+              ele.source().position().x < target.position().x;
+            return isSourceLeftOfTarget ? "270deg" : "90deg";
+          }
+          return "outside-to-node";
+        },
       },
     },
     {
@@ -261,9 +275,7 @@ const GraphView: React.FC = () => {
             content: "Layout",
             selector: "*",
             tooltipText: "Layout graph",
-            onClickFunction: function (event) {
-              cyRef.current?.layout(getLayout()).run();
-            },
+            onClickFunction: layoutGraph,
             coreAsWell: true,
           },
         ],
@@ -396,14 +408,17 @@ const GraphView: React.FC = () => {
           renderedPosition: event.position,
         });
       });
+      cy.on("layoutstop", () => {
+        layoutPropositionCompoundAtomsVertically(cy);
+      });
     }
   }, [dispatch]);
 
-  useEffect(() => {
-    if (cyRef.current) {
-      cyRef.current.layout(getLayout()).run();
-    }
-  }, [nodes, edges]);
+  useEffect(() => layoutGraph, [nodes, edges]);
+
+  function layoutGraph() {
+    cyRef.current?.layout(getLayout()).run();
+  }
 
   return (
     <CytoscapeComponent
@@ -421,6 +436,48 @@ const GraphView: React.FC = () => {
     />
   );
 };
+
+const compoundChildPadding = 15;
+
+function layoutPropositionCompoundAtomsVertically(cy: cytoscape.Core) {
+  const compoundNodes = cy
+    .nodes()
+    .filter(
+      (node) => node.isParent() && node.data("type") === "PropositionCompound"
+    );
+
+  compoundNodes.forEach((compound) => {
+    const children = compound.children();
+    const childCount = children.length;
+
+    if (children.length <= 1) {
+      return;
+    }
+    const compoundBbox = compound.boundingBox();
+    const padding = compoundChildPadding;
+
+    let totalChildHeight = 0;
+    children.forEach((child, index) => {
+      const childWidth = child.width();
+      const childHeight = child.height();
+
+      const xPosition = compoundBbox.x1 + padding + childWidth / 2;
+      const yPosition = compoundBbox.y1 + totalChildHeight + padding;
+
+      totalChildHeight += childHeight + padding;
+
+      child.position({
+        x: xPosition,
+        y: yPosition,
+      });
+    });
+
+    compound.style({
+      width: compoundBbox.w,
+      height: Math.max(compoundBbox.h, totalChildHeight + 2 * padding),
+    });
+  });
+}
 
 function openUrlInActiveTab(url: string) {
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {

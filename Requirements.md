@@ -40,9 +40,13 @@ TODO:
 
 - Add Justification polarity
   - https://github.com/cytoscape/cytoscape.js-popper for polarity targets?
+- Node list for disconnected nodes? (Filter by all nodes and disconnected?)
+  - Propositions, MediaExcerpts
 - Clicking on URL scrolls to the highlight
 - Message origin checks
 - Show icon in Prop/Just nodes for MediaExcerpts; clicking on it navigates to URL and scrolls to highlight.
 - Retrieve MediaExcerpts from background scripts instead of sidebar?
 - Collapsing
-- Layout proposition compound atoms vertically.
+- Counter justification intermediate nodes
+- Voting?
+- Multiple justification targets?
