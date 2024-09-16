@@ -1,3 +1,10 @@
 p {
   margin: 0;
 }
+
+.hover-highlight {
+  border-width: 3px;
+  border-color: #e67e22;
+  border-style: solid;
+  transition: border 0.1s ease;
+}

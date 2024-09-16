@@ -33,6 +33,8 @@ const defaultReactNodeOptions: ReactNodeOptions = {
 interface ReactNodeOptions {
   query: string;
   template: (data: any) => JSX.Element;
+  /** CSS classes to copy from the node to the HTML container */
+  syncClasses?: string[];
   containerCSS?: Partial<CSSStyleDeclaration>;
 }
 
@@ -79,6 +81,12 @@ function makeReactNode(
     Object.assign(htmlElement.style, options.containerCSS);
 
     htmlElement.style.position = "absolute";
+
+    options.syncClasses?.forEach((className) => {
+      if (node.hasClass(className)) {
+        htmlElement.classList.add(className);
+      }
+    });
     const container = cy.container();
     if (!container) throw new Error("Cytoscape container not found");
     container.appendChild(htmlElement);
@@ -150,6 +158,17 @@ function makeReactNode(
       var jsxElement = options.template(node.data());
       root.render(jsxElement);
     });
+    if (options.syncClasses) {
+      node.on("style", function () {
+        options.syncClasses?.forEach((className) => {
+          if (node.hasClass(className)) {
+            htmlElement.classList.add(className);
+          } else {
+            htmlElement.classList.remove(className);
+          }
+        });
+      });
+    }
     cy.on("pan zoom resize", updatePosition);
   }
 

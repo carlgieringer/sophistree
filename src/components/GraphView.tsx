@@ -22,7 +22,13 @@ import {
   deleteNode,
   resetSelection,
 } from "../store/nodesSlice";
-import { peterRiver, sunflower } from "../colors";
+import {
+  carrot,
+  nephritis,
+  peterRiver,
+  pomegranate,
+  sunflower,
+} from "../colors";
 
 import "cytoscape-context-menus/cytoscape-context-menus.css";
 import "./GraphView.css";
@@ -218,16 +224,16 @@ const GraphView: React.FC = () => {
       selector: `edge[polarity="Positive"]`,
       style: {
         width: 2,
-        "line-color": "#27ae60",
-        "target-arrow-color": "#27ae60",
+        "line-color": nephritis,
+        "target-arrow-color": nephritis,
       },
     },
     {
       selector: `edge[polarity="Negative"]`,
       style: {
         width: 2,
-        "line-color": "#c0392b",
-        "target-arrow-color": "#c0392b",
+        "line-color": pomegranate,
+        "target-arrow-color": pomegranate,
       },
     },
     {
@@ -247,7 +253,7 @@ const GraphView: React.FC = () => {
       selector: ".hover-highlight",
       style: {
         "border-width": 3,
-        "border-color": "#ff0000",
+        "border-color": carrot,
       },
     },
   ];
@@ -268,6 +274,7 @@ const GraphView: React.FC = () => {
                 </>
               );
             },
+            syncClasses: ["hover-highlight"],
             containerCSS: {
               padding: "1em",
               backgroundColor: peterRiver,
@@ -297,6 +304,7 @@ const GraphView: React.FC = () => {
                 </>
               );
             },
+            syncClasses: ["hover-highlight"],
             containerCSS: {
               padding: "1em",
               backgroundColor: peterRiver,
