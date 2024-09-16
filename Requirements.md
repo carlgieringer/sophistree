@@ -38,7 +38,7 @@ this extension and use that in place of Sophistree?
 
 TODO:
 
-- Add Justification polarity
+- Support setting Justification polarity via drag.
   - https://github.com/cytoscape/cytoscape.js-popper for polarity targets?
 - Node list for disconnected nodes? (Filter by all nodes and disconnected?)
   - Propositions, MediaExcerpts

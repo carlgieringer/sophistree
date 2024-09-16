@@ -13,7 +13,7 @@ import { v4 as uuidv4 } from "uuid";
 import elk from "cytoscape-elk";
 
 import { Node, MediaExcerptNode } from "../store/nodesSlice";
-import htmlNode from "../cytoscape/htmlNode";
+import htmlNode from "../cytoscape/reactNodes";
 
 import "cytoscape-context-menus/cytoscape-context-menus.css";
 
@@ -26,7 +26,7 @@ import {
   resetSelection,
 } from "../store/nodesSlice";
 import { url } from "inspector";
-import { sunflower } from "../colors";
+import { peterRiver, sunflower } from "../colors";
 
 cytoscape.use(elk);
 cytoscape.use(contextMenus);
@@ -132,8 +132,9 @@ const GraphView: React.FC = () => {
     {
       selector: 'node[type="Proposition"]',
       style: {
-        "background-color": "#3498db",
         shape: "roundrectangle",
+        "background-color": peterRiver,
+        padding: "1em",
       },
     },
     {
@@ -152,7 +153,15 @@ const GraphView: React.FC = () => {
       selector: `node[type="MediaExcerpt"]`,
       style: {
         shape: "rectangle",
+        // Hide the default cytoscape content in favor of the reactNodes content
         opacity: 0,
+      },
+    },
+    {
+      selector: `node[type="MediaExcerpt"][height]`,
+      style: {
+        // reactNodes will dynamically set MediaExcerpt nodes' height to match the wrapped JSX.
+        height: "data(height)",
       },
     },
     {
@@ -228,33 +237,40 @@ const GraphView: React.FC = () => {
     if (cyRef.current) {
       const cy = cyRef.current;
 
-      cy.htmlNode({
-        query: `node[type="MediaExcerpt"]`,
-        template: function (data: cytoscape.NodeDataDefinition) {
-          const d = data as MediaExcerptNode;
-          return (
-            <div>
-              <p>{d.quotation}</p>
-              <a
-                href={d.canonicalUrl}
-                onClick={(event) => {
-                  if (!d.canonicalUrl) {
-                    return;
-                  }
-                  event.preventDefault();
-                  event.stopPropagation();
-                  openUrlInActiveTab(d.canonicalUrl);
-                  return false;
-                }}
-              >
-                {d.sourceName}
-              </a>
-            </div>
-          );
-        },
-        containerCSS: {
-          backgroundColor: "#3498db",
-        },
+      cy.reactNodes({
+        layout: getLayout(),
+        nodes: [
+          {
+            query: `node[type="MediaExcerpt"]`,
+            template: function (data: cytoscape.NodeDataDefinition) {
+              const d = data as MediaExcerptNode;
+              return (
+                <>
+                  <p>{d.quotation}</p>
+                  <a
+                    href={d.canonicalUrl}
+                    onClick={(event) => {
+                      if (!d.canonicalUrl) {
+                        return;
+                      }
+                      event.preventDefault();
+                      event.stopPropagation();
+                      openUrlInActiveTab(d.canonicalUrl);
+                      return false;
+                    }}
+                  >
+                    {d.sourceName}
+                  </a>
+                </>
+              );
+            },
+            containerCSS: {
+              padding: "1em",
+              backgroundColor: peterRiver,
+              borderRadius: "8px",
+            },
+          },
+        ],
       });
 
       cy.contextMenus({
@@ -408,6 +424,7 @@ const GraphView: React.FC = () => {
           renderedPosition: event.position,
         });
       });
+
       cy.on("layoutstop", () => {
         layoutPropositionCompoundAtomsVertically(cy);
       });
@@ -425,7 +442,7 @@ const GraphView: React.FC = () => {
       elements={elements}
       layout={getLayout()}
       stylesheet={stylesheet}
-      style={{ width: "100%", height: "100%" }}
+      style={{ width: "100%", height: "100%", overflow: "hidden" }}
       cy={(cy) => {
         cyRef.current = cy;
       }}
