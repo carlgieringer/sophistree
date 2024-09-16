@@ -5,8 +5,6 @@ import { DomAnchor } from "../anchors";
 
 interface BaseNode {
   id: string;
-  // PropositionCompounds and Justifications don't need content?
-  content?: string;
 }
 
 export type Node =
@@ -79,7 +77,6 @@ export const nodesSlice = createSlice({
     addMediaExcerpt(state, action: PayloadAction<AddMediaExcerptData>) {
       const newNode: MediaExcerptNode = {
         type: "MediaExcerpt",
-        content: action.payload.quotation,
         ...action.payload,
       };
       state.nodes.push(newNode);
@@ -181,7 +178,6 @@ export const nodesSlice = createSlice({
               const propositionCompound = {
                 type: "PropositionCompound" as const,
                 id: uuidv4(),
-                content: "",
                 atomIds: [sourceId],
               };
               state.nodes.push(propositionCompound);
@@ -223,7 +219,6 @@ export const nodesSlice = createSlice({
       const newJustification: JustificationNode = {
         id: newJustificationId,
         type: "Justification",
-        content: "",
         targetId,
         basisId,
         polarity,

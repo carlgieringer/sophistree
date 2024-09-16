@@ -60,34 +60,12 @@ const GraphView: React.FC = () => {
     return acc;
   }, {} as { [key: string]: string });
 
-  function makeData(node: Node) {
-    switch (node.type) {
-      case "MediaExcerpt":
-        return {
-          label: node.quotation,
-          parent: nodeIdToParentId[node.id],
-          ...node,
-        };
-      case "Proposition":
-        return {
-          id: node.id,
-          type: node.type,
-          text: node.text,
-          label: node.text,
-        };
-      default:
-        return {
-          id: node.id,
-          label: node.content,
-          type: node.type,
-          parent: nodeIdToParentId[node.id],
-        };
-    }
-  }
-
   const elements = [
     ...nodes.map((node) => ({
-      data: makeData(node),
+      data: {
+        ...node,
+        parent: nodeIdToParentId[node.id],
+      },
     })),
     ...edges.map((edge) => ({
       data: { ...edge },
@@ -132,9 +110,6 @@ const GraphView: React.FC = () => {
     {
       selector: "node",
       style: {
-        label: "data(label)",
-        width: "label",
-        height: "label",
         "text-valign": "center",
         "text-halign": "center",
         "text-wrap": "wrap",
@@ -144,7 +119,7 @@ const GraphView: React.FC = () => {
     {
       selector: 'node[type="Proposition"]',
       style: {
-        shape: "rectangle",
+        shape: "roundedrectangle",
         label: "data(text)",
         width: "label",
         height: "label",
@@ -162,8 +137,8 @@ const GraphView: React.FC = () => {
     {
       selector: 'node[type="Justification"]',
       style: {
+        shape: "roundedrectangle",
         "background-color": "#34495e",
-        shape: "rectangle",
         "compound-sizing-wrt-labels": "include",
         "padding-left": "10px",
         "padding-right": "10px",
@@ -174,7 +149,7 @@ const GraphView: React.FC = () => {
     {
       selector: `node[type="MediaExcerpt"]`,
       style: {
-        shape: "rectangle",
+        shape: "roundedrectangle",
         label: "data(quotation)",
         width: "label",
         height: "label",
@@ -192,8 +167,8 @@ const GraphView: React.FC = () => {
     {
       selector: `node[type="PropositionCompound"]`,
       style: {
+        shape: "roundedrectangle",
         "background-color": "#2980b9",
-        shape: "rectangle",
       },
     },
     {
@@ -244,7 +219,13 @@ const GraphView: React.FC = () => {
       },
     },
     {
-      selector: ".dragging",
+      selector: `.dragging[type="Justification"]`,
+      style: {
+        opacity: 0.5,
+      },
+    },
+    {
+      selector: `.dragging[type="PropositionCompound"]`,
       style: {
         opacity: 0.5,
       },
@@ -274,7 +255,7 @@ const GraphView: React.FC = () => {
                 </>
               );
             },
-            syncClasses: ["hover-highlight"],
+            syncClasses: ["hover-highlight", "dragging"],
             containerCSS: {
               padding: "1em",
               backgroundColor: peterRiver,
@@ -304,7 +285,7 @@ const GraphView: React.FC = () => {
                 </>
               );
             },
-            syncClasses: ["hover-highlight"],
+            syncClasses: ["hover-highlight", "dragging"],
             containerCSS: {
               padding: "1em",
               backgroundColor: peterRiver,

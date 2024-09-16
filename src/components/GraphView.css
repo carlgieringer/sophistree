@@ -8,3 +8,7 @@ p {
   border-style: solid;
   transition: border 0.1s ease;
 }
+
+.dragging  {
+  opacity: 0.5;
+}

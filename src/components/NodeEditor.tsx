@@ -26,12 +26,6 @@ const NodeEditor: React.FC = () => {
     return <div>No node selected</div>;
   }
 
-  const handleContentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch(
-      updateNode({ id: selectedNode.id, updates: { content: e.target.value } })
-    );
-  };
-
   const editor = chooseEditor(selectedNode);
   return editor;
 };
@@ -54,9 +48,7 @@ function PropositionEditor({ node }: { node: PropositionNode }) {
 
   function handleTextChange(e: React.ChangeEvent<HTMLInputElement>) {
     const text = e.target.value;
-    dispatch(
-      updatePropositionNode({ id: node.id, updates: { text } })
-    );
+    dispatch(updatePropositionNode({ id: node.id, updates: { text } }));
   }
   return (
     <div>
