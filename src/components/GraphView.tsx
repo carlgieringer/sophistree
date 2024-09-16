@@ -135,6 +135,7 @@ const GraphView: React.FC = () => {
         shape: "roundrectangle",
         "background-color": peterRiver,
         padding: "1em",
+        border: "1px solid black",
       },
     },
     {
@@ -454,8 +455,6 @@ const GraphView: React.FC = () => {
   );
 };
 
-const compoundChildPadding = 15;
-
 function layoutPropositionCompoundAtomsVertically(cy: cytoscape.Core) {
   const compoundNodes = cy
     .nodes()
@@ -465,35 +464,85 @@ function layoutPropositionCompoundAtomsVertically(cy: cytoscape.Core) {
 
   compoundNodes.forEach((compound) => {
     const children = compound.children();
-    const childCount = children.length;
 
     if (children.length <= 1) {
       return;
     }
     const compoundBbox = compound.boundingBox();
-    const padding = compoundChildPadding;
 
     let totalChildHeight = 0;
+    let previousChildBottomMargin = 0;
+
     children.forEach((child, index) => {
       const childWidth = child.width();
       const childHeight = child.height();
+      const leftPadding = getNumericStyle(child, "padding-left");
+      const leftMargin = getNumericStyle(child, "margin-left");
+      const topPadding = getNumericStyle(child, "padding-top");
+      const topMargin = getNumericStyle(child, "margin-top");
+      const bottomPadding = getNumericStyle(child, "padding-bottom");
+      const bottomMargin = getNumericStyle(child, "margin-bottom");
 
-      const xPosition = compoundBbox.x1 + padding + childWidth / 2;
-      const yPosition = compoundBbox.y1 + totalChildHeight + padding;
+      const xPosition =
+        compoundBbox.x1 + leftMargin + leftPadding + childWidth / 2;
 
-      totalChildHeight += childHeight + padding;
+      let topOffset;
+      if (index === 0) {
+        topOffset = topMargin + topPadding;
+      } else {
+        const collapsedMargin = Math.max(previousChildBottomMargin, topMargin);
+        topOffset = collapsedMargin + topPadding;
+      }
 
+      const yPosition =
+        compoundBbox.y1 + totalChildHeight + topOffset + childHeight / 2;
+      totalChildHeight += childHeight + topOffset + bottomPadding;
       child.position({
         x: xPosition,
         y: yPosition,
       });
+
+      previousChildBottomMargin = bottomMargin;
     });
 
+    const lastBottomMargin = getNumericStyle(children.last(), "margin-bottom");
     compound.style({
       width: compoundBbox.w,
-      height: Math.max(compoundBbox.h, totalChildHeight + 2 * padding),
+      height: Math.max(compoundBbox.h, totalChildHeight + lastBottomMargin),
     });
   });
+}
+
+/**
+ * Returns a numeric value for the given style property of the node.
+ *
+ * Cytoscape's node defines a getNumericStyle, but it throws for style names
+ * that aren't defined directly. I.e. if you define `padding: 1em` and ask
+ * for `padding-top`, it throws. node.style works for style names that are
+ * not defined directly, but returns a string. This function works for both.
+ */
+function getNumericStyle(node: cytoscape.NodeSingular, name: string) {
+  try {
+    return styleLengthToPx(node.style(name));
+  } catch {
+    return 0;
+  }
+}
+
+function styleLengthToPx(length: string | number): number {
+  if (typeof length === "number") {
+    return length;
+  }
+  if (length.endsWith("px")) {
+    return parseFloat(length);
+  }
+  if (length.endsWith("em")) {
+    const fontSize = parseFloat(
+      getComputedStyle(document.documentElement).fontSize
+    );
+    return parseFloat(length) * fontSize;
+  }
+  throw new Error(`Unsupported length unit: ${length}`);
 }
 
 function openUrlInActiveTab(url: string) {
