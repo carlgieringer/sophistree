@@ -32,22 +32,21 @@ const defaultReactNodeOptions: ReactNodeOptions = {
 
 interface ReactNodeOptions {
   query: string;
-  template: (data: cytoscape.NodeDataDefinition) => JSX.Element;
+  template: (data: any) => JSX.Element;
   containerCSS?: Partial<CSSStyleDeclaration>;
 }
 
 interface ReactNodesOptions {
-  nodes: [ReactNodeOptions];
+  nodes: [ReactNodeOptions, ...ReactNodeOptions[]];
   layout: cytoscape.LayoutOptions;
   layoutDelay?: number;
 }
 
 function reactNodes(this: cytoscape.Core, options: ReactNodesOptions) {
-  var cy = this;
+  const cy = this;
 
   // debounce layout function to avoid layout thrashing
   const layout = debounce(function layout() {
-    console.debug("Delayed layout");
     cy.layout(options.layout).run();
   }, options.layoutDelay ?? defaultOptions.layoutDelay);
 
@@ -75,7 +74,8 @@ function makeReactNode(
   function createHtmlNode(node: cytoscape.NodeSingular) {
     var htmlElement = document.createElement("div");
     var jsxElement = options.template(node.data());
-    ReactDOM.createRoot(htmlElement).render(jsxElement);
+    const root = ReactDOM.createRoot(htmlElement);
+    root.render(jsxElement);
     Object.assign(htmlElement.style, options.containerCSS);
 
     htmlElement.style.position = "absolute";
@@ -83,6 +83,7 @@ function makeReactNode(
     if (!container) throw new Error("Cytoscape container not found");
     container.appendChild(htmlElement);
 
+    /** Returns true if the graph requires layout. */
     function updatePosition() {
       const pos = node.position();
       const zoom = cy.zoom();
@@ -96,27 +97,45 @@ function makeReactNode(
       htmlElement.style.left = left + "px";
       htmlElement.style.top = top + "px";
       const widthStyle = elementWidth + "px";
-      if (htmlElement.style.width !== widthStyle) {
-        layout();
-      }
+      const oldWidth = htmlElement.style.width;
       htmlElement.style.width = widthStyle;
       htmlElement.style.transform = `scale(${zoom})`;
       htmlElement.style.transformOrigin = "top left";
+      return oldWidth !== widthStyle;
     }
 
     function updateNodeHeightToSurroundHtml() {
       const height = htmlElement.offsetHeight;
-      if (node.data("height") !== height) {
-        layout();
-      }
+      const oldHeight = node.data("height");
       node.data("height", height);
+      return oldHeight !== height;
     }
 
-    updatePosition();
-    updateNodeHeightToSurroundHtml();
+    // Give the react node a chance to layout to get a real height
+    setTimeout(updateInitialLayout, 0);
 
-    window.addEventListener("resize", updateNodeHeightToSurroundHtml);
-    node.on("position", updatePosition);
+    function updateInitialLayout() {
+      let isLayoutRequired = updatePosition();
+      isLayoutRequired = updateNodeHeightToSurroundHtml() || isLayoutRequired;
+      if (isLayoutRequired) {
+        layout();
+      }
+    }
+
+    function updateNodeHeightToSurroundHtmlWithLayout() {
+      if (updateNodeHeightToSurroundHtml()) {
+        layout();
+      }
+    }
+
+    function updatePositionWithLayout() {
+      if (updatePosition()) {
+        layout();
+      }
+    }
+
+    window.addEventListener("resize", updateNodeHeightToSurroundHtmlWithLayout);
+    node.on("position", updatePositionWithLayout);
     node.on("remove", function () {
       htmlElement.remove();
     });
@@ -126,6 +145,10 @@ function makeReactNode(
       } else {
         htmlElement.style.border = "";
       }
+    });
+    node.on("data", function () {
+      var jsxElement = options.template(node.data());
+      root.render(jsxElement);
     });
     cy.on("pan zoom resize", updatePosition);
   }

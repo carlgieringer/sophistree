@@ -15,7 +15,7 @@ const NodeList: React.FC = () => {
       addNode({
         id: uuidv4(),
         type: "Proposition",
-        content: "New Node",
+        text: "New Node",
       })
     );
   };

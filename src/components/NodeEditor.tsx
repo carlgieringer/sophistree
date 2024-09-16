@@ -6,6 +6,11 @@ import {
   updateNode,
   updateJustificationNode,
   Polarity,
+  Node,
+  PropositionNode,
+  updatePropositionNode,
+  JustificationNode,
+  MediaExcerptNode,
 } from "../store/nodesSlice";
 
 const NodeEditor: React.FC = () => {
@@ -27,32 +32,62 @@ const NodeEditor: React.FC = () => {
     );
   };
 
+  const editor = chooseEditor(selectedNode);
+  return editor;
+};
+
+function chooseEditor(node: Node) {
+  switch (node.type) {
+    case "Proposition":
+      return <PropositionEditor node={node} />;
+    case "Justification":
+      return <JustificationEditor node={node} />;
+    case "MediaExcerpt":
+      return <MediaExcerptEditor node={node} />;
+    default:
+      return <div>Unknown node type</div>;
+  }
+}
+
+function PropositionEditor({ node }: { node: PropositionNode }) {
+  const dispatch = useDispatch();
+
+  function handleTextChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const text = e.target.value;
+    dispatch(
+      updatePropositionNode({ id: node.id, updates: { text } })
+    );
+  }
+  return (
+    <div>
+      <input type="text" value={node.text} onChange={handleTextChange} />
+    </div>
+  );
+}
+
+function JustificationEditor({ node }: { node: JustificationNode }) {
+  const dispatch = useDispatch();
+
   const handlePolarityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     dispatch(
       updateJustificationNode({
-        id: selectedNode.id,
+        id: node.id,
         updates: { polarity: e.target.value as Polarity },
       })
     );
   };
-
-  const polarityDropdown = selectedNode.type === "Justification" && (
-    <select onChange={handlePolarityChange} value={selectedNode.polarity}>
-      <option value="Positive">Positive</option>
-      <option value="Negative">Negative</option>
-    </select>
-  );
-
   return (
     <div>
-      <input
-        type="text"
-        value={selectedNode.content}
-        onChange={handleContentChange}
-      />
-      {polarityDropdown}
+      <select onChange={handlePolarityChange} value={node.polarity}>
+        <option value="Positive">Positive</option>
+        <option value="Negative">Negative</option>
+      </select>
     </div>
   );
-};
+}
+
+function MediaExcerptEditor({ node }: { node: MediaExcerptNode }) {
+  return <div>MediaExcerptEditor</div>;
+}
 
 export default NodeEditor;

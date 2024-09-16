@@ -12,11 +12,8 @@ import contextMenus from "cytoscape-context-menus";
 import { v4 as uuidv4 } from "uuid";
 import elk from "cytoscape-elk";
 
-import { Node, MediaExcerptNode } from "../store/nodesSlice";
+import { Node, MediaExcerptNode, PropositionNode } from "../store/nodesSlice";
 import htmlNode from "../cytoscape/reactNodes";
-
-import "cytoscape-context-menus/cytoscape-context-menus.css";
-
 import { RootState } from "../store";
 import {
   addNode,
@@ -25,8 +22,10 @@ import {
   deleteNode,
   resetSelection,
 } from "../store/nodesSlice";
-import { url } from "inspector";
 import { peterRiver, sunflower } from "../colors";
+
+import "cytoscape-context-menus/cytoscape-context-menus.css";
+import "./GraphView.css";
 
 cytoscape.use(elk);
 cytoscape.use(contextMenus);
@@ -62,6 +61,13 @@ const GraphView: React.FC = () => {
           label: node.quotation,
           parent: nodeIdToParentId[node.id],
           ...node,
+        };
+      case "Proposition":
+        return {
+          id: node.id,
+          type: node.type,
+          text: node.text,
+          label: node.text,
         };
       default:
         return {
@@ -132,10 +138,19 @@ const GraphView: React.FC = () => {
     {
       selector: 'node[type="Proposition"]',
       style: {
-        shape: "roundrectangle",
-        "background-color": peterRiver,
-        padding: "1em",
-        border: "1px solid black",
+        shape: "rectangle",
+        label: "data(text)",
+        width: "label",
+        height: "label",
+        // Hide the default cytoscape content in favor of the reactNodes content
+        opacity: 0,
+      },
+    },
+    {
+      selector: `node[type="Proposition"][height]`,
+      style: {
+        // reactNodes will dynamically set the nodes' height to match the wrapped JSX.
+        height: "data(height)",
       },
     },
     {
@@ -154,6 +169,9 @@ const GraphView: React.FC = () => {
       selector: `node[type="MediaExcerpt"]`,
       style: {
         shape: "rectangle",
+        label: "data(quotation)",
+        width: "label",
+        height: "label",
         // Hide the default cytoscape content in favor of the reactNodes content
         opacity: 0,
       },
@@ -161,7 +179,7 @@ const GraphView: React.FC = () => {
     {
       selector: `node[type="MediaExcerpt"][height]`,
       style: {
-        // reactNodes will dynamically set MediaExcerpt nodes' height to match the wrapped JSX.
+        // reactNodes will dynamically set the nodes' height to match the wrapped JSX.
         height: "data(height)",
       },
     },
@@ -242,25 +260,39 @@ const GraphView: React.FC = () => {
         layout: getLayout(),
         nodes: [
           {
-            query: `node[type="MediaExcerpt"]`,
-            template: function (data: cytoscape.NodeDataDefinition) {
-              const d = data as MediaExcerptNode;
+            query: `node[type="Proposition"]`,
+            template: function (data: PropositionNode) {
               return (
                 <>
-                  <p>{d.quotation}</p>
+                  <p>{data.text}</p>
+                </>
+              );
+            },
+            containerCSS: {
+              padding: "1em",
+              backgroundColor: peterRiver,
+              borderRadius: "8px",
+            },
+          },
+          {
+            query: `node[type="MediaExcerpt"]`,
+            template: function (data: MediaExcerptNode) {
+              return (
+                <>
+                  <p>{data.quotation}</p>
                   <a
-                    href={d.canonicalUrl}
+                    href={data.canonicalUrl}
                     onClick={(event) => {
-                      if (!d.canonicalUrl) {
+                      if (!data.canonicalUrl) {
                         return;
                       }
                       event.preventDefault();
                       event.stopPropagation();
-                      openUrlInActiveTab(d.canonicalUrl);
+                      openUrlInActiveTab(data.canonicalUrl);
                       return false;
                     }}
                   >
-                    {d.sourceName}
+                    {data.sourceName}
                   </a>
                 </>
               );
@@ -314,15 +346,14 @@ const GraphView: React.FC = () => {
           const pos = event.position;
           const newNode = {
             id: uuidv4(),
-            type: "Proposition",
-            content: "New Node",
-          } as const;
+            type: "Proposition" as const,
+            text: "New Node",
+          };
           dispatch(addNode(newNode));
           cy.add({
             data: {
-              id: newNode.id,
-              label: newNode.content,
-              type: newNode.type,
+              ...newNode,
+              label: newNode.text,
             },
             position: pos,
           });

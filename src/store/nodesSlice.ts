@@ -15,8 +15,9 @@ export type Node =
   | JustificationNode
   | MediaExcerptNode;
 
-interface PropositionNode extends BaseNode {
+export interface PropositionNode extends BaseNode {
   type: "Proposition";
+  text: string;
 }
 
 interface PropositionCompoundNode extends BaseNode {
@@ -26,7 +27,7 @@ interface PropositionCompoundNode extends BaseNode {
 
 export type Polarity = "Positive" | "Negative";
 
-interface JustificationNode extends BaseNode {
+export interface JustificationNode extends BaseNode {
   type: "Justification";
   basisId: string;
   targetId: string;
@@ -88,6 +89,23 @@ export const nodesSlice = createSlice({
       action: PayloadAction<{
         id: string;
         updates: Partial<Omit<Node, "type">>;
+      }>
+    ) {
+      const index = state.nodes.findIndex(
+        (node) => node.id === action.payload.id
+      );
+      if (index !== -1) {
+        state.nodes[index] = {
+          ...state.nodes[index],
+          ...action.payload.updates,
+        };
+      }
+    },
+    updatePropositionNode(
+      state,
+      action: PayloadAction<{
+        id: string;
+        updates: Partial<Omit<PropositionNode, "type">>;
       }>
     ) {
       const index = state.nodes.findIndex(
@@ -282,6 +300,7 @@ export const {
   addNode,
   addMediaExcerpt,
   updateNode,
+  updatePropositionNode,
   updateJustificationNode,
   deleteNode,
   completeDrag,

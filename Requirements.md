@@ -38,15 +38,17 @@ this extension and use that in place of Sophistree?
 
 TODO:
 
+- Proposition Appearances
+- Clicking on URL scrolls to the highlight
+- Counter justification intermediate nodes
+
 - Support setting Justification polarity via drag.
   - https://github.com/cytoscape/cytoscape.js-popper for polarity targets?
 - Node list for disconnected nodes? (Filter by all nodes and disconnected?)
   - Propositions, MediaExcerpts
-- Clicking on URL scrolls to the highlight
 - Message origin checks
 - Show icon in Prop/Just nodes for MediaExcerpts; clicking on it navigates to URL and scrolls to highlight.
 - Retrieve MediaExcerpts from background scripts instead of sidebar?
 - Collapsing
-- Counter justification intermediate nodes
 - Voting?
 - Multiple justification targets?
