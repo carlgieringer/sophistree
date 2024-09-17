@@ -39,7 +39,7 @@ interface ReactNodeOptions {
 }
 
 interface ReactNodesOptions {
-  nodes: [ReactNodeOptions, ...ReactNodeOptions[]];
+  nodes: ReactNodeOptions[];
   layout: cytoscape.LayoutOptions;
   layoutDelay?: number;
 }

@@ -46,213 +46,12 @@ const GraphView: React.FC = () => {
   const dispatch = useDispatch();
   const cyRef = useRef<cytoscape.Core | undefined>(undefined);
 
-  const { entityIdToParentId, edges } = entities.reduce(
-    (acc, node) => {
-      const { entityIdToParentId, edges } = acc;
-      switch (node.type) {
-        case "Justification":
-          entityIdToParentId.set(node.basisId, node.id);
-          edges.push({
-            source: node.id,
-            target: node.targetId,
-            polarity: node.polarity,
-          });
-          break;
-        case "PropositionCompound":
-          node.atomIds.forEach((atomId) => {
-            entityIdToParentId.set(atomId, node.id);
-          });
-          break;
-      }
-      return acc;
-    },
-    {
-      entityIdToParentId: new Map(),
-      edges: [],
-    } as {
-      entityIdToParentId: Map<string, string>;
-      edges: EdgeDataDefinition[];
-    }
-  );
-
-  const elements = [
-    ...entities.map((entity) => ({
-      data: {
-        ...entity,
-        parent: entityIdToParentId.get(entity.id),
-      },
-    })),
-    ...edges.map((edge) => ({
-      data: { ...edge },
-    })),
-  ];
+  const elements = makeElements(entities);
 
   useEffect(() => {
     cyRef.current?.nodes().subtract(`#${selectedEntityId}`).unselect();
     cyRef.current?.nodes(`#${selectedEntityId}`).select();
   }, [selectedEntityId]);
-
-  const elkLayout = {
-    name: "elk",
-    // All options are available at http://www.eclipse.org/elk/reference.html
-    //
-    // 'org.eclipse.' can be dropped from the identifier. The subsequent identifier has to be used as property key in quotes.
-    // E.g. for 'org.eclipse.elk.direction' use:
-    // 'elk.direction'
-    //
-    // Enums use the name of the enum as string e.g. instead of Direction.DOWN use:
-    // 'elk.direction': 'DOWN'
-    //
-    // The main field to set is `algorithm`, which controls which particular layout algorithm is used.
-    // Example (downwards layered layout):
-    elk: {
-      algorithm: "layered",
-      "elk.direction": "UP",
-      "elk.spacing.nodeNode": "50",
-      "elk.layered.spacing.nodeNodeBetweenLayers": "100",
-      "elk.hierarchyHandling": "INCLUDE_CHILDREN",
-      "elk.aspectRatio": "1.5",
-      "elk.padding": "[top=50,left=50,bottom=50,right=50]",
-      "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
-    },
-  };
-
-  function getLayout() {
-    return elkLayout;
-  }
-
-  const stylesheet = [
-    {
-      selector: "node",
-      style: {
-        "text-valign": "center",
-        "text-halign": "center",
-        "text-wrap": "wrap",
-        "text-max-width": "200px",
-      } as const,
-    },
-    {
-      selector: 'node[type="Proposition"]',
-      style: {
-        shape: "round-rectangle",
-        label: "data(text)",
-        width: "label",
-        height: "label",
-        // Hide the default cytoscape content in favor of the reactNodes content
-        opacity: 0,
-      },
-    },
-    {
-      selector: `node[type="Proposition"][height]`,
-      style: {
-        // reactNodes will dynamically set the nodes' height to match the wrapped JSX.
-        height: "data(height)",
-      },
-    },
-    {
-      selector: 'node[type="Justification"]',
-      style: {
-        shape: "round-rectangle",
-        "background-color": "#34495e",
-        "compound-sizing-wrt-labels": "include",
-        "padding-left": "10px",
-        "padding-right": "10px",
-        "padding-top": "10px",
-        "padding-bottom": "10px",
-      },
-    },
-    {
-      selector: `node[type="MediaExcerpt"]`,
-      style: {
-        shape: "round-rectangle",
-        label: "data(quotation)",
-        width: "label",
-        height: "label",
-        // Hide the default cytoscape content in favor of the reactNodes content
-        opacity: 0,
-      },
-    },
-    {
-      selector: `node[type="MediaExcerpt"][height]`,
-      style: {
-        // reactNodes will dynamically set the nodes' height to match the wrapped JSX.
-        height: "data(height)",
-      },
-    },
-    {
-      selector: `node[type="PropositionCompound"]`,
-      style: {
-        shape: "round-rectangle",
-        "background-color": "#2980b9",
-      },
-    },
-    {
-      selector: `edge`,
-      style: {
-        width: 2,
-        "line-color": "#ccc",
-        "target-arrow-color": "#ccc",
-        "target-arrow-shape": "triangle",
-        "arrow-scale": 1.5,
-        "curve-style": "straight",
-        "target-endpoint": (ele: EdgeSingular) => {
-          const target = ele.target();
-          const parent = target.parent();
-          if (
-            parent.data("type") === "PropositionCompound" &&
-            parent.children().length > 1
-          ) {
-            const isSourceLeftOfTarget =
-              ele.source().position().x < target.position().x;
-            return isSourceLeftOfTarget ? "270deg" : "90deg";
-          }
-          return "outside-to-node";
-        },
-      },
-    },
-    {
-      selector: `edge[polarity="Positive"]`,
-      style: {
-        width: 2,
-        "line-color": nephritis,
-        "target-arrow-color": nephritis,
-      },
-    },
-    {
-      selector: `edge[polarity="Negative"]`,
-      style: {
-        width: 2,
-        "line-color": pomegranate,
-        "target-arrow-color": pomegranate,
-      },
-    },
-    {
-      selector: "node:selected",
-      style: {
-        "border-width": 3,
-        "border-color": sunflower,
-      },
-    },
-    {
-      selector: `.dragging[type="Justification"]`,
-      style: {
-        opacity: 0.5,
-      },
-    },
-    {
-      selector: `.dragging[type="PropositionCompound"]`,
-      style: {
-        opacity: 0.5,
-      },
-    },
-    {
-      selector: ".hover-highlight",
-      style: {
-        "border-width": 3,
-        "border-color": carrot,
-      },
-    },
-  ];
 
   useEffect(() => {
     if (cyRef.current) {
@@ -260,54 +59,7 @@ const GraphView: React.FC = () => {
 
       cy.reactNodes({
         layout: getLayout(),
-        nodes: [
-          {
-            query: `node[type="Proposition"]`,
-            template: function (data: Proposition) {
-              return (
-                <>
-                  <p>{data.text}</p>
-                </>
-              );
-            },
-            syncClasses: ["hover-highlight", "dragging"],
-            containerCSS: {
-              padding: "1em",
-              backgroundColor: peterRiver,
-              borderRadius: "8px",
-            },
-          },
-          {
-            query: `node[type="MediaExcerpt"]`,
-            template: function (data: MediaExcerpt) {
-              return (
-                <>
-                  <p>{data.quotation}</p>
-                  <a
-                    href={data.canonicalUrl}
-                    onClick={(event) => {
-                      if (!data.canonicalUrl) {
-                        return;
-                      }
-                      event.preventDefault();
-                      event.stopPropagation();
-                      openUrlInActiveTab(data.canonicalUrl);
-                      return false;
-                    }}
-                  >
-                    {data.sourceName}
-                  </a>
-                </>
-              );
-            },
-            syncClasses: ["hover-highlight", "dragging"],
-            containerCSS: {
-              padding: "1em",
-              backgroundColor: peterRiver,
-              borderRadius: "8px",
-            },
-          },
-        ],
+        nodes: reactNodesConfig,
       });
 
       cy.contextMenus({
@@ -370,44 +122,6 @@ const GraphView: React.FC = () => {
         dragSource.ancestors().add(dragSource).addClass("dragging");
       });
 
-      function nodeContainsPosition(node: NodeSingular, pos: Position) {
-        const bb = node.boundingBox();
-        return (
-          bb.x1 <= pos.x && pos.x <= bb.x2 && bb.y1 <= pos.y && pos.y <= bb.y2
-        );
-      }
-
-      function nodeIncludesNode(node1: NodeSingular, node2: NodeSingular) {
-        const bb1 = node1.boundingBox();
-        const bb2 = node2.boundingBox();
-        return (
-          bb1.x1 <= bb2.x1 &&
-          bb2.x2 <= bb1.x2 &&
-          bb1.y1 <= bb2.y1 &&
-          bb2.y2 <= bb1.y2
-        );
-      }
-
-      function getInnermostNodeContainingNodesPosition(
-        position: Position,
-        excludeNode: NodeSingular
-      ) {
-        const node = cy
-          .nodes()
-          .reduce(
-            (innermost, curr) =>
-              curr !== excludeNode &&
-              !curr.edgesWith(excludeNode).length &&
-              !excludeNode.ancestors().contains(curr) &&
-              nodeContainsPosition(curr, position) &&
-              (!innermost || nodeIncludesNode(innermost, curr))
-                ? curr
-                : innermost,
-            undefined as NodeSingular | undefined
-          );
-        return node;
-      }
-
       // Store mousePosition for drags because using event.position caused weird
       // behavior when dragging nodes.
       let mousePosition: Position = { x: 0, y: 0 };
@@ -417,6 +131,7 @@ const GraphView: React.FC = () => {
 
       cy.on("drag", "node", (event: EventObjectNode) => {
         const hoverNode = getInnermostNodeContainingNodesPosition(
+          cy,
           mousePosition,
           event.target
         );
@@ -430,6 +145,7 @@ const GraphView: React.FC = () => {
         if (dragSource) {
           dragSource.ancestors().add(dragSource).removeClass("dragging");
           const dragTargetNode = getInnermostNodeContainingNodesPosition(
+            cy,
             mousePosition,
             dragSource
           );
@@ -467,7 +183,7 @@ const GraphView: React.FC = () => {
     }
   }, [dispatch]);
 
-  useEffect(() => layoutGraph, [entities, edges]);
+  useEffect(() => layoutGraph, [elements]);
 
   function layoutGraph() {
     cyRef.current?.layout(getLayout()).run();
@@ -489,6 +205,234 @@ const GraphView: React.FC = () => {
     />
   );
 };
+
+export default GraphView;
+
+function makeElements(entities: Entity[]) {
+  const { entityIdToParentId, edges } = entities.reduce(
+    (acc, node) => {
+      const { entityIdToParentId, edges } = acc;
+      switch (node.type) {
+        case "Justification":
+          entityIdToParentId.set(node.basisId, node.id);
+          edges.push({
+            source: node.id,
+            target: node.targetId,
+            polarity: node.polarity,
+          });
+          break;
+        case "PropositionCompound":
+          node.atomIds.forEach((atomId) => {
+            entityIdToParentId.set(atomId, node.id);
+          });
+          break;
+      }
+      return acc;
+    },
+    {
+      entityIdToParentId: new Map(),
+      edges: [],
+    } as {
+      entityIdToParentId: Map<string, string>;
+      edges: EdgeDataDefinition[];
+    }
+  );
+
+  const elements = [
+    ...entities.map((entity) => ({
+      data: {
+        ...entity,
+        parent: entityIdToParentId.get(entity.id),
+      },
+    })),
+    ...edges.map((edge) => ({
+      data: { ...edge },
+    })),
+  ];
+  return elements;
+}
+
+const stylesheet = [
+  {
+    selector: "node",
+    style: {
+      "text-valign": "center",
+      "text-halign": "center",
+      "text-wrap": "wrap",
+      "text-max-width": "200px",
+    } as const,
+  },
+  {
+    selector: 'node[type="Proposition"]',
+    style: {
+      shape: "round-rectangle",
+      label: "data(text)",
+      width: "label",
+      height: "label",
+      // Hide the default cytoscape content in favor of the reactNodes content
+      opacity: 0,
+    },
+  },
+  {
+    selector: `node[type="Proposition"][height]`,
+    style: {
+      // reactNodes will dynamically set the nodes' height to match the wrapped JSX.
+      height: "data(height)",
+    },
+  },
+  {
+    selector: 'node[type="Justification"]',
+    style: {
+      shape: "round-rectangle",
+      "background-color": "#34495e",
+      "compound-sizing-wrt-labels": "include",
+      "padding-left": "10px",
+      "padding-right": "10px",
+      "padding-top": "10px",
+      "padding-bottom": "10px",
+    },
+  },
+  {
+    selector: `node[type="MediaExcerpt"]`,
+    style: {
+      shape: "round-rectangle",
+      label: "data(quotation)",
+      width: "label",
+      height: "label",
+      // Hide the default cytoscape content in favor of the reactNodes content
+      opacity: 0,
+    },
+  },
+  {
+    selector: `node[type="MediaExcerpt"][height]`,
+    style: {
+      // reactNodes will dynamically set the nodes' height to match the wrapped JSX.
+      height: "data(height)",
+    },
+  },
+  {
+    selector: `node[type="PropositionCompound"]`,
+    style: {
+      shape: "round-rectangle",
+      "background-color": "#2980b9",
+    },
+  },
+  {
+    selector: `edge`,
+    style: {
+      width: 2,
+      "line-color": "#ccc",
+      "target-arrow-color": "#ccc",
+      "target-arrow-shape": "triangle",
+      "arrow-scale": 1.5,
+      "curve-style": "straight",
+      "target-endpoint": (ele: EdgeSingular) => {
+        const target = ele.target();
+        const parent = target.parent();
+        if (
+          parent.data("type") === "PropositionCompound" &&
+          parent.children().length > 1
+        ) {
+          const isSourceLeftOfTarget =
+            ele.source().position().x < target.position().x;
+          return isSourceLeftOfTarget ? "270deg" : "90deg";
+        }
+        return "outside-to-node";
+      },
+    },
+  },
+  {
+    selector: `edge[polarity="Positive"]`,
+    style: {
+      width: 2,
+      "line-color": nephritis,
+      "target-arrow-color": nephritis,
+    },
+  },
+  {
+    selector: `edge[polarity="Negative"]`,
+    style: {
+      width: 2,
+      "line-color": pomegranate,
+      "target-arrow-color": pomegranate,
+    },
+  },
+  {
+    selector: "node:selected",
+    style: {
+      "border-width": 3,
+      "border-color": sunflower,
+    },
+  },
+  {
+    selector: `.dragging[type="Justification"]`,
+    style: {
+      opacity: 0.5,
+    },
+  },
+  {
+    selector: `.dragging[type="PropositionCompound"]`,
+    style: {
+      opacity: 0.5,
+    },
+  },
+  {
+    selector: ".hover-highlight",
+    style: {
+      "border-width": 3,
+      "border-color": carrot,
+    },
+  },
+];
+
+const reactNodesConfig = [
+  {
+    query: `node[type="Proposition"]`,
+    template: function (data: Proposition) {
+      return (
+        <>
+          <p>{data.text}</p>
+        </>
+      );
+    },
+    syncClasses: ["hover-highlight", "dragging"],
+    containerCSS: {
+      padding: "1em",
+      backgroundColor: peterRiver,
+      borderRadius: "8px",
+    },
+  },
+  {
+    query: `node[type="MediaExcerpt"]`,
+    template: function (data: MediaExcerpt) {
+      return (
+        <>
+          <p>{data.quotation}</p>
+          <a
+            href={data.canonicalUrl}
+            onClick={(event) => {
+              if (!data.canonicalUrl) {
+                return;
+              }
+              event.preventDefault();
+              event.stopPropagation();
+              openUrlInActiveTab(data.canonicalUrl);
+              return false;
+            }}
+          >
+            {data.sourceName}
+          </a>
+        </>
+      );
+    },
+    syncClasses: ["hover-highlight", "dragging"],
+    containerCSS: {
+      padding: "1em",
+      backgroundColor: peterRiver,
+      borderRadius: "8px",
+    },
+  },
+];
 
 function layoutPropositionCompoundAtomsVertically(cy: cytoscape.Core) {
   const compoundNodes = cy
@@ -549,6 +493,40 @@ function layoutPropositionCompoundAtomsVertically(cy: cytoscape.Core) {
   });
 }
 
+function nodeContainsPosition(node: NodeSingular, pos: Position) {
+  const bb = node.boundingBox();
+  return bb.x1 <= pos.x && pos.x <= bb.x2 && bb.y1 <= pos.y && pos.y <= bb.y2;
+}
+
+function nodeIncludesNode(node1: NodeSingular, node2: NodeSingular) {
+  const bb1 = node1.boundingBox();
+  const bb2 = node2.boundingBox();
+  return (
+    bb1.x1 <= bb2.x1 && bb2.x2 <= bb1.x2 && bb1.y1 <= bb2.y1 && bb2.y2 <= bb1.y2
+  );
+}
+
+function getInnermostNodeContainingNodesPosition(
+  cy: cytoscape.Core,
+  position: Position,
+  excludeNode: NodeSingular
+) {
+  const node = cy
+    .nodes()
+    .reduce(
+      (innermost, curr) =>
+        curr !== excludeNode &&
+        !curr.edgesWith(excludeNode).length &&
+        !excludeNode.ancestors().contains(curr) &&
+        nodeContainsPosition(curr, position) &&
+        (!innermost || nodeIncludesNode(innermost, curr))
+          ? curr
+          : innermost,
+      undefined as NodeSingular | undefined
+    );
+  return node;
+}
+
 /**
  * Returns a numeric value for the given style property of the node.
  *
@@ -603,4 +581,31 @@ function openUrlInActiveTab(url: string) {
   });
 }
 
-export default GraphView;
+const elkLayout = {
+  name: "elk",
+  // All options are available at http://www.eclipse.org/elk/reference.html
+  //
+  // 'org.eclipse.' can be dropped from the identifier. The subsequent identifier has to be used as property key in quotes.
+  // E.g. for 'org.eclipse.elk.direction' use:
+  // 'elk.direction'
+  //
+  // Enums use the name of the enum as string e.g. instead of Direction.DOWN use:
+  // 'elk.direction': 'DOWN'
+  //
+  // The main field to set is `algorithm`, which controls which particular layout algorithm is used.
+  // Example (downwards layered layout):
+  elk: {
+    algorithm: "layered",
+    "elk.direction": "UP",
+    "elk.spacing.nodeNode": "50",
+    "elk.layered.spacing.nodeNodeBetweenLayers": "100",
+    "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+    "elk.aspectRatio": "1.5",
+    "elk.padding": "[top=50,left=50,bottom=50,right=50]",
+    "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
+  },
+};
+
+function getLayout() {
+  return elkLayout;
+}
