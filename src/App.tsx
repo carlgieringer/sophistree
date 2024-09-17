@@ -2,17 +2,17 @@
 import React, { useEffect } from "react";
 import { Provider, useDispatch, useSelector } from "react-redux";
 import { RootState, store } from "./store";
-import { addMediaExcerpt, selectNode } from "./store/nodesSlice";
-import NodeList from "./components/NodeList";
+import { addMediaExcerpt, selectEntity } from "./store/entitiesSlice";
+import EntityList from "./components/EntityList";
 import GraphView from "./components/GraphView";
-import NodeEditor from "./components/NodeEditor";
+import EntityEditor from "./components/EntityEditor";
 
 import "./App.css";
 import { ChromeRuntimeMessage } from "./content";
 const AppContent: React.FC = () => {
   const dispatch = useDispatch();
 
-  const nodes = useSelector((state: RootState) => state.nodes.nodes);
+  const entities = useSelector((state: RootState) => state.entities.entities);
 
   useEffect(() => {
     function handleChromeRuntimeMessage(
@@ -26,17 +26,17 @@ const AppContent: React.FC = () => {
           break;
         }
         case "selectMediaExcerpt": {
-          dispatch(selectNode(message.data.mediaExcerptId));
+          dispatch(selectEntity(message.data.mediaExcerptId));
           break;
         }
         case "getMediaExcerpts": {
           const { url, canonicalUrl } = message.data;
-          const mediaExcerpts = nodes.filter(
-            (node) =>
-              node.type === "MediaExcerpt" &&
-              (node.canonicalUrl
-                ? node.canonicalUrl === canonicalUrl
-                : node.url === url)
+          const mediaExcerpts = entities.filter(
+            (entity) =>
+              entity.type === "MediaExcerpt" &&
+              (entity.canonicalUrl
+                ? entity.canonicalUrl === canonicalUrl
+                : entity.url === url)
           );
           sendResponse({ mediaExcerpts });
           break;
@@ -63,9 +63,9 @@ const AppContent: React.FC = () => {
         <section className="graph-view">
           <GraphView />
         </section>
-        <section className="node-editor">
-          <h2>Node Editor</h2>
-          <NodeEditor />
+        <section className="entity-editor">
+          <h2>Entity Editor</h2>
+          <EntityEditor />
         </section>
       </main>
       <footer>

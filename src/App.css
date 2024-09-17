@@ -36,7 +36,7 @@ section {
   min-height: 0; /* Allows the element to shrink below its content size */
 }
 
-.node-editor {
+.entity-editor {
   flex: 0 0 auto; /* Does not grow or shrink, sizes to content */
   overflow-y: auto; /* In case content is taller than the set height */
 }

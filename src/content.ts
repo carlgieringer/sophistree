@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 
-import { AddMediaExcerptData, MediaExcerptNode } from "./store/nodesSlice";
+import { AddMediaExcerptData, MediaExcerpt } from "./store/entitiesSlice";
 import {
   DomAnchor,
   makeDomAnchorFromSelection,
@@ -102,7 +102,7 @@ function getTitle() {
 }
 
 type GetMediaExcerptsMessageResponse = {
-  mediaExcerpts: MediaExcerptNode[];
+  mediaExcerpts: MediaExcerpt[];
 };
 
 function getMediaExcerpts() {

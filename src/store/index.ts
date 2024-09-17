@@ -2,18 +2,18 @@ import { configureStore } from "@reduxjs/toolkit";
 import { persistStore, persistReducer } from "redux-persist";
 import storage from "redux-persist/lib/storage";
 
-import nodesReducer from "./nodesSlice";
+import entitiesReducer from "./entitiesSlice";
 
 const persistConfig = {
   key: "root",
   storage,
 };
 
-const persistedReducer = persistReducer(persistConfig, nodesReducer);
+const persistedReducer = persistReducer(persistConfig, entitiesReducer);
 
 export const store = configureStore({
   reducer: {
-    nodes: persistedReducer,
+    entities: persistedReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

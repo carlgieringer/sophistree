@@ -6,22 +6,23 @@ import cytoscape, {
   Position,
   EventObject,
   EdgeSingular,
+  EdgeDataDefinition,
 } from "cytoscape";
 import CytoscapeComponent from "react-cytoscapejs";
 import contextMenus from "cytoscape-context-menus";
 import { v4 as uuidv4 } from "uuid";
 import elk from "cytoscape-elk";
 
-import { Node, MediaExcerptNode, PropositionNode } from "../store/nodesSlice";
+import { Entity, MediaExcerpt, Proposition } from "../store/entitiesSlice";
 import htmlNode from "../cytoscape/reactNodes";
 import { RootState } from "../store";
 import {
-  addNode,
+  addEntity,
   completeDrag,
-  selectNode,
-  deleteNode,
+  selectEntity,
+  deleteEntity,
   resetSelection,
-} from "../store/nodesSlice";
+} from "../store/entitiesSlice";
 import {
   carrot,
   nephritis,
@@ -38,33 +39,47 @@ cytoscape.use(contextMenus);
 cytoscape.use(htmlNode);
 
 const GraphView: React.FC = () => {
-  const nodes = useSelector((state: RootState) => state.nodes.nodes);
-  const edges = useSelector((state: RootState) => state.nodes.edges);
-  const selectedNodeId = useSelector(
-    (state: RootState) => state.nodes.selectedNodeId
+  const entities = useSelector((state: RootState) => state.entities.entities);
+  const selectedEntityId = useSelector(
+    (state: RootState) => state.entities.selectedEntityId
   );
   const dispatch = useDispatch();
   const cyRef = useRef<cytoscape.Core | undefined>(undefined);
 
-  const nodeIdToParentId = nodes.reduce((acc, node) => {
-    switch (node.type) {
-      case "Justification":
-        acc[node.basisId] = node.id;
-        break;
-      case "PropositionCompound":
-        node.atomIds.forEach((atomId) => {
-          acc[atomId] = node.id;
-        });
-        break;
+  const { entityIdToParentId, edges } = entities.reduce(
+    (acc, node) => {
+      const { entityIdToParentId, edges } = acc;
+      switch (node.type) {
+        case "Justification":
+          entityIdToParentId.set(node.basisId, node.id);
+          edges.push({
+            source: node.id,
+            target: node.targetId,
+            polarity: node.polarity,
+          });
+          break;
+        case "PropositionCompound":
+          node.atomIds.forEach((atomId) => {
+            entityIdToParentId.set(atomId, node.id);
+          });
+          break;
+      }
+      return acc;
+    },
+    {
+      entityIdToParentId: new Map(),
+      edges: [],
+    } as {
+      entityIdToParentId: Map<string, string>;
+      edges: EdgeDataDefinition[];
     }
-    return acc;
-  }, {} as { [key: string]: string });
+  );
 
   const elements = [
-    ...nodes.map((node) => ({
+    ...entities.map((entity) => ({
       data: {
-        ...node,
-        parent: nodeIdToParentId[node.id],
+        ...entity,
+        parent: entityIdToParentId.get(entity.id),
       },
     })),
     ...edges.map((edge) => ({
@@ -73,9 +88,9 @@ const GraphView: React.FC = () => {
   ];
 
   useEffect(() => {
-    cyRef.current?.nodes().subtract(`#${selectedNodeId}`).unselect();
-    cyRef.current?.nodes(`#${selectedNodeId}`).select();
-  }, [selectedNodeId]);
+    cyRef.current?.nodes().subtract(`#${selectedEntityId}`).unselect();
+    cyRef.current?.nodes(`#${selectedEntityId}`).select();
+  }, [selectedEntityId]);
 
   const elkLayout = {
     name: "elk",
@@ -119,7 +134,7 @@ const GraphView: React.FC = () => {
     {
       selector: 'node[type="Proposition"]',
       style: {
-        shape: "roundedrectangle",
+        shape: "round-rectangle",
         label: "data(text)",
         width: "label",
         height: "label",
@@ -137,7 +152,7 @@ const GraphView: React.FC = () => {
     {
       selector: 'node[type="Justification"]',
       style: {
-        shape: "roundedrectangle",
+        shape: "round-rectangle",
         "background-color": "#34495e",
         "compound-sizing-wrt-labels": "include",
         "padding-left": "10px",
@@ -149,7 +164,7 @@ const GraphView: React.FC = () => {
     {
       selector: `node[type="MediaExcerpt"]`,
       style: {
-        shape: "roundedrectangle",
+        shape: "round-rectangle",
         label: "data(quotation)",
         width: "label",
         height: "label",
@@ -167,7 +182,7 @@ const GraphView: React.FC = () => {
     {
       selector: `node[type="PropositionCompound"]`,
       style: {
-        shape: "roundedrectangle",
+        shape: "round-rectangle",
         "background-color": "#2980b9",
       },
     },
@@ -248,7 +263,7 @@ const GraphView: React.FC = () => {
         nodes: [
           {
             query: `node[type="Proposition"]`,
-            template: function (data: PropositionNode) {
+            template: function (data: Proposition) {
               return (
                 <>
                   <p>{data.text}</p>
@@ -264,7 +279,7 @@ const GraphView: React.FC = () => {
           },
           {
             query: `node[type="MediaExcerpt"]`,
-            template: function (data: MediaExcerptNode) {
+            template: function (data: MediaExcerpt) {
               return (
                 <>
                   <p>{data.quotation}</p>
@@ -304,7 +319,7 @@ const GraphView: React.FC = () => {
             selector: "node, edge",
             onClickFunction: function (event) {
               var target = event.target;
-              dispatch(deleteNode(target.id()));
+              dispatch(deleteEntity(target.id()));
             },
             hasTrailingDivider: true,
           },
@@ -321,7 +336,7 @@ const GraphView: React.FC = () => {
 
       cy.on("tap", "node", (event: EventObjectNode) => {
         const nodeId = event.target.id();
-        dispatch(selectNode(nodeId));
+        dispatch(selectEntity(nodeId));
       });
 
       cy.on("tap", (event: EventObject) => {
@@ -338,7 +353,7 @@ const GraphView: React.FC = () => {
             type: "Proposition" as const,
             text: "New Node",
           };
-          dispatch(addNode(newNode));
+          dispatch(addEntity(newNode));
           cy.add({
             data: {
               ...newNode,
@@ -452,7 +467,7 @@ const GraphView: React.FC = () => {
     }
   }, [dispatch]);
 
-  useEffect(() => layoutGraph, [nodes, edges]);
+  useEffect(() => layoutGraph, [entities, edges]);
 
   function layoutGraph() {
     cyRef.current?.layout(getLayout()).run();
@@ -479,7 +494,8 @@ function layoutPropositionCompoundAtomsVertically(cy: cytoscape.Core) {
   const compoundNodes = cy
     .nodes()
     .filter(
-      (node) => node.isParent() && node.data("type") === "PropositionCompound"
+      (entity) =>
+        entity.isParent() && entity.data("type") === "PropositionCompound"
     );
 
   compoundNodes.forEach((compound) => {
