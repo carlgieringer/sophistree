@@ -12,8 +12,14 @@ import CytoscapeComponent from "react-cytoscapejs";
 import contextMenus from "cytoscape-context-menus";
 import { v4 as uuidv4 } from "uuid";
 import elk from "cytoscape-elk";
+import { MdOutlineMyLocation } from "react-icons/md";
 
-import { Entity, MediaExcerpt, Proposition } from "../store/entitiesSlice";
+import {
+  Appearance,
+  Entity,
+  MediaExcerpt,
+  Proposition,
+} from "../store/entitiesSlice";
 import htmlNode from "../cytoscape/reactNodes";
 import { RootState } from "../store";
 import {
@@ -166,6 +172,13 @@ const GraphView: React.FC = () => {
                 targetId: dragTargetNode.id(),
               })
             );
+            if (
+              dragSourceOriginalPosition &&
+              dragSource.data().type === "Proposition" &&
+              dragTargetNode.data().type === "MediaExcerpt"
+            ) {
+              dragSource.position(dragSourceOriginalPosition);
+            }
           } else if (dragSourceOriginalPosition) {
             // Return the node to its original position
             dragSource.position(dragSourceOriginalPosition);
@@ -228,49 +241,86 @@ const GraphView: React.FC = () => {
 export default GraphView;
 
 function makeElements(entities: Entity[]) {
-  const { entityIdToParentId, canonicalJustificationByBasisId, edges } =
-    entities.reduce(
-      (acc, entity) => {
-        const { entityIdToParentId, canonicalJustificationByBasisId, edges } =
-          acc;
-        switch (entity.type) {
-          case "Justification":
-            // Since the same basis can appear in multiple justifications, but we want
-            // to display this as a single justification node with multiple edges
-            // targeting each of the justification's targets, we choose the first justification
-            // as the canonical one we will display.
-            let source = canonicalJustificationByBasisId.get(entity.basisId);
-            if (!source) {
-              source = entity.id;
-              entityIdToParentId.set(entity.basisId, entity.id);
-              canonicalJustificationByBasisId.set(entity.basisId, entity.id);
-            }
-            edges.push({
-              // Give the edge related to the justification for debugging.
-              id: `justification-edge-${entity.id}`,
-              source,
-              target: entity.targetId,
-              polarity: entity.polarity,
-            });
+  const mediaExcerptsById = entities
+    .filter((e) => e.type === "MediaExcerpt")
+    .reduce((acc, e) => {
+      acc.set(e.id, e);
+      return acc;
+    }, new Map() as Map<string, MediaExcerpt>);
+
+  const {
+    entityIdToParentId,
+    canonicalJustificationByBasisId,
+    propositionIdToAppearanceInfos,
+    edges,
+  } = entities.reduce(
+    (acc, entity) => {
+      const {
+        entityIdToParentId,
+        canonicalJustificationByBasisId,
+        propositionIdToAppearanceInfos,
+        edges,
+      } = acc;
+      switch (entity.type) {
+        case "Justification":
+          // Since the same basis can appear in multiple justifications, but we want
+          // to display this as a single justification node with multiple edges
+          // targeting each of the justification's targets, we choose the first justification
+          // as the canonical one we will display.
+          let source = canonicalJustificationByBasisId.get(entity.basisId);
+          if (!source) {
+            source = entity.id;
+            entityIdToParentId.set(entity.basisId, entity.id);
+            canonicalJustificationByBasisId.set(entity.basisId, entity.id);
+          }
+          edges.push({
+            // Give the edge related to the justification for debugging.
+            id: `justification-edge-${entity.id}`,
+            source,
+            target: entity.targetId,
+            polarity: entity.polarity,
+          });
+          break;
+        case "PropositionCompound":
+          entity.atomIds.forEach((atomId) => {
+            entityIdToParentId.set(atomId, entity.id);
+          });
+          break;
+        case "Appearance":
+          const mediaExcerpt = mediaExcerptsById.get(entity.mediaExcerptId);
+          if (!mediaExcerpt) {
+            console.error(
+              `Appearance's mediaExcerpt ${entity.mediaExcerptId} was missing from entities.`
+            );
             break;
-          case "PropositionCompound":
-            entity.atomIds.forEach((atomId) => {
-              entityIdToParentId.set(atomId, entity.id);
-            });
-            break;
-        }
-        return acc;
-      },
-      {
-        entityIdToParentId: new Map(),
-        canonicalJustificationByBasisId: new Map(),
-        edges: [],
-      } as {
-        entityIdToParentId: Map<string, string>;
-        canonicalJustificationByBasisId: Map<string, string>;
-        edges: EdgeDataDefinition[];
+          }
+          const appearanceInfo = { mediaExcerpt };
+          const appearances = propositionIdToAppearanceInfos.get(
+            entity.apparitionId
+          );
+          if (appearances) {
+            appearances.push(appearanceInfo);
+          } else {
+            propositionIdToAppearanceInfos.set(entity.apparitionId, [
+              appearanceInfo,
+            ]);
+          }
+          break;
       }
-    );
+      return acc;
+    },
+    {
+      entityIdToParentId: new Map(),
+      canonicalJustificationByBasisId: new Map(),
+      propositionIdToAppearanceInfos: new Map(),
+      edges: [],
+    } as {
+      entityIdToParentId: Map<string, string>;
+      canonicalJustificationByBasisId: Map<string, string>;
+      propositionIdToAppearanceInfos: Map<string, AppearanceInfo[]>;
+      edges: EdgeDataDefinition[];
+    }
+  );
 
   const canonicalJustifications = new Set(
     canonicalJustificationByBasisId.values()
@@ -279,15 +329,27 @@ function makeElements(entities: Entity[]) {
     ...entities
       .filter(
         (entity) =>
-          entity.type !== "Justification" ||
-          canonicalJustifications.has(entity.id)
+          entity.type !== "Appearance" &&
+          (entity.type !== "Justification" ||
+            canonicalJustifications.has(entity.id))
       )
-      .map((entity) => ({
-        data: {
-          ...entity,
-          parent: entityIdToParentId.get(entity.id),
-        },
-      })),
+      .map((entity) => {
+        if (entity.type === "Proposition") {
+          return {
+            data: {
+              ...entity,
+              appearances: propositionIdToAppearanceInfos.get(entity.id),
+              parent: entityIdToParentId.get(entity.id),
+            },
+          };
+        }
+        return {
+          data: {
+            ...entity,
+            parent: entityIdToParentId.get(entity.id),
+          },
+        };
+      }),
     ...edges.map((edge) => ({
       data: { ...edge },
     })),
@@ -448,12 +510,36 @@ const stylesheet = [
   },
 ];
 
+interface AppearanceInfo {
+  mediaExcerpt: MediaExcerpt;
+}
+
+type PropositionNodeData = Proposition & {
+  appearances: AppearanceInfo[] | undefined;
+};
+
 const reactNodesConfig = [
   {
     query: `node[type="Proposition"]`,
-    template: function (data: Proposition) {
+    template: function (data: PropositionNodeData) {
       return (
         <>
+          {data.appearances?.length ? (
+            <MdOutlineMyLocation
+              title={`${data.appearances.length} appearances`}
+              className="appearances-icon"
+              onClick={(event) => {
+                const canonicalUrl =
+                  data.appearances?.[0].mediaExcerpt.canonicalUrl;
+                if (!canonicalUrl) {
+                  return;
+                }
+                event.preventDefault();
+                event.stopPropagation();
+                openUrlInActiveTab(canonicalUrl);
+              }}
+            />
+          ) : undefined}
           <p>{data.text}</p>
         </>
       );
@@ -594,6 +680,7 @@ const validPropositionDropTargets = new Set([
   "PropositionCompound",
   "Justification",
   "Proposition",
+  "MediaExcerpt",
 ]);
 const validMediaExcerptDropTarges = new Set(["Justification", "Proposition"]);
 

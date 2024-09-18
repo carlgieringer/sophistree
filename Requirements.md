@@ -39,6 +39,8 @@ this extension and use that in place of Sophistree?
 TODO:
 
 - Proposition Appearances
+  - Support multiple appearances per proposition
+  - Navigate to excerpt on same page if already open.
 - Clicking on URL scrolls to the highlight
 - Counter justification intermediate nodes
 

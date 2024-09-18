@@ -11,7 +11,8 @@ export type Entity =
   | Proposition
   | PropositionCompound
   | Justification
-  | MediaExcerpt;
+  | MediaExcerpt
+  | Appearance;
 
 export interface Proposition extends BaseEntity {
   type: "Proposition";
@@ -34,6 +35,12 @@ export interface Justification extends BaseEntity {
 
 export interface MediaExcerpt extends BaseEntity, AddMediaExcerptData {
   type: "MediaExcerpt";
+}
+
+export interface Appearance extends BaseEntity {
+  type: "Appearance";
+  apparitionId: string;
+  mediaExcerptId: string;
 }
 
 interface DragPayload {
@@ -165,6 +172,25 @@ export const entitiesSlice = createSlice({
               }
               basisId = propositionCompound.id;
               break;
+            }
+            case "MediaExcerpt": {
+              const apparitionId = sourceId;
+              const mediaExcerptId = targetId;
+              const extantMediaExcerpt = state.entities.find(
+                (e) =>
+                  e.type === "Appearance" &&
+                  e.apparitionId === apparitionId &&
+                  e.mediaExcerptId === mediaExcerptId
+              );
+              if (!extantMediaExcerpt) {
+                state.entities.push({
+                  type: "Appearance" as const,
+                  id: uuidv4(),
+                  apparitionId,
+                  mediaExcerptId,
+                });
+              }
+              return;
             }
             default: {
               console.error(
