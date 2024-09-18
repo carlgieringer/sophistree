@@ -18,7 +18,7 @@ export interface Proposition extends BaseEntity {
   text: string;
 }
 
-interface PropositionCompound extends BaseEntity {
+export interface PropositionCompound extends BaseEntity {
   type: "PropositionCompound";
   atomIds: string[];
 }
@@ -39,8 +39,6 @@ export interface MediaExcerpt extends BaseEntity, AddMediaExcerptData {
 interface DragPayload {
   sourceId: string;
   targetId: string;
-  // Since a target may appear in multiple places, include its parent for context
-  targetParentId: string | undefined;
   polarity?: Polarity;
 }
 
@@ -151,12 +149,20 @@ export const entitiesSlice = createSlice({
             }
             case "Justification":
             case "Proposition": {
-              const propositionCompound = {
-                type: "PropositionCompound" as const,
-                id: uuidv4(),
-                atomIds: [sourceId],
-              };
-              state.entities.push(propositionCompound);
+              let propositionCompound = state.entities.find(
+                (e) =>
+                  e.type === "PropositionCompound" &&
+                  e.atomIds.length === 1 &&
+                  e.atomIds[0] === source.id
+              );
+              if (!propositionCompound) {
+                propositionCompound = {
+                  type: "PropositionCompound" as const,
+                  id: uuidv4(),
+                  atomIds: [sourceId],
+                };
+                state.entities.push(propositionCompound);
+              }
               basisId = propositionCompound.id;
               break;
             }
@@ -212,36 +218,49 @@ export const entitiesSlice = createSlice({
       const entitiesById = new Map(
         state.entities.map((entity) => [entity.id, entity])
       );
-      const entityIdsToDelete = new Set([entityIdToDelete]);
+      const allEntityIdsToDelete = new Set([entityIdToDelete]);
       state.entities.forEach((entity) => {
         // Process PropositionCompounds first since they may delete justifications
         if (entity.type === "PropositionCompound") {
           updatePropositionCompound(
             entity,
             entityIdToDelete,
-            entityIdsToDelete
+            allEntityIdsToDelete
           );
         }
+        // Delete justifications if either their basis or target will be deleted.
         if (
           entity.type === "Justification" &&
-          (entityIdsToDelete.has(entity.basisId) ||
-            entityIdsToDelete.has(entity.targetId))
+          (allEntityIdsToDelete.has(entity.basisId) ||
+            allEntityIdsToDelete.has(entity.targetId))
         ) {
-          entityIdsToDelete.add(entity.id);
+          allEntityIdsToDelete.add(entity.id);
           const basis = entitiesById.get(entity.basisId);
+          // The point of PropositionCompounds is to wrap propositions in a justification.
+          // So if the justification is going away, we should delete the PropositionCompound too.
           if (basis && basis.type === "PropositionCompound") {
-            entityIdsToDelete.add(basis.id);
+            // If no other justifications are using the proposition compound, delete it
+            const otherJustificationsUsingCompound = state.entities.some(
+              (e) =>
+                e.type === "Justification" &&
+                e.basisId === basis.id &&
+                !allEntityIdsToDelete.has(e.id)
+            );
+            if (!otherJustificationsUsingCompound) {
+              allEntityIdsToDelete.add(basis.id);
+            }
           }
         }
       });
 
+      // Remove all the collected entities
       state.entities = state.entities.filter(
-        (entity) => !entityIdsToDelete.has(entity.id)
+        (entity) => !allEntityIdsToDelete.has(entity.id)
       );
 
       if (
         state.selectedEntityId &&
-        entityIdsToDelete.has(state.selectedEntityId)
+        allEntityIdsToDelete.has(state.selectedEntityId)
       ) {
         state.selectedEntityId = undefined;
       }
@@ -252,11 +271,11 @@ export const entitiesSlice = createSlice({
 function updatePropositionCompound(
   entity: PropositionCompound,
   entityIdToDelete: string,
-  entityIdsToDelete: Set<string>
+  allEntityIdsToDelete: Set<string>
 ) {
   entity.atomIds = entity.atomIds.filter((id) => id !== entityIdToDelete);
   if (entity.atomIds.length === 0) {
-    entityIdsToDelete.add(entity.id);
+    allEntityIdsToDelete.add(entity.id);
   }
 }
 

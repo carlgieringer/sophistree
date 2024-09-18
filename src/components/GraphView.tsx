@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import cytoscape, {
   NodeSingular,
@@ -40,19 +40,23 @@ cytoscape.use(htmlNode);
 
 const GraphView: React.FC = () => {
   const entities = useSelector((state: RootState) => state.entities.entities);
+  const elements = useMemo(() => makeElements(entities), [entities]);
+
+  const cyRef = useRef<cytoscape.Core | undefined>(undefined);
+
+  if (cyRef.current) {
+    correctInvalidNodes(cyRef.current, elements);
+  }
+
   const selectedEntityId = useSelector(
     (state: RootState) => state.entities.selectedEntityId
   );
-  const dispatch = useDispatch();
-  const cyRef = useRef<cytoscape.Core | undefined>(undefined);
-
-  const elements = makeElements(entities);
-
   useEffect(() => {
     cyRef.current?.nodes().subtract(`#${selectedEntityId}`).unselect();
     cyRef.current?.nodes(`#${selectedEntityId}`).select();
   }, [selectedEntityId]);
 
+  const dispatch = useDispatch();
   useEffect(() => {
     if (cyRef.current) {
       const cy = cyRef.current;
@@ -154,7 +158,6 @@ const GraphView: React.FC = () => {
               completeDrag({
                 sourceId: dragSource.id(),
                 targetId: dragTargetNode.id(),
-                targetParentId: dragTargetNode.parent().first().id(),
               })
             );
           }
@@ -209,47 +212,91 @@ const GraphView: React.FC = () => {
 export default GraphView;
 
 function makeElements(entities: Entity[]) {
-  const { entityIdToParentId, edges } = entities.reduce(
-    (acc, node) => {
-      const { entityIdToParentId, edges } = acc;
-      switch (node.type) {
-        case "Justification":
-          entityIdToParentId.set(node.basisId, node.id);
-          edges.push({
-            source: node.id,
-            target: node.targetId,
-            polarity: node.polarity,
-          });
-          break;
-        case "PropositionCompound":
-          node.atomIds.forEach((atomId) => {
-            entityIdToParentId.set(atomId, node.id);
-          });
-          break;
-      }
-      return acc;
-    },
-    {
-      entityIdToParentId: new Map(),
-      edges: [],
-    } as {
-      entityIdToParentId: Map<string, string>;
-      edges: EdgeDataDefinition[];
-    }
-  );
-
-  const elements = [
-    ...entities.map((entity) => ({
-      data: {
-        ...entity,
-        parent: entityIdToParentId.get(entity.id),
+  const { entityIdToParentId, canonicalJustificationByBasisId, edges } =
+    entities.reduce(
+      (acc, entity) => {
+        const { entityIdToParentId, canonicalJustificationByBasisId, edges } =
+          acc;
+        switch (entity.type) {
+          case "Justification":
+            // Since the same basis can appear in multiple justifications, but we want
+            // to display this as a single justification node with multiple edges
+            // targeting each of the justification's targets, we choose the first justification
+            // as the canonical one we will display.
+            let source = canonicalJustificationByBasisId.get(entity.basisId);
+            if (!source) {
+              source = entity.id;
+              entityIdToParentId.set(entity.basisId, entity.id);
+              canonicalJustificationByBasisId.set(entity.basisId, entity.id);
+            }
+            edges.push({
+              // Give the edge related to the justification for debugging.
+              id: `justification-edge-${entity.id}`,
+              source,
+              target: entity.targetId,
+              polarity: entity.polarity,
+            });
+            break;
+          case "PropositionCompound":
+            entity.atomIds.forEach((atomId) => {
+              entityIdToParentId.set(atomId, entity.id);
+            });
+            break;
+        }
+        return acc;
       },
-    })),
+      {
+        entityIdToParentId: new Map(),
+        canonicalJustificationByBasisId: new Map(),
+        edges: [],
+      } as {
+        entityIdToParentId: Map<string, string>;
+        canonicalJustificationByBasisId: Map<string, string>;
+        edges: EdgeDataDefinition[];
+      }
+    );
+
+  const canonicalJustifications = new Set(
+    canonicalJustificationByBasisId.values()
+  );
+  const elements = [
+    ...entities
+      .filter(
+        (entity) =>
+          entity.type !== "Justification" ||
+          canonicalJustifications.has(entity.id)
+      )
+      .map((entity) => ({
+        data: {
+          ...entity,
+          parent: entityIdToParentId.get(entity.id),
+        },
+      })),
     ...edges.map((edge) => ({
       data: { ...edge },
     })),
   ];
   return elements;
+}
+
+/** After we delete entities we need to remove them from Cytoscape */
+function correctInvalidNodes(
+  cy: cytoscape.Core,
+  elements: cytoscape.ElementDefinition[]
+) {
+  const extantIds = elements.map((el) => el.data.id).filter((id) => id);
+
+  // Remove invalid parents first. Otherwise the nodes disappear when we remove the
+  // invalid parents below.
+  const extantIdsSet = new Set(extantIds);
+  cy.nodes().forEach((node) => {
+    if (node.isChild() && !extantIdsSet.has(node.parent().first().data().id)) {
+      node.move({ parent: null });
+    }
+  });
+
+  const extantElementsSelector = extantIds.map((id) => `#${id}`).join(",");
+  cy.elements().subtract(extantElementsSelector).remove();
 }
 
 const stylesheet = [
