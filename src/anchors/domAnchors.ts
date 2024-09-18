@@ -13,7 +13,7 @@ export interface DomAnchor {
   fragment?: TextFragment;
 }
 
-export function getRangeFromDomAnchor(
+export function getRangesFromDomAnchor(
   root: HTMLElement,
   domAnchor: DomAnchor
 ): Range[] {

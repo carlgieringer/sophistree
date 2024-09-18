@@ -47,7 +47,7 @@ const AppContent: React.FC = () => {
     return () => {
       chrome.runtime.onMessage.removeListener(handleChromeRuntimeMessage);
     };
-  }, [dispatch]);
+  }, [dispatch, entities]);
 
   const handleReload = () => {
     chrome.runtime.reload();

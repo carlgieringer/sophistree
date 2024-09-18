@@ -4,9 +4,9 @@ import { AddMediaExcerptData, MediaExcerpt } from "./store/entitiesSlice";
 import {
   DomAnchor,
   makeDomAnchorFromSelection,
-  getRangeFromDomAnchor,
+  getRangesFromDomAnchor,
 } from "./anchors";
-import { sunflower } from "./colors";
+import { opacity50, sunflower } from "./colors";
 
 interface AddMediaExcerptMessage {
   action: "addMediaExcerpt";
@@ -123,8 +123,39 @@ function getMediaExcerpts() {
         return;
       }
       const { mediaExcerpts } = response;
-      mediaExcerpts.forEach(({ id, domAnchor }) =>
-        highlightDomAnchor(domAnchor, id)
+      const mediaExcerptRanges = mediaExcerpts
+        .flatMap(({ id: mediaExcerptId, domAnchor }) => {
+          const ranges = getRangesFromDomAnchor(
+            window.document.body,
+            domAnchor
+          );
+          if (!ranges.length) {
+            console.error(
+              `Unable to highlight domAnchor for mediaExcerptId ${mediaExcerptId}: ${JSON.stringify(
+                domAnchor
+              )}`
+            );
+            return [];
+          }
+          return { mediaExcerptId, ranges };
+        })
+        // Sort the ranges so that those that encompass others come first, and
+        // the inner ones will cover the outer ones so that they are clickable
+        .sort((a, b) => {
+          const comparison = a.ranges[0].compareBoundaryPoints(
+            Range.START_TO_START,
+            b.ranges[0]
+          );
+          return comparison === 0
+            ? a.ranges[a.ranges.length - 1].compareBoundaryPoints(
+                Range.END_TO_END,
+                b.ranges[b.ranges.length - 1]
+              )
+            : comparison;
+        });
+
+      mediaExcerptRanges.forEach(({ mediaExcerptId, ranges }) =>
+        highlightRanges(ranges, mediaExcerptId)
       );
     }
   );
@@ -151,26 +182,14 @@ function highlightCurrentSelection(mediaExcerptId: string) {
   highlightRanges(ranges, mediaExcerptId);
 }
 
-function highlightDomAnchor(domAnchor: DomAnchor, mediaExcerptId: string) {
-  const ranges = getRangeFromDomAnchor(window.document.body, domAnchor);
-  if (!ranges.length) {
-    console.error(
-      `Unable to highlight domAnchor for mediaExcerptId ${mediaExcerptId}: ${JSON.stringify(
-        domAnchor
-      )}`
-    );
-    return;
-  }
-  highlightRanges(ranges, mediaExcerptId);
-}
-
 function highlightRanges(ranges: Range[], mediaExcerptId: string) {
   ranges.forEach((range) => highlightRange(range, mediaExcerptId));
 }
 
 function highlightRange(range: Range, mediaExcerptId: string) {
   const span = document.createElement("span");
-  span.style.backgroundColor = sunflower;
+  span.style.backgroundColor = sunflower + opacity50;
+  span.style.cursor = "pointer";
   span.dataset.mediaExcerptId = mediaExcerptId;
   span.onclick = function highlightOnClick() {
     const message: SelectMediaExcerptMessage = {

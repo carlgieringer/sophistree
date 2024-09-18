@@ -41,7 +41,7 @@ TODO:
 - Proposition Appearances
   - Support multiple appearances per proposition
   - Navigate to excerpt on same page if already open.
-- Clicking on URL scrolls to the highlight
+  - Scroll to excerpt in openUrlInActiveTab.
 - Counter justification intermediate nodes
 
 - Support setting Justification polarity via drag.
@@ -49,7 +49,6 @@ TODO:
 - Node list for disconnected nodes? (Filter by all nodes and disconnected?)
   - Propositions, MediaExcerpts
 - Message origin checks
-- Show icon in Prop/Just nodes for MediaExcerpts; clicking on it navigates to URL and scrolls to highlight.
 - Retrieve MediaExcerpts from background scripts instead of sidebar?
 - Collapsing
 - Voting?
