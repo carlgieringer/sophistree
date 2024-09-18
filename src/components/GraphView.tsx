@@ -121,8 +121,10 @@ const GraphView: React.FC = () => {
       });
 
       let dragSource = undefined as NodeSingular | undefined;
+      let dragSourceOriginalPosition: Position | undefined;
       cy.on("mousedown", "node", (event: cytoscape.EventObjectNode) => {
         dragSource = event.target;
+        dragSourceOriginalPosition = { ...dragSource.position() };
         dragSource.ancestors().add(dragSource).addClass("dragging");
       });
 
@@ -139,10 +141,14 @@ const GraphView: React.FC = () => {
           mousePosition,
           event.target
         );
-        cy.nodes(".hover-highlight")
-          .subtract(hoverNode ?? cy.collection())
-          .removeClass("hover-highlight");
-        hoverNode?.addClass("hover-highlight");
+        cy.nodes(".hover-highlight").removeClass("hover-highlight");
+        if (
+          hoverNode &&
+          dragSource &&
+          isValidDropTarget(dragSource, hoverNode)
+        ) {
+          hoverNode.addClass("hover-highlight");
+        }
       });
 
       cy.on("mouseup", "node", (event: any) => {
@@ -153,22 +159,32 @@ const GraphView: React.FC = () => {
             mousePosition,
             dragSource
           );
-          if (dragTargetNode) {
+          if (dragTargetNode && isValidDropTarget(dragSource, dragTargetNode)) {
             dispatch(
               completeDrag({
                 sourceId: dragSource.id(),
                 targetId: dragTargetNode.id(),
               })
             );
+          } else if (dragSourceOriginalPosition) {
+            // Return the node to its original position
+            dragSource.position(dragSourceOriginalPosition);
           }
         }
         dragSource = undefined;
+        dragSourceOriginalPosition = undefined;
         cy.nodes().removeClass("hover-highlight");
       });
 
-      cy.on("mouseup", (event: any) => {
+      cy.on("mouseup", (event: EventObject) => {
         if (event.target === cy) {
+          if (dragSource && dragSourceOriginalPosition) {
+            // Return the node to its original position
+            dragSource.position(dragSourceOriginalPosition);
+          }
           dragSource = undefined;
+          dragSourceOriginalPosition = undefined;
+          cy.nodes().removeClass("hover-highlight");
         }
       });
 
@@ -572,6 +588,30 @@ function getInnermostNodeContainingNodesPosition(
       undefined as NodeSingular | undefined
     );
   return node;
+}
+
+const validPropositionDropTargets = new Set([
+  "PropositionCompound",
+  "Justification",
+  "Proposition",
+]);
+const validMediaExcerptDropTarges = new Set(["Justification", "Proposition"]);
+
+function isValidDropTarget(
+  source: NodeSingular,
+  target: NodeSingular
+): boolean {
+  const sourceType = source.data("type");
+  const targetType = target.data("type");
+
+  switch (sourceType) {
+    case "Proposition":
+      return validPropositionDropTargets.has(targetType);
+    case "MediaExcerpt":
+      return validMediaExcerptDropTarges.has(targetType);
+    default:
+      return false;
+  }
 }
 
 /**
