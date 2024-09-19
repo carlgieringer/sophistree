@@ -45,7 +45,6 @@ class HighlightManager {
   private colors = defaultColors;
   private resizeHandler: () => void;
   private dragDetector: DragDetector;
-  private levelPadding = 0;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -73,7 +72,9 @@ class HighlightManager {
 
     this.highlights.push(highlight);
 
-    this.updateHighlightsElements();
+    const newElements = this.updateHighlightElements(highlight);
+    this.container.append(...newElements);
+
     this.updateStyles();
     this.addEventListeners();
 
@@ -81,14 +82,37 @@ class HighlightManager {
   }
 
   private updateStyles() {
-    this.highlights.forEach((highlight, index) => {
-      const color = this.colors[index % this.colors.length];
+    const inOrderHighlightElements = this.highlights
+      .flatMap((highlight, highlightIndex) =>
+        highlight.elements.map((element) => ({
+          highlight,
+          element,
+          highlightIndex,
+        }))
+      )
+      // TODO maintain sorted order instead of recalculating it each time
+      .sort(({ element: e1 }, { element: e2 }) => {
+        switch (e1.compareDocumentPosition(e2)) {
+          case Node.DOCUMENT_POSITION_PRECEDING:
+          case Node.DOCUMENT_POSITION_CONTAINS:
+            return 1;
+          case Node.DOCUMENT_POSITION_FOLLOWING:
+          case Node.DOCUMENT_POSITION_CONTAINED_BY:
+            return -1;
+          case Node.DOCUMENT_POSITION_DISCONNECTED:
+          case Node.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC:
+          // error?
+          default:
+            return 0;
+        }
+      });
+    inOrderHighlightElements.forEach(
+      ({ highlight, element, highlightIndex }, index) => {
+        const color = this.colors[highlightIndex % this.colors.length];
 
-      // Determine which elements need borders
-      highlight.elements.forEach((element, index) => {
         element.style.backgroundColor = color.bg;
         element.style.border = `1px solid ${color.border}`;
-        element.style.zIndex = element.dataset.highlightLevel || "0";
+        element.style.zIndex = (index + 1).toString();
         element.style.cursor = highlight.onClick ? "pointer" : "default";
         element.style.mixBlendMode = "multiply"; // This helps with color blending
 
@@ -110,8 +134,8 @@ class HighlightManager {
         if (!needsRightBorder) {
           element.style.borderRight = "";
         }
-      });
-    });
+      }
+    );
   }
 
   private addEventListeners() {
@@ -161,96 +185,49 @@ class HighlightManager {
   }
 
   private updateHighlightPositions() {
-    this.updateHighlightsElements();
-  }
-
-  private updateHighlightsElements() {
-    const rangeLevels = this.calculateRangeLevels();
-    const newElements = [] as HTMLElement[];
-
-    this.highlights.forEach((highlight) => {
-      let elementIndex = 0;
-
-      highlight.ranges.forEach((range) => {
-        const level = rangeLevels.get(range) ?? 0;
-
-        const rects = Array.from(range.getClientRects());
-        const uniqueRects = this.filterUniqueRects(rects);
-
-        uniqueRects.forEach((rect) => {
-          let element = highlight.elements[elementIndex];
-          if (!element) {
-            element = this.createElementForHighlight(highlight);
-            newElements.push(element);
-          }
-
-          const left = rect.left + window.scrollX;
-          const width = rect.width;
-          const levelHeightAdjustment = this.levelPadding * level;
-          const height = rect.height + levelHeightAdjustment;
-          const top = rect.top + window.scrollY - levelHeightAdjustment / 2;
-
-          element.style.left = `${left}px`;
-          element.style.top = `${top}px`;
-          element.style.width = `${width}px`;
-          element.style.height = `${height}px`;
-          element.style.display = "block";
-
-          element.dataset.highlightLevel = level.toString();
-
-          elementIndex++;
-        });
-      });
-
-      // Hide any extra elements
-      for (let i = elementIndex; i < highlight.elements.length; i++) {
-        highlight.elements[i].style.display = "none";
-      }
+    const newElements = this.highlights.flatMap((highlight) => {
+      return this.updateHighlightElements(highlight);
     });
-
     this.container.append(...newElements);
   }
 
-  private calculateRangeLevels() {
-    // TODO maintain this as state rather than sorting every time
-    const sortedRanges = this.highlights
-      .flatMap((h) => h.ranges)
-      .sort((a, b) => {
-        const startComparison = a.compareBoundaryPoints(
-          Range.START_TO_START,
-          b
-        );
-        if (startComparison !== 0) return startComparison;
-        return b.compareBoundaryPoints(Range.END_TO_END, a);
-      });
+  private updateHighlightElements(highlight: Highlight) {
+    const newElements = [] as HTMLElement[];
 
-    const rangeLevels = new Map() as Map<Range, number>;
-    const currentRects = [] as DOMRect[];
-    sortedRanges.forEach((range) => {
-      while (
-        currentRects.length &&
-        !this.rectsOverlap(
-          currentRects[currentRects.length - 1],
-          range.getBoundingClientRect()
-        )
-      ) {
-        currentRects.pop();
-      }
-      const level = currentRects.length;
-      rangeLevels.set(range, level);
-      currentRects.push(range.getBoundingClientRect());
+    let elementIndex = 0;
+
+    highlight.ranges.forEach((range) => {
+      const rects = Array.from(range.getClientRects());
+      const uniqueRects = this.filterUniqueRects(rects);
+
+      uniqueRects.forEach((rect) => {
+        let element = highlight.elements[elementIndex];
+        if (!element) {
+          element = this.createElementForHighlight(highlight);
+          newElements.push(element);
+        }
+
+        const left = rect.left + window.scrollX;
+        const top = rect.top + window.scrollY;
+        const width = rect.width;
+        const height = rect.height;
+
+        element.style.left = `${left}px`;
+        element.style.top = `${top}px`;
+        element.style.width = `${width}px`;
+        element.style.height = `${height}px`;
+        element.style.display = "block";
+
+        elementIndex++;
+      });
     });
 
-    return rangeLevels;
-  }
+    // Hide any extra elements
+    for (let i = elementIndex; i < highlight.elements.length; i++) {
+      highlight.elements[i].style.display = "none";
+    }
 
-  private rectsOverlap(rect1: DOMRect, rect2: DOMRect): boolean {
-    return !(
-      rect1.right < rect2.left ||
-      rect1.left > rect2.right ||
-      rect1.bottom < rect2.top ||
-      rect1.top > rect2.bottom
-    );
+    return newElements;
   }
 
   private createElementForHighlight(highlight: Highlight): HTMLElement {
