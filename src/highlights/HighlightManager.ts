@@ -182,6 +182,7 @@ class HighlightManager {
 
   private handleResize() {
     this.updateHighlightPositions();
+    this.updateStyles();
   }
 
   private updateHighlightPositions() {
@@ -197,10 +198,10 @@ class HighlightManager {
     let elementIndex = 0;
 
     highlight.ranges.forEach((range) => {
-      const rects = Array.from(range.getClientRects());
-      const uniqueRects = this.filterUniqueRects(rects);
+      const rangeRects = Array.from(range.getClientRects());
+      const combinedRects = this.combineAdjacentRects(rangeRects);
 
-      uniqueRects.forEach((rect) => {
+      combinedRects.forEach((rect) => {
         let element = highlight.elements[elementIndex];
         if (!element) {
           element = this.createElementForHighlight(highlight);
@@ -237,23 +238,51 @@ class HighlightManager {
     // TODO how can we click highlighted links? I think we must provide a context
     // menu item or a hover item.
     element.style.pointerEvents = highlight.onClick ? "auto" : "none";
-    element.dataset.highlightIndex = (this.highlights.length - 1).toString();
+    element.dataset.highlightIndex = this.highlights
+      .indexOf(highlight)
+      .toString();
     highlight.elements.push(element);
     return element;
   }
 
-  private filterUniqueRects(rects: DOMRect[]): DOMRect[] {
-    return rects.reduce((uniqueRects: DOMRect[], currentRect: DOMRect) => {
-      const isEncompassed = uniqueRects.some((uniqueRect) =>
-        this.isRectEncompassed(currentRect, uniqueRect)
-      );
+  private combineAdjacentRects(rects: DOMRect[]): DOMRect[] {
+    if (rects.length === 0) return [];
 
-      if (!isEncompassed) {
-        uniqueRects.push(currentRect);
+    // Sort rects by top, then left
+    const sortedRects = rects.sort((a, b) =>
+      a.top !== b.top ? a.top - b.top : a.left - b.left
+    );
+
+    const combinedRects: DOMRect[] = [];
+    let currentRect = sortedRects[0];
+
+    for (let i = 1; i < sortedRects.length; i++) {
+      const nextRect = sortedRects[i];
+
+      // If the rects have the same top and height and are adjacent or overlapping
+      if (
+        currentRect.top === nextRect.top &&
+        currentRect.height === nextRect.height &&
+        nextRect.left <= currentRect.right + 1
+      ) {
+        // Combine the rects
+        currentRect = new DOMRect(
+          currentRect.left,
+          currentRect.top,
+          Math.max(nextRect.right - currentRect.left, currentRect.width),
+          currentRect.height
+        );
+      } else {
+        // If they're not combinable, add the current rect to the result and move to the next
+        combinedRects.push(currentRect);
+        currentRect = nextRect;
       }
+    }
 
-      return uniqueRects;
-    }, []);
+    // Add the last rect
+    combinedRects.push(currentRect);
+
+    return combinedRects;
   }
 
   private isRectEncompassed(rect1: DOMRect, rect2: DOMRect): boolean {
