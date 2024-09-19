@@ -6,43 +6,46 @@ interface Highlight {
   onClick?: (highlight: Highlight) => void;
 }
 
+const defaultColors = [
+  {
+    // Light yellow
+    bg: "rgba(255, 245, 180, 0.4)",
+    border: "rgba(255, 218, 151, 0.6)",
+    hover: "rgba(255, 215, 0, 0.5)",
+  },
+  {
+    // Light pink
+    bg: "rgba(255, 228, 225, 0.3)",
+    border: "rgba(255, 160, 122, 0.5)",
+    hover: "rgba(250, 128, 114, 0.5)",
+  },
+  {
+    // Light purple
+    bg: "rgba(230, 230, 250, 0.3)",
+    border: "rgba(216, 191, 216, 0.5)",
+    hover: "rgba(221, 160, 221, 0.5)",
+  },
+  {
+    // Light green
+    bg: "rgba(220, 245, 220, 0.4)",
+    border: "rgba(132, 231, 132, 0.6)",
+    hover: "rgba(144, 238, 144, 0.5)",
+  },
+  {
+    // Light blue
+    bg: "rgba(240, 248, 255, 0.3)",
+    border: "rgba(135, 206, 250, 0.5)",
+    hover: "rgba(30, 144, 255, 0.5)",
+  },
+];
+
 class HighlightManager {
   private highlights: Highlight[] = [];
   private container: HTMLElement;
-  private colors = [
-    {
-      // Light yellow
-      bg: "rgba(255, 245, 180, 0.4)",
-      border: "rgba(255, 218, 151, 0.6)",
-      hover: "rgba(255, 215, 0, 0.5)",
-    },
-    {
-      // Light pink
-      bg: "rgba(255, 228, 225, 0.3)",
-      border: "rgba(255, 160, 122, 0.5)",
-      hover: "rgba(250, 128, 114, 0.5)",
-    },
-    {
-      // Light purple
-      bg: "rgba(230, 230, 250, 0.3)",
-      border: "rgba(216, 191, 216, 0.5)",
-      hover: "rgba(221, 160, 221, 0.5)",
-    },
-    {
-      // Light green
-      bg: "rgba(220, 245, 220, 0.4)",
-      border: "rgba(132, 231, 132, 0.6)",
-      hover: "rgba(144, 238, 144, 0.5)",
-    },
-    {
-      // Light blue
-      bg: "rgba(240, 248, 255, 0.3)",
-      border: "rgba(135, 206, 250, 0.5)",
-      hover: "rgba(30, 144, 255, 0.5)",
-    },
-  ];
+  private colors = defaultColors;
   private resizeHandler: () => void;
   private dragDetector: DragDetector;
+  private levelPadding = 0;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -68,9 +71,9 @@ class HighlightManager {
       onClick: handlers?.onClick,
     };
 
-    this.updateHighlightElements(highlight);
-    this.container.append(...elements);
     this.highlights.push(highlight);
+
+    this.updateHighlightsElements();
     this.updateStyles();
     this.addEventListeners();
 
@@ -79,13 +82,13 @@ class HighlightManager {
 
   private updateStyles() {
     this.highlights.forEach((highlight, index) => {
-      const color = this.colors[Math.min(index, this.colors.length - 1)];
+      const color = this.colors[index % this.colors.length];
 
       // Determine which elements need borders
       highlight.elements.forEach((element, index) => {
         element.style.backgroundColor = color.bg;
         element.style.border = `1px solid ${color.border}`;
-        element.style.zIndex = (index + 1).toString();
+        element.style.zIndex = element.dataset.highlightLevel || "0";
         element.style.cursor = highlight.onClick ? "pointer" : "default";
         element.style.mixBlendMode = "multiply"; // This helps with color blending
 
@@ -125,7 +128,7 @@ class HighlightManager {
     const highlightIndex = target.dataset.highlightIndex;
     if (highlightIndex) {
       const index = parseInt(highlightIndex, 10);
-      const color = this.colors[Math.min(index, this.colors.length - 1)];
+      const color = this.colors[index % this.colors.length];
       this.highlights[index].elements.forEach((element) => {
         element.style.backgroundColor = color.hover;
         element.style.borderColor = color.hover;
@@ -158,51 +161,106 @@ class HighlightManager {
   }
 
   private updateHighlightPositions() {
-    this.highlights.forEach((highlight) => {
-      this.updateHighlightElements(highlight);
-    });
+    this.updateHighlightsElements();
   }
 
-  private updateHighlightElements(highlight: Highlight) {
-    let elementIndex = 0;
-    const elements: HTMLElement[] = [];
+  private updateHighlightsElements() {
+    const rangeLevels = this.calculateRangeLevels();
+    const newElements = [] as HTMLElement[];
 
-    highlight.ranges.forEach((range) => {
-      const rects = Array.from(range.getClientRects());
-      const uniqueRects = this.filterUniqueRects(rects);
+    this.highlights.forEach((highlight) => {
+      let elementIndex = 0;
 
-      uniqueRects.forEach((rect) => {
-        const element =
-          highlight.elements[elementIndex] ??
-          this.createElementForHighlight(highlight);
+      highlight.ranges.forEach((range) => {
+        const level = rangeLevels.get(range) ?? 0;
 
-        const left = rect.left + window.scrollX;
-        const top = rect.top + window.scrollY;
-        const width = rect.width;
-        const height = rect.height;
-        element.style.left = `${left}px`;
-        element.style.top = `${top}px`;
-        element.style.width = `${width}px`;
-        element.style.height = `${height}px`;
-        element.style.display = "block";
+        const rects = Array.from(range.getClientRects());
+        const uniqueRects = this.filterUniqueRects(rects);
 
-        elements.push(element);
-        elementIndex++;
+        uniqueRects.forEach((rect) => {
+          let element = highlight.elements[elementIndex];
+          if (!element) {
+            element = this.createElementForHighlight(highlight);
+            newElements.push(element);
+          }
+
+          const left = rect.left + window.scrollX;
+          const width = rect.width;
+          const levelHeightAdjustment = this.levelPadding * level;
+          const height = rect.height + levelHeightAdjustment;
+          const top = rect.top + window.scrollY - levelHeightAdjustment / 2;
+
+          element.style.left = `${left}px`;
+          element.style.top = `${top}px`;
+          element.style.width = `${width}px`;
+          element.style.height = `${height}px`;
+          element.style.display = "block";
+
+          element.dataset.highlightLevel = level.toString();
+
+          elementIndex++;
+        });
       });
+
+      // Hide any extra elements
+      for (let i = elementIndex; i < highlight.elements.length; i++) {
+        highlight.elements[i].style.display = "none";
+      }
     });
 
-    // Hide any extra elements
-    for (let i = elementIndex; i < highlight.elements.length; i++) {
-      highlight.elements[i].style.display = "none";
-    }
+    this.container.append(...newElements);
+  }
+
+  private calculateRangeLevels() {
+    // TODO maintain this as state rather than sorting every time
+    const sortedRanges = this.highlights
+      .flatMap((h) => h.ranges)
+      .sort((a, b) => {
+        const startComparison = a.compareBoundaryPoints(
+          Range.START_TO_START,
+          b
+        );
+        if (startComparison !== 0) return startComparison;
+        return b.compareBoundaryPoints(Range.END_TO_END, a);
+      });
+
+    const rangeLevels = new Map() as Map<Range, number>;
+    const currentRects = [] as DOMRect[];
+    sortedRanges.forEach((range) => {
+      while (
+        currentRects.length &&
+        !this.rectsOverlap(
+          currentRects[currentRects.length - 1],
+          range.getBoundingClientRect()
+        )
+      ) {
+        currentRects.pop();
+      }
+      const level = currentRects.length;
+      rangeLevels.set(range, level);
+      currentRects.push(range.getBoundingClientRect());
+    });
+
+    return rangeLevels;
+  }
+
+  private rectsOverlap(rect1: DOMRect, rect2: DOMRect): boolean {
+    return !(
+      rect1.right < rect2.left ||
+      rect1.left > rect2.right ||
+      rect1.bottom < rect2.top ||
+      rect1.top > rect2.bottom
+    );
   }
 
   private createElementForHighlight(highlight: Highlight): HTMLElement {
     const element = document.createElement("div");
     element.classList.add("sophistree-highlight");
     element.style.position = "absolute";
+    // TODO how can we click highlighted links? I think we must provide a context
+    // menu item or a hover item.
     element.style.pointerEvents = highlight.onClick ? "auto" : "none";
-    element.dataset.highlightIndex = this.highlights.length.toString();
+    element.dataset.highlightIndex = (this.highlights.length - 1).toString();
     highlight.elements.push(element);
     return element;
   }
