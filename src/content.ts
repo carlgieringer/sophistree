@@ -1,12 +1,9 @@
 import { v4 as uuidv4 } from "uuid";
 
 import { AddMediaExcerptData, MediaExcerpt } from "./store/entitiesSlice";
-import {
-  DomAnchor,
-  makeDomAnchorFromSelection,
-  getRangesFromDomAnchor,
-} from "./anchors";
+import { makeDomAnchorFromSelection, getRangesFromDomAnchor } from "./anchors";
 import { opacity50, sunflower } from "./colors";
+import { HighlightManager } from "./highlights";
 
 interface AddMediaExcerptMessage {
   action: "addMediaExcerpt";
@@ -182,26 +179,16 @@ function highlightCurrentSelection(mediaExcerptId: string) {
   highlightRanges(ranges, mediaExcerptId);
 }
 
+const highlightManager = new HighlightManager(document.body);
+
 function highlightRanges(ranges: Range[], mediaExcerptId: string) {
-  ranges.forEach((range) => highlightRange(range, mediaExcerptId));
-}
-
-function highlightRange(range: Range, mediaExcerptId: string) {
-  const span = document.createElement("span");
-  span.style.backgroundColor = sunflower + opacity50;
-  span.style.cursor = "pointer";
-  span.dataset.mediaExcerptId = mediaExcerptId;
-  span.onclick = function highlightOnClick() {
-    const message: SelectMediaExcerptMessage = {
-      action: "selectMediaExcerpt",
-      data: { mediaExcerptId },
-    };
-    chrome.runtime.sendMessage(message);
-  };
-
-  try {
-    range.surroundContents(span);
-  } catch (e) {
-    console.error("Failed to highlight selection:", e);
-  }
+  highlightManager.createHighlight(ranges, {
+    onClick: function highlightOnClick() {
+      const message: SelectMediaExcerptMessage = {
+        action: "selectMediaExcerpt",
+        data: { mediaExcerptId },
+      };
+      chrome.runtime.sendMessage(message);
+    },
+  });
 }
