@@ -1,5 +1,3 @@
-import { DragDetector } from "./DragDetector";
-
 interface Highlight {
   ranges: Range[];
   elements: HTMLElement[];
