@@ -40,21 +40,17 @@ const defaultColors = [
 ];
 
 class HighlightManager {
-  private highlights: Highlight[] = [];
   private container: HTMLElement;
+  private highlights: Highlight[] = [];
+  private sortedHighlightElements: Array<{
+    highlight: Highlight;
+    element: HTMLElement;
+  }> = [];
   private colors = defaultColors;
-  private resizeHandler: () => void;
-  private dragDetector: DragDetector;
 
   constructor(container: HTMLElement) {
     this.container = container;
-    this.resizeHandler = this.handleResize.bind(this);
-    window.addEventListener("resize", this.resizeHandler);
-    this.dragDetector = new DragDetector(
-      container,
-      this.handleDragStart.bind(this),
-      this.handleDragEnd.bind(this)
-    );
+    this.addEventListeners();
   }
 
   createHighlight(
@@ -73,125 +69,177 @@ class HighlightManager {
     this.highlights.push(highlight);
 
     const newElements = this.updateHighlightElements(highlight);
+    console.log(this.sortedHighlightElements.map((e) => e.element));
     this.container.append(...newElements);
 
     this.updateStyles();
-    this.addEventListeners();
 
     return highlight;
   }
 
   private updateStyles() {
-    const inOrderHighlightElements = this.highlights
-      .flatMap((highlight, highlightIndex) =>
-        highlight.elements.map((element) => ({
-          highlight,
-          element,
-          highlightIndex,
-        }))
-      )
-      // TODO maintain sorted order instead of recalculating it each time
-      .sort(({ element: e1 }, { element: e2 }) => {
-        switch (e1.compareDocumentPosition(e2)) {
-          case Node.DOCUMENT_POSITION_PRECEDING:
-          case Node.DOCUMENT_POSITION_CONTAINS:
-            return 1;
-          case Node.DOCUMENT_POSITION_FOLLOWING:
-          case Node.DOCUMENT_POSITION_CONTAINED_BY:
-            return -1;
-          case Node.DOCUMENT_POSITION_DISCONNECTED:
-          case Node.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC:
-          // error?
-          default:
-            return 0;
-        }
-      });
-    inOrderHighlightElements.forEach(
-      ({ highlight, element, highlightIndex }, index) => {
-        const color = this.colors[highlightIndex % this.colors.length];
+    this.sortedHighlightElements.forEach(({ highlight, element }, index) => {
+      const highlightIndex = this.highlights.indexOf(highlight);
+      const color = this.colors[highlightIndex % this.colors.length];
 
-        element.style.backgroundColor = color.bg;
-        element.style.border = `1px solid ${color.border}`;
-        element.style.zIndex = (index + 1).toString();
-        element.style.cursor = highlight.onClick ? "pointer" : "default";
-        element.style.mixBlendMode = "multiply"; // This helps with color blending
+      element.style.backgroundColor = color.bg;
+      element.style.border = `1px solid ${color.border}`;
+      // Set the z-index so that later highlight elements are on top of earlier highlights.
+      element.style.zIndex = (index + 1).toString();
+      element.style.cursor = highlight.onClick ? "pointer" : "default";
+      element.style.mixBlendMode = "multiply"; // This helps with color blending
 
-        // Elements immediately adjacent to other elements in the same highlight
-        // don't need a left/right border touching the adjacent element.
-        const prevElement = highlight.elements[index - 1];
-        const nextElement = highlight.elements[index + 1];
+      // Elements immediately adjacent to other elements in the same highlight
+      // don't need a left/right border touching the adjacent element.
+      const prevElement = highlight.elements[index - 1];
+      const nextElement = highlight.elements[index + 1];
 
-        const rect = element.getBoundingClientRect();
-        const prevRect = prevElement?.getBoundingClientRect();
-        const nextRect = nextElement?.getBoundingClientRect();
+      const rect = element.getBoundingClientRect();
+      const prevRect = prevElement?.getBoundingClientRect();
+      const nextRect = nextElement?.getBoundingClientRect();
 
-        const needsLeftBorder = !prevRect || rect.left - prevRect.right > 1;
-        const needsRightBorder = !nextRect || nextRect.left - rect.right > 1;
+      const needsLeftBorder = !prevRect || rect.left - prevRect.right > 1;
+      const needsRightBorder = !nextRect || nextRect.left - rect.right > 1;
 
-        if (!needsLeftBorder) {
-          element.style.borderLeft = "";
-        }
-        if (!needsRightBorder) {
-          element.style.borderRight = "";
-        }
+      if (!needsLeftBorder) {
+        element.style.borderLeft = "";
       }
-    );
+      if (!needsRightBorder) {
+        element.style.borderRight = "";
+      }
+    });
   }
-
   private addEventListeners() {
     this.container.addEventListener(
-      "mouseover",
-      this.handleMouseOver.bind(this)
+      "mousemove",
+      this.handleMouseMove.bind(this)
     );
-    this.container.addEventListener("mouseout", this.handleMouseOut.bind(this));
     this.container.addEventListener("click", this.handleClick.bind(this));
+    window.addEventListener("resize", this.handleResize.bind(this));
   }
 
-  private handleMouseOver(event: MouseEvent) {
-    const target = event.target as HTMLElement;
-    const highlightIndex = target.dataset.highlightIndex;
-    if (highlightIndex) {
-      const index = parseInt(highlightIndex, 10);
-      const color = this.colors[index % this.colors.length];
-      this.highlights[index].elements.forEach((element) => {
+  private insertSortedElement(item: {
+    highlight: Highlight;
+    element: HTMLElement;
+  }) {
+    const index = this.sortedHighlightElements.findIndex((existing) => {
+      const rect1 = item.element.getBoundingClientRect();
+      const rect2 = existing.element.getBoundingClientRect();
+
+      if (rect1.top !== rect2.top) {
+        return rect1.top < rect2.top;
+      }
+      if (rect1.left !== rect2.left) {
+        return rect1.left < rect2.left;
+      }
+      return rect2.right > rect1.right;
+    });
+
+    if (index === -1) {
+      this.sortedHighlightElements.push(item);
+    } else {
+      this.sortedHighlightElements.splice(index, 0, item);
+    }
+  }
+
+  private removeSortedElement(element: HTMLElement) {
+    const index = this.sortedHighlightElements.findIndex(
+      (item) => item.element === element
+    );
+    if (index > -1) {
+      this.sortedHighlightElements.splice(index, 1);
+    }
+  }
+
+  private handleMouseMove(event: MouseEvent) {
+    const highlightElement = this.getHighestHighlightElementAtPoint(
+      event.clientX,
+      event.clientY
+    );
+
+    // Reset all highlights to their default state
+    this.updateStyles();
+
+    if (highlightElement && highlightElement.dataset.highlightIndex) {
+      const highlightIndex = parseInt(highlightElement.dataset.highlightIndex);
+      const highlight = this.highlights[highlightIndex];
+      const color = this.colors[highlightIndex % this.colors.length];
+
+      highlight.elements.forEach((element) => {
         element.style.backgroundColor = color.hover;
         element.style.borderColor = color.hover;
       });
     }
   }
 
-  private handleMouseOut(event: MouseEvent) {
-    const target = event.target as HTMLElement;
-    const highlightIndex = target.dataset.highlightIndex;
-    if (highlightIndex) {
-      this.updateStyles();
-    }
-  }
-
   private handleClick(event: MouseEvent) {
-    const target = event.target as HTMLElement;
-    const highlightIndex = target.dataset.highlightIndex;
-    if (highlightIndex) {
-      const index = parseInt(highlightIndex, 10);
-      const highlight = this.highlights[index];
+    // Find the highlight element at the click coordinates
+    const highlightElement = this.getHighestHighlightElementAtPoint(
+      event.clientX,
+      event.clientY
+    );
+
+    if (!highlightElement) {
+      return;
+    }
+    const highlightIndex = highlightElement.dataset.highlightIndex;
+    if (!highlightIndex) {
+      return;
+    }
+
+    const index = parseInt(highlightIndex, 10);
+    const highlight = this.highlights[index];
+
+    // Check if the click wasn't handled by a child element
+    if (
+      event.target === highlightElement ||
+      !highlightElement.contains(event.target as Node)
+    ) {
       if (highlight.onClick) {
         highlight.onClick(highlight);
       }
     }
   }
 
+  private getHighestHighlightElementAtPoint(
+    x: number,
+    y: number
+  ): HTMLElement | undefined {
+    // elementsFromPoint ignores pointer-events: none, so temporarily enable them
+    const highlightElements = document.querySelectorAll(
+      ".sophistree-highlight"
+    );
+    highlightElements.forEach((el) => {
+      (el as HTMLElement).style.pointerEvents = "auto";
+    });
+    // elementsFromPoint returns the elements topmost to bottomost, so the first is the highest
+    const highestHighlite = document
+      .elementsFromPoint(x, y)
+      .find((el) => el.classList.contains("sophistree-highlight")) as
+      | HTMLElement
+      | undefined;
+    highlightElements.forEach((el) => {
+      (el as HTMLElement).style.pointerEvents = "none";
+    });
+    return highestHighlite;
+  }
+
   private handleResize() {
-    this.updateHighlightPositions();
+    this.updateAllHighlightElements();
     this.updateStyles();
   }
 
-  private updateHighlightPositions() {
-    const newElements = this.highlights.flatMap((highlight) => {
-      return this.updateHighlightElements(highlight);
-    });
+  private updateAllHighlightElements() {
+    const newElements = this.highlights.flatMap((highlight) =>
+      this.updateHighlightElements(highlight)
+    );
     this.container.append(...newElements);
   }
 
+  /**
+   * Updates the highlight's elements to have the right coordinates. Adds
+   * new elements as necessary, and hides unnecessary ones.
+   */
   private updateHighlightElements(highlight: Highlight) {
     const newElements = [] as HTMLElement[];
 
@@ -228,6 +276,15 @@ class HighlightManager {
       highlight.elements[i].style.display = "none";
     }
 
+    setTimeout(() => {
+      highlight.elements.forEach((element) => {
+        this.removeSortedElement(element);
+        if (element.style.display !== "none") {
+          this.insertSortedElement({ highlight, element });
+        }
+      });
+    });
+
     return newElements;
   }
 
@@ -235,9 +292,7 @@ class HighlightManager {
     const element = document.createElement("div");
     element.classList.add("sophistree-highlight");
     element.style.position = "absolute";
-    // TODO how can we click highlighted links? I think we must provide a context
-    // menu item or a hover item.
-    element.style.pointerEvents = highlight.onClick ? "auto" : "none";
+    element.style.pointerEvents = "none";
     element.dataset.highlightIndex = this.highlights
       .indexOf(highlight)
       .toString();
@@ -296,11 +351,15 @@ class HighlightManager {
 
   removeHighlight(highlight: Highlight) {
     const index = this.highlights.indexOf(highlight);
-    if (index > -1) {
-      this.highlights.splice(index, 1);
-      highlight.elements.forEach((element) => element.remove());
-      this.updateStyles();
+    if (index < 0) {
+      return;
     }
+    this.highlights.splice(index, 1);
+    highlight.elements.forEach((element) => {
+      element.remove();
+      this.removeSortedElement(element);
+    });
+    this.updateStyles();
   }
 
   removeAllHighlights() {
@@ -308,24 +367,7 @@ class HighlightManager {
       highlight.elements.forEach((element) => element.remove());
     });
     this.highlights = [];
-    window.removeEventListener("resize", this.resizeHandler);
-    this.dragDetector.destroy();
-  }
-
-  private handleDragStart() {
-    this.setHighlightPointerEvents("none");
-  }
-
-  private handleDragEnd() {
-    this.setHighlightPointerEvents("auto");
-  }
-
-  private setHighlightPointerEvents(value: "none" | "auto") {
-    this.highlights.forEach((highlight) => {
-      highlight.elements.forEach((element) => {
-        element.style.pointerEvents = value;
-      });
-    });
+    this.sortedHighlightElements = [];
   }
 }
 
