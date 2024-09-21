@@ -38,7 +38,6 @@ this extension and use that in place of Sophistree?
 
 TODO:
 
-- Multiple maps
 - Proposition Appearances
   - Support multiple appearances per proposition
   - Navigate to excerpt on same page if already open.

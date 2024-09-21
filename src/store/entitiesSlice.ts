@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { v4 as uuidv4 } from "uuid";
-import * as domAnchorTextQuote from "dom-anchor-text-quote";
+
 import { DomAnchor } from "../anchors";
 
 interface BaseEntity {
@@ -49,8 +49,15 @@ interface DragPayload {
   polarity?: Polarity;
 }
 
+export interface Map {
+  id: string;
+  name: string;
+  entities: Entity[];
+}
+
 const initialState = {
-  entities: [] as Entity[],
+  activeMapId: undefined as string | undefined,
+  maps: [] as Map[],
   selectedEntityId: undefined as string | undefined,
 };
 
@@ -67,15 +74,41 @@ export const entitiesSlice = createSlice({
   name: "entities",
   initialState,
   reducers: {
+    createMap(state, action: PayloadAction<Partial<Map>>) {
+      const newMap: Map = {
+        name: "New map",
+        entities: [],
+        ...action.payload,
+        // Overwrite any ID from the payload to ensure that uploaded maps do not replace existing ones.
+        id: uuidv4(),
+      };
+      state.maps.push(newMap);
+      state.activeMapId = newMap.id;
+    },
+    deleteMap(state, action: PayloadAction<string>) {
+      state.maps = state.maps.filter((map) => map.id !== action.payload);
+      if (state.activeMapId === action.payload) {
+        state.activeMapId = state.maps[0]?.id;
+      }
+    },
+    setActiveMap(state, action: PayloadAction<string | undefined>) {
+      state.activeMapId = action.payload;
+    },
     addEntity(state, action: PayloadAction<Entity>) {
-      state.entities.push(action.payload);
+      const activeMap = state.maps.find((map) => map.id === state.activeMapId);
+      if (activeMap) {
+        activeMap.entities.push(action.payload);
+      }
     },
     addMediaExcerpt(state, action: PayloadAction<AddMediaExcerptData>) {
-      const newNode: MediaExcerpt = {
-        type: "MediaExcerpt",
-        ...action.payload,
-      };
-      state.entities.push(newNode);
+      const activeMap = state.maps.find((map) => map.id === state.activeMapId);
+      if (activeMap) {
+        const newNode: MediaExcerpt = {
+          type: "MediaExcerpt",
+          ...action.payload,
+        };
+        activeMap.entities.push(newNode);
+      }
     },
     updateEntity(
       state,
@@ -84,12 +117,14 @@ export const entitiesSlice = createSlice({
         updates: Partial<Omit<Entity, "type">>;
       }>
     ) {
-      const index = state.entities.findIndex(
+      const activeMap = state.maps.find((map) => map.id === state.activeMapId);
+      if (!activeMap) return;
+      const index = activeMap.entities.findIndex(
         (entity) => entity.id === action.payload.id
       );
       if (index !== -1) {
-        state.entities[index] = {
-          ...state.entities[index],
+        activeMap.entities[index] = {
+          ...activeMap.entities[index],
           ...action.payload.updates,
         };
       }
@@ -101,12 +136,14 @@ export const entitiesSlice = createSlice({
         updates: Partial<Omit<Proposition, "type">>;
       }>
     ) {
-      const index = state.entities.findIndex(
+      const activeMap = state.maps.find((map) => map.id === state.activeMapId);
+      if (!activeMap) return;
+      const index = activeMap.entities.findIndex(
         (entity) => entity.id === action.payload.id
       );
       if (index !== -1) {
-        state.entities[index] = {
-          ...state.entities[index],
+        activeMap.entities[index] = {
+          ...activeMap.entities[index],
           ...action.payload.updates,
         };
       }
@@ -118,7 +155,10 @@ export const entitiesSlice = createSlice({
         updates: Partial<Omit<Justification, "type">>;
       }>
     ) {
-      const index = state.entities.findIndex(
+      const activeMap = state.maps.find((map) => map.id === state.activeMapId);
+      if (!activeMap) return;
+
+      const index = activeMap.entities.findIndex(
         (entity) => entity.id === action.payload.id
       );
       if (index === -1) {
@@ -127,20 +167,23 @@ export const entitiesSlice = createSlice({
         );
         return;
       }
-      state.entities[index] = {
-        ...state.entities[index],
+      activeMap.entities[index] = {
+        ...activeMap.entities[index],
         ...action.payload.updates,
       };
     },
     completeDrag(state, action: PayloadAction<DragPayload>) {
+      const activeMap = state.maps.find((map) => map.id === state.activeMapId);
+      if (!activeMap) return;
+
       const { sourceId, targetId, polarity: actionPolarity } = action.payload;
 
-      const source = state.entities.find((n) => n.id === sourceId);
+      const source = activeMap.entities.find((n) => n.id === sourceId);
       if (!source) {
         console.error(`Drag source node with id ${sourceId} not found`);
         return;
       }
-      const target = state.entities.find((n) => n.id === targetId);
+      const target = activeMap.entities.find((n) => n.id === targetId);
       if (!target) {
         console.error(`Drag target node with id ${targetId} not found`);
         return;
@@ -156,7 +199,7 @@ export const entitiesSlice = createSlice({
             }
             case "Justification":
             case "Proposition": {
-              let propositionCompound = state.entities.find(
+              let propositionCompound = activeMap.entities.find(
                 (e) =>
                   e.type === "PropositionCompound" &&
                   e.atomIds.length === 1 &&
@@ -168,7 +211,7 @@ export const entitiesSlice = createSlice({
                   id: uuidv4(),
                   atomIds: [sourceId],
                 };
-                state.entities.push(propositionCompound);
+                activeMap.entities.push(propositionCompound);
               }
               basisId = propositionCompound.id;
               break;
@@ -176,14 +219,14 @@ export const entitiesSlice = createSlice({
             case "MediaExcerpt": {
               const apparitionId = sourceId;
               const mediaExcerptId = targetId;
-              const extantMediaExcerpt = state.entities.find(
+              const extantMediaExcerpt = activeMap.entities.find(
                 (e) =>
                   e.type === "Appearance" &&
                   e.apparitionId === apparitionId &&
                   e.mediaExcerptId === mediaExcerptId
               );
               if (!extantMediaExcerpt) {
-                state.entities.push({
+                activeMap.entities.push({
                   type: "Appearance" as const,
                   id: uuidv4(),
                   apparitionId,
@@ -231,7 +274,7 @@ export const entitiesSlice = createSlice({
         basisId,
         polarity,
       };
-      state.entities.push(newJustification);
+      activeMap.entities.push(newJustification);
     },
     selectEntity(state, action: PayloadAction<string>) {
       state.selectedEntityId = action.payload;
@@ -240,12 +283,15 @@ export const entitiesSlice = createSlice({
       state.selectedEntityId = undefined;
     },
     deleteEntity(state, action: PayloadAction<string>) {
+      const activeMap = state.maps.find((map) => map.id === state.activeMapId);
+      if (!activeMap) return;
+
       const entityIdToDelete = action.payload;
       const entitiesById = new Map(
-        state.entities.map((entity) => [entity.id, entity])
+        activeMap.entities.map((entity) => [entity.id, entity])
       );
       const allEntityIdsToDelete = new Set([entityIdToDelete]);
-      state.entities.forEach((entity) => {
+      activeMap.entities.forEach((entity) => {
         // Process PropositionCompounds first since they may delete justifications
         if (entity.type === "PropositionCompound") {
           updatePropositionCompound(
@@ -266,7 +312,7 @@ export const entitiesSlice = createSlice({
           // So if the justification is going away, we should delete the PropositionCompound too.
           if (basis && basis.type === "PropositionCompound") {
             // If no other justifications are using the proposition compound, delete it
-            const otherJustificationsUsingCompound = state.entities.some(
+            const otherJustificationsUsingCompound = activeMap.entities.some(
               (e) =>
                 e.type === "Justification" &&
                 e.basisId === basis.id &&
@@ -280,7 +326,7 @@ export const entitiesSlice = createSlice({
       });
 
       // Remove all the collected entities
-      state.entities = state.entities.filter(
+      activeMap.entities = activeMap.entities.filter(
         (entity) => !allEntityIdsToDelete.has(entity.id)
       );
 
@@ -306,6 +352,9 @@ function updatePropositionCompound(
 }
 
 export const {
+  createMap,
+  deleteMap,
+  setActiveMap,
   addEntity,
   addMediaExcerpt,
   updateEntity,

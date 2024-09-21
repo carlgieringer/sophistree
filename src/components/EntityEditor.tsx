@@ -2,7 +2,6 @@ import React from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../store";
 import {
-  updateEntity,
   updateJustification,
   Polarity,
   Entity,
@@ -13,11 +12,16 @@ import {
 } from "../store/entitiesSlice";
 
 const EntityEditor: React.FC = () => {
+  const activeMapId = useSelector(
+    (state: RootState) => state.entities.activeMapId
+  );
   const selectedEntityId = useSelector(
     (state: RootState) => state.entities.selectedEntityId
   );
   const selectedEntity = useSelector((state: RootState) =>
-    state.entities.entities.find((entity) => entity.id === selectedEntityId)
+    state.entities.maps
+      .find((map) => map.id === activeMapId)
+      ?.entities.find((entity) => entity.id === selectedEntityId)
   );
 
   if (!selectedEntity) {

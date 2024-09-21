@@ -6,7 +6,13 @@ import { RootState } from "../store";
 import { addEntity, selectEntity, Entity } from "../store/entitiesSlice";
 
 const EntityList: React.FC = () => {
-  const entities = useSelector((state: RootState) => state.entities.entities);
+  const activeMapId = useSelector(
+    (state: RootState) => state.entities.activeMapId
+  );
+  const entities = useSelector(
+    (state: RootState) =>
+      state.entities.maps.find((map) => map.id === activeMapId)?.entities || []
+  );
   const dispatch = useDispatch();
 
   const handleAddEntity = () => {

@@ -27,9 +27,7 @@ header h1 {
 .sophistree-sidebar main {
   display: flex;
   flex-direction: column;
-  height: calc(
-    100vh - 120px
-  ); /* Adjust based on your header and footer heights */
+  height: 100%;
 }
 
 section {

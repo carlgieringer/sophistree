@@ -1,8 +1,8 @@
-import { configureStore } from "@reduxjs/toolkit";
 import reducer, {
   addEntity,
   completeDrag,
   deleteEntity,
+  createMap,
   Justification,
   Proposition,
   PropositionCompound,
@@ -13,7 +13,14 @@ describe("entitiesSlice", () => {
     it("should delete a justification when its target is deleted", () => {
       // Initial state
       const initialState = {
-        entities: [],
+        activeMapId: "map1",
+        maps: [
+          {
+            id: "map1",
+            name: "Test Map",
+            entities: [],
+          },
+        ],
         selectedEntityId: undefined,
       };
 
@@ -38,20 +45,22 @@ describe("entitiesSlice", () => {
       state = reducer(state, addEntity(justification));
 
       // Verify that both entities are in the state
-      expect(state.entities).toHaveLength(2);
-      expect(state.entities).toContainEqual(proposition);
-      expect(state.entities).toContainEqual(justification);
+      expect(state.maps[0].entities).toHaveLength(2);
+      expect(state.maps[0].entities).toContainEqual(proposition);
+      expect(state.maps[0].entities).toContainEqual(justification);
 
       // Delete the proposition (target)
       state = reducer(state, deleteEntity(proposition.id));
 
       // Verify that both the proposition and the justification are deleted
-      expect(state.entities).toHaveLength(0);
+      expect(state.maps[0].entities).toHaveLength(0);
     });
   });
+
   describe("completeDrag", () => {
     it("reuses existing PropositionCompound", () => {
-      const store = configureStore({ reducer: { entities: reducer } });
+      // Initial state
+      const initialState = reducer(undefined, createMap({ name: "Test Map" }));
 
       // Add initial entities
       const proposition: Proposition = {
@@ -62,43 +71,42 @@ describe("entitiesSlice", () => {
       const target1: Proposition = {
         id: "target1",
         type: "Proposition",
-        text: "Target proposition",
+        text: "Target proposition 1",
       };
       const target2: Proposition = {
         id: "target2",
         type: "Proposition",
-        text: "Target proposition",
-      };
-      const existingCompound: PropositionCompound = {
-        id: "compound1",
-        type: "PropositionCompound",
-        atomIds: ["prop1"],
+        text: "Target proposition 2",
       };
 
-      store.dispatch(addEntity(proposition));
-      store.dispatch(addEntity(target1));
-      store.dispatch(addEntity(target2));
-      store.dispatch(
+      let state = reducer(initialState, addEntity(proposition));
+      state = reducer(state, addEntity(target1));
+      state = reducer(state, addEntity(target2));
+      // Perform first drag action
+      state = reducer(
+        state,
         completeDrag({ sourceId: proposition.id, targetId: target1.id })
       );
 
-      // Perform drag action
-      store.dispatch(
-        completeDrag({
-          sourceId: proposition.id,
-          targetId: target2.id,
-        })
+      // Perform second drag action
+      state = reducer(
+        state,
+        completeDrag({ sourceId: proposition.id, targetId: target2.id })
       );
-
-      // Check the state after the action
-      const state = store.getState().entities;
-
+      // Check the state after the actions
+      const activeMap = state.maps.find((map) => map.id === state.activeMapId);
       // The existing compound should not be duplicated
-      const compounds = state.entities.filter(
+      const compounds = activeMap!.entities.filter(
         (e) => e.type === "PropositionCompound"
       ) as PropositionCompound[];
       expect(compounds).toHaveLength(1);
       expect(compounds[0].atomIds).toEqual([proposition.id]);
+
+      // There should be two justifications
+      const justifications = activeMap!.entities.filter(
+        (e) => e.type === "Justification"
+      ) as Justification[];
+      expect(justifications).toHaveLength(2);
     });
   });
 });

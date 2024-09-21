@@ -1,7 +1,6 @@
 // src/App.tsx
 import React, { useEffect } from "react";
 import { Provider, useDispatch, useSelector } from "react-redux";
-import { Button } from "react-native-paper";
 
 import { RootState, store } from "./store";
 import { addMediaExcerpt, selectEntity } from "./store/entitiesSlice";
@@ -9,12 +8,17 @@ import GraphView from "./components/GraphView";
 import EntityEditor from "./components/EntityEditor";
 import { ChromeRuntimeMessage } from "./content";
 import "./App.scss";
-import DownloadButton from "./components/DownloadButton";
+import HeaderBar from "./components/HeaderBar";
 
 const AppContent: React.FC = () => {
   const dispatch = useDispatch();
 
-  const entities = useSelector((state: RootState) => state.entities.entities);
+  const maps = useSelector((state: RootState) => state.entities.maps);
+  const activeMapId = useSelector(
+    (state: RootState) => state.entities.activeMapId
+  );
+  const activeMapName = maps.find((m) => m.id === activeMapId)?.name || "";
+  const entities = maps.find((m) => m.id === activeMapId)?.entities || [];
 
   useEffect(() => {
     function handleChromeRuntimeMessage(
@@ -51,16 +55,9 @@ const AppContent: React.FC = () => {
     };
   }, [dispatch, entities]);
 
-  const handleReload = () => {
-    chrome.runtime.reload();
-  };
-
   return (
     <div className="sophistree-sidebar">
-      <header>
-        <img className="logo" src="./logo-32.png" alt="Sophistree Logo" />
-        <h1>Sophistree</h1>
-      </header>
+      <HeaderBar />
       <main>
         <section className="graph-view">
           <GraphView />
@@ -70,10 +67,6 @@ const AppContent: React.FC = () => {
           <EntityEditor />
         </section>
       </main>
-      <footer>
-        <DownloadButton />
-        <Button onPress={handleReload}>Reload Extension</Button>
-      </footer>
     </div>
   );
 };

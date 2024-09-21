@@ -14,12 +14,6 @@ import { v4 as uuidv4 } from "uuid";
 import elk from "cytoscape-elk";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
-import {
-  Appearance,
-  Entity,
-  MediaExcerpt,
-  Proposition,
-} from "../store/entitiesSlice";
 import htmlNode from "../cytoscape/reactNodes";
 import { RootState } from "../store";
 import {
@@ -28,6 +22,9 @@ import {
   selectEntity,
   deleteEntity,
   resetSelection,
+  Entity,
+  MediaExcerpt,
+  Proposition,
 } from "../store/entitiesSlice";
 import {
   carrot,
@@ -45,7 +42,11 @@ cytoscape.use(contextMenus);
 cytoscape.use(htmlNode);
 
 const GraphView: React.FC = () => {
-  const entities = useSelector((state: RootState) => state.entities.entities);
+  const activeMapId = useSelector(
+    (state: RootState) => state.entities.activeMapId
+  );
+  const maps = useSelector((state: RootState) => state.entities.maps);
+  const entities = maps.find((map) => map.id === activeMapId)?.entities || [];
   const elements = useMemo(() => makeElements(entities), [entities]);
 
   const cyRef = useRef<cytoscape.Core | undefined>(undefined);
