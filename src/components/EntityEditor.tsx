@@ -1,5 +1,8 @@
 import React from "react";
 import { useSelector, useDispatch } from "react-redux";
+import { TextInput } from "react-native-paper";
+import { View } from "react-native";
+
 import { RootState } from "../store";
 import {
   updateJustification,
@@ -25,7 +28,7 @@ const EntityEditor: React.FC = () => {
   );
 
   if (!selectedEntity) {
-    return <div>No entity selected</div>;
+    return <View>No entity selected</View>;
   }
 
   const editor = chooseEditor(selectedEntity);
@@ -41,21 +44,20 @@ function chooseEditor(entity: Entity) {
     case "MediaExcerpt":
       return <MediaExcerptEditor entity={entity} />;
     default:
-      return <div>Unknown entity type</div>;
+      return <View>Unknown entity type</View>;
   }
 }
 
 function PropositionEditor({ entity }: { entity: Proposition }) {
   const dispatch = useDispatch();
 
-  function handleTextChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const text = e.target.value;
+  function handleTextChange(text: string) {
     dispatch(updateProposition({ id: entity.id, updates: { text } }));
   }
   return (
-    <div>
-      <input type="text" value={entity.text} onChange={handleTextChange} />
-    </div>
+    <View>
+      <TextInput value={entity.text} onChangeText={handleTextChange} />
+    </View>
   );
 }
 
@@ -71,17 +73,17 @@ function JustificationEditor({ entity }: { entity: Justification }) {
     );
   };
   return (
-    <div>
+    <View>
       <select onChange={handlePolarityChange} value={entity.polarity}>
         <option value="Positive">Positive</option>
         <option value="Negative">Negative</option>
       </select>
-    </div>
+    </View>
   );
 }
 
 function MediaExcerptEditor({ entity }: { entity: MediaExcerpt }) {
-  return <div>MediaExcerptEditor</div>;
+  return <View>MediaExcerptEditor</View>;
 }
 
 export default EntityEditor;

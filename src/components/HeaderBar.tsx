@@ -9,7 +9,7 @@ import ActivateMapDialog from "./ActivateMapDialog";
 import DownloadMapsDialog from "./DownloadMapsDialog";
 import UploadMapsDialog from "./UploadMapsDialog";
 
-function HeaderBar() {
+function HeaderBar({ id }: { id?: string }) {
   const dispatch = useDispatch();
 
   const [isMenuVisible, setMenuVisible] = useState(false);
@@ -46,7 +46,7 @@ function HeaderBar() {
 
   return (
     <>
-      <Appbar.Header>
+      <Appbar.Header id={id}>
         <Appbar.Content title={activeMapName} />
         <Menu
           onDismiss={hideMenu}

@@ -1,0 +1,12 @@
+/* From https://necolas.github.io/react-native-web/docs/setup/#root-element */
+
+/* These styles make the body full-height */
+html,
+body {
+  height: 100vh;
+}
+/* These styles make the root element full-height */
+#root {
+  display: flex;
+  height: 100vh;
+}

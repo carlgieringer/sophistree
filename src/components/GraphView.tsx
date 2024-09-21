@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { CSSProperties, useEffect, useMemo, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import cytoscape, {
   NodeSingular,
@@ -41,7 +41,13 @@ cytoscape.use(elk);
 cytoscape.use(contextMenus);
 cytoscape.use(htmlNode);
 
-const GraphView: React.FC = () => {
+function GraphView({
+  id,
+  style,
+}: {
+  id?: string;
+  style?: CSSProperties | undefined;
+}) {
   const activeMapId = useSelector(
     (state: RootState) => state.entities.activeMapId
   );
@@ -224,10 +230,16 @@ const GraphView: React.FC = () => {
 
   return (
     <CytoscapeComponent
+      id={id}
       elements={elements}
       layout={getLayout()}
       stylesheet={stylesheet}
-      style={{ width: "100%", height: "100%", overflow: "hidden" }}
+      style={{
+        ...style,
+        ...{
+          overflow: "hidden",
+        },
+      }}
       cy={(cy) => {
         cyRef.current = cy;
       }}
@@ -237,11 +249,12 @@ const GraphView: React.FC = () => {
       maxZoom={2}
     />
   );
-};
+}
 
 export default GraphView;
 
 function makeElements(entities: Entity[]) {
+  // TODO hide media excerpts that are only appearances
   const mediaExcerptsById = entities
     .filter((e) => e.type === "MediaExcerpt")
     .reduce((acc, e) => {
@@ -529,18 +542,20 @@ const reactNodesConfig = [
             <span
               title={`${data.appearances.length} appearances`}
               className="appearances-icon"
-              onClick={(event) => {
-                const canonicalUrl =
-                  data.appearances?.[0].mediaExcerpt.canonicalUrl;
-                if (!canonicalUrl) {
-                  return;
-                }
-                event.preventDefault();
-                event.stopPropagation();
-                openUrlInActiveTab(canonicalUrl);
-              }}
             >
-              <Icon name="outline_my_location" />
+              <Icon
+                name="crosshairs-gps"
+                onPress={(event) => {
+                  const canonicalUrl =
+                    data.appearances?.[0].mediaExcerpt.canonicalUrl;
+                  if (!canonicalUrl) {
+                    return;
+                  }
+                  event.preventDefault();
+                  event.stopPropagation();
+                  openUrlInActiveTab(canonicalUrl);
+                }}
+              />
             </span>
           ) : undefined}
           <p>{data.text}</p>

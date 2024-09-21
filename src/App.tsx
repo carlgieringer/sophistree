@@ -1,23 +1,23 @@
-// src/App.tsx
 import React, { useEffect } from "react";
-import { Provider, useDispatch, useSelector } from "react-redux";
+import { StyleSheet, View } from "react-native";
+import { Text } from "react-native-paper";
+import { useDispatch, useSelector } from "react-redux";
 
-import { RootState, store } from "./store";
-import { addMediaExcerpt, selectEntity } from "./store/entitiesSlice";
-import GraphView from "./components/GraphView";
-import EntityEditor from "./components/EntityEditor";
-import { ChromeRuntimeMessage } from "./content";
 import "./App.scss";
+import EntityEditor from "./components/EntityEditor";
+import GraphView from "./components/GraphView";
 import HeaderBar from "./components/HeaderBar";
+import { ChromeRuntimeMessage } from "./content";
+import { RootState } from "./store";
+import { addMediaExcerpt, selectEntity } from "./store/entitiesSlice";
 
-const AppContent: React.FC = () => {
+const App: React.FC = () => {
   const dispatch = useDispatch();
 
   const maps = useSelector((state: RootState) => state.entities.maps);
   const activeMapId = useSelector(
     (state: RootState) => state.entities.activeMapId
   );
-  const activeMapName = maps.find((m) => m.id === activeMapId)?.name || "";
   const entities = maps.find((m) => m.id === activeMapId)?.entities || [];
 
   useEffect(() => {
@@ -56,27 +56,40 @@ const AppContent: React.FC = () => {
   }, [dispatch, entities]);
 
   return (
-    <div className="sophistree-sidebar">
+    <View style={styles.container}>
       <HeaderBar />
-      <main>
-        <section className="graph-view">
-          <GraphView />
-        </section>
-        <section className="entity-editor">
-          <h2>Entity Editor</h2>
+      <View style={styles.content}>
+        <GraphView style={styles.graphView} />
+        <View style={styles.entityEditorContainer}>
+          <Text variant="titleMedium">Entity Editor</Text>
           <EntityEditor />
-        </section>
-      </main>
-    </div>
+        </View>
+      </View>
+    </View>
   );
 };
 
-const App: React.FC = () => {
-  return (
-    <Provider store={store}>
-      <AppContent />
-    </Provider>
-  );
-};
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+  },
+  content: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+  },
+  graphView: {
+    flex: 1,
+  },
+  entityEditorContainer: {
+    paddingLeft: 16,
+    paddingRight: 16,
+    paddingBottom: 16,
+    flexShrink: 0,
+    maxHeight: "50%",
+  },
+});
 
 export default App;
