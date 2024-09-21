@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, View, ScrollView } from "react-native";
 import { Text } from "react-native-paper";
 import { useDispatch, useSelector } from "react-redux";
 
@@ -10,6 +10,7 @@ import HeaderBar from "./components/HeaderBar";
 import { ChromeRuntimeMessage } from "./content";
 import { RootState } from "./store";
 import { addMediaExcerpt, selectEntity } from "./store/entitiesSlice";
+import EntityList from "./components/EntityList";
 
 const App: React.FC = () => {
   const dispatch = useDispatch();
@@ -64,6 +65,10 @@ const App: React.FC = () => {
           <Text variant="titleMedium">Entity Editor</Text>
           <EntityEditor />
         </View>
+
+        <ScrollView style={styles.entityListScrollView}>
+          <EntityList />
+        </ScrollView>
       </View>
     </View>
   );
@@ -82,6 +87,10 @@ const styles = StyleSheet.create({
   },
   graphView: {
     flex: 1,
+  },
+  entityListScrollView: {
+    flexShrink: 0,
+    maxHeight: "33%",
   },
   entityEditorContainer: {
     paddingLeft: 16,

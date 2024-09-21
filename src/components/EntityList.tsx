@@ -1,48 +1,45 @@
 import React from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { v4 as uuidv4 } from "uuid";
+import { useSelector } from "react-redux";
+import { DataTable } from "react-native-paper";
+import { StyleProp, ViewStyle } from "react-native";
 
 import { RootState } from "../store";
-import { addEntity, selectEntity, Entity } from "../store/entitiesSlice";
+import { Entity } from "../store/entitiesSlice";
 
-const EntityList: React.FC = () => {
+const tableEntityTypes = new Set(["Proposition", "MediaExcerpt"]);
+
+function EntityList({ style }: { style?: StyleProp<ViewStyle> }) {
   const activeMapId = useSelector(
     (state: RootState) => state.entities.activeMapId
   );
-  const entities = useSelector(
+  const allEntities = useSelector(
     (state: RootState) =>
       state.entities.maps.find((map) => map.id === activeMapId)?.entities || []
   );
-  const dispatch = useDispatch();
-
-  const handleAddEntity = () => {
-    dispatch(
-      addEntity({
-        id: uuidv4(),
-        type: "Proposition",
-        text: "New Proposition",
-      })
-    );
-  };
+  const tableEntities = allEntities.filter((e) => tableEntityTypes.has(e.type));
 
   return (
-    <div>
-      {entities.map((entity) => (
-        <div key={entity.id} onClick={() => dispatch(selectEntity(entity.id))}>
-          {makeDescription(entity)}
-        </div>
+    <DataTable style={style}>
+      <DataTable.Header>
+        <DataTable.Title>Type</DataTable.Title>
+        <DataTable.Title>Description</DataTable.Title>
+      </DataTable.Header>
+      {tableEntities.map((entity) => (
+        <DataTable.Row key={entity.id}>
+          <DataTable.Cell>{entity.type}</DataTable.Cell>
+          <DataTable.Cell>{makeDescription(entity)}</DataTable.Cell>
+        </DataTable.Row>
       ))}
-      <button onClick={handleAddEntity}>Add Proposition</button>
-    </div>
+    </DataTable>
   );
-};
+}
 
 function makeDescription(entity: Entity): string {
   switch (entity.type) {
     case "Proposition":
-      return `Proposition: ${entity.text}`;
+      return entity.text;
     case "MediaExcerpt":
-      return `MediaExcerpt: “${entity.quotation}” ${entity.sourceName}`;
+      return `“${entity.quotation}” ${entity.sourceName} <${entity.canonicalUrl}>`;
     default:
       return `${entity.type}`;
   }

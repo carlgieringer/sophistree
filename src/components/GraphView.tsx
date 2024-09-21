@@ -41,13 +41,7 @@ cytoscape.use(elk);
 cytoscape.use(contextMenus);
 cytoscape.use(htmlNode);
 
-function GraphView({
-  id,
-  style,
-}: {
-  id?: string;
-  style?: CSSProperties | undefined;
-}) {
+function GraphView({ id, style }: { id?: string; style?: CSSProperties }) {
   const activeMapId = useSelector(
     (state: RootState) => state.entities.activeMapId
   );
