@@ -1,14 +1,16 @@
 // src/App.tsx
 import React, { useEffect } from "react";
 import { Provider, useDispatch, useSelector } from "react-redux";
+import { Button } from "react-native-paper";
+
 import { RootState, store } from "./store";
 import { addMediaExcerpt, selectEntity } from "./store/entitiesSlice";
-import EntityList from "./components/EntityList";
 import GraphView from "./components/GraphView";
 import EntityEditor from "./components/EntityEditor";
-
-import "./App.css";
 import { ChromeRuntimeMessage } from "./content";
+import "./App.scss";
+import DownloadButton from "./components/DownloadButton";
+
 const AppContent: React.FC = () => {
   const dispatch = useDispatch();
 
@@ -69,9 +71,8 @@ const AppContent: React.FC = () => {
         </section>
       </main>
       <footer>
-        <button>Export</button>
-        <button>Import</button>
-        <button onClick={handleReload}>Reload Extension</button>
+        <DownloadButton />
+        <Button onPress={handleReload}>Reload Extension</Button>
       </footer>
     </div>
   );

@@ -1,0 +1,9 @@
+@font-face {
+  src: url(react-native-vector-icons/Fonts/MaterialIcons.ttf);
+  font-family: "MaterialIcons";
+}
+
+@font-face {
+  src: url(react-native-vector-icons/Fonts/MaterialCommunityIcons.ttf);
+  font-family: "MaterialCommunityIcons";
+}

@@ -12,7 +12,7 @@ import CytoscapeComponent from "react-cytoscapejs";
 import contextMenus from "cytoscape-context-menus";
 import { v4 as uuidv4 } from "uuid";
 import elk from "cytoscape-elk";
-import { MdOutlineMyLocation } from "react-icons/md";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 import {
   Appearance,
@@ -525,7 +525,7 @@ const reactNodesConfig = [
       return (
         <>
           {data.appearances?.length ? (
-            <MdOutlineMyLocation
+            <span
               title={`${data.appearances.length} appearances`}
               className="appearances-icon"
               onClick={(event) => {
@@ -538,7 +538,9 @@ const reactNodesConfig = [
                 event.stopPropagation();
                 openUrlInActiveTab(canonicalUrl);
               }}
-            />
+            >
+              <Icon name="outline_my_location" />
+            </span>
           ) : undefined}
           <p>{data.text}</p>
         </>

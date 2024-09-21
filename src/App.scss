@@ -1,3 +1,6 @@
+@import "./react-native-vector-icons/font-faces.css";
+@import "./react-native-paper/roboto.css";
+
 .sophistree-sidebar {
   height: 100vh;
   display: flex;
@@ -24,7 +27,9 @@ header h1 {
 .sophistree-sidebar main {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 120px); /* Adjust based on your header and footer heights */
+  height: calc(
+    100vh - 120px
+  ); /* Adjust based on your header and footer heights */
 }
 
 section {
@@ -47,7 +52,7 @@ h2 {
 }
 
 button {
-  background-color: #4CAF50;
+  background-color: #4caf50;
   border: none;
   color: white;
   padding: 10px 20px;

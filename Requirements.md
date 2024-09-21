@@ -38,18 +38,20 @@ this extension and use that in place of Sophistree?
 
 TODO:
 
+- Multiple maps
 - Proposition Appearances
   - Support multiple appearances per proposition
   - Navigate to excerpt on same page if already open.
   - Scroll to excerpt in openUrlInActiveTab.
 - Counter justification intermediate nodes
+- Node list for disconnected nodes? (Filter by all nodes and disconnected?)
+  - Propositions, MediaExcerpts
+  - Drag from NodeList to graph view?
+- Collapsing
+- Trackpad scrolling?
 
 - Support setting Justification polarity via drag.
   - https://github.com/cytoscape/cytoscape.js-popper for polarity targets?
-- Node list for disconnected nodes? (Filter by all nodes and disconnected?)
-  - Propositions, MediaExcerpts
 - Message origin checks
 - Retrieve MediaExcerpts from background scripts instead of sidebar?
-- Collapsing
 - Voting?
-- Multiple justification targets?
