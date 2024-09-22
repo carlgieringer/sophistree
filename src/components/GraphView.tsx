@@ -1,4 +1,4 @@
-import { CSSProperties, useEffect, useMemo, useRef } from "react";
+import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import cytoscape, {
   NodeSingular,
@@ -13,6 +13,7 @@ import contextMenus from "cytoscape-context-menus";
 import { v4 as uuidv4 } from "uuid";
 import elk from "cytoscape-elk";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { Portal } from "react-native-paper";
 
 import htmlNode from "../cytoscape/reactNodes";
 import {
@@ -37,6 +38,11 @@ import "cytoscape-context-menus/cytoscape-context-menus.css";
 import "./GraphView.css";
 import { activeMapEntities } from "../store/selectors";
 import * as selectors from "../store/selectors";
+import VisitPropositionAppearanceDialog, {
+  AppearanceInfo,
+  openUrlInActiveTab,
+  PropositionNodeData,
+} from "./VisitPropositionAppearanceDialog";
 
 cytoscape.use(elk);
 cytoscape.use(contextMenus);
@@ -62,6 +68,80 @@ export default function GraphView({ id, style }: GraphViewProps) {
     cyRef.current?.nodes().subtract(`#${selectedEntityId}`).unselect();
     cyRef.current?.nodes(`#${selectedEntityId}`).select();
   }, [selectedEntityId]);
+
+  const [
+    visitAppearancesDialogProposition,
+    setVisitAppearancesDialogProposition,
+  ] = useState(undefined as PropositionNodeData | undefined);
+
+  const reactNodesConfig = [
+    {
+      query: `node[type="Proposition"]`,
+      template: function (data: PropositionNodeData) {
+        const appearanceCount = data.appearances?.length;
+        const appearanceNoun =
+          "appearance" + (appearanceCount === 1 ? "" : "s");
+
+        return (
+          <>
+            {appearanceCount ? (
+              <span
+                title={`${appearanceCount} ${appearanceNoun}`}
+                className="appearances-icon"
+              >
+                <Icon
+                  name="crosshairs-gps"
+                  onPress={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setVisitAppearancesDialogProposition(data);
+                  }}
+                />
+              </span>
+            ) : undefined}
+            <p>{data.text}</p>
+          </>
+        );
+      },
+      syncClasses: ["hover-highlight", "dragging"],
+      containerCSS: {
+        padding: "1em",
+        backgroundColor: peterRiver,
+        borderRadius: "8px",
+      },
+    },
+    {
+      query: `node[type="MediaExcerpt"]`,
+      template: function (data: MediaExcerpt) {
+        return (
+          <>
+            <p>{data.quotation}</p>
+            <a
+              href={data.canonicalUrl}
+              title={data.canonicalUrl}
+              onClick={(event) => {
+                if (!data.canonicalUrl) {
+                  return;
+                }
+                event.preventDefault();
+                event.stopPropagation();
+                openUrlInActiveTab(data.canonicalUrl);
+                return false;
+              }}
+            >
+              {data.sourceName}
+            </a>
+          </>
+        );
+      },
+      syncClasses: ["hover-highlight", "dragging"],
+      containerCSS: {
+        padding: "1em",
+        backgroundColor: peterRiver,
+        borderRadius: "8px",
+      },
+    },
+  ];
 
   const dispatch = useDispatch();
   useEffect(() => {
@@ -224,25 +304,36 @@ export default function GraphView({ id, style }: GraphViewProps) {
   }
 
   return (
-    <CytoscapeComponent
-      id={id}
-      elements={elements}
-      layout={getLayout()}
-      stylesheet={stylesheet}
-      style={{
-        ...style,
-        ...{
-          overflow: "hidden",
-        },
-      }}
-      cy={(cy) => {
-        cyRef.current = cy;
-      }}
-      zoom={1}
-      pan={{ x: 0, y: 0 }}
-      minZoom={0.5}
-      maxZoom={2}
-    />
+    <>
+      <CytoscapeComponent
+        id={id}
+        elements={elements}
+        layout={getLayout()}
+        stylesheet={stylesheet}
+        style={{
+          ...style,
+          ...{
+            overflow: "hidden",
+          },
+        }}
+        cy={(cy) => {
+          cyRef.current = cy;
+        }}
+        zoom={1}
+        pan={{ x: 0, y: 0 }}
+        minZoom={0.5}
+        maxZoom={2}
+      />
+      {visitAppearancesDialogProposition && (
+        <Portal>
+          <VisitPropositionAppearanceDialog
+            data={visitAppearancesDialogProposition}
+            visible={!!visitAppearancesDialogProposition}
+            onDismiss={() => setVisitAppearancesDialogProposition(undefined)}
+          />
+        </Portal>
+      )}
+    </>
   );
 }
 
@@ -297,7 +388,7 @@ function makeElements(entities: Entity[]) {
           if (!mediaExcerpt) {
             break;
           }
-          const appearanceInfo = { mediaExcerpt };
+          const appearanceInfo = { id: entity.id, mediaExcerpt };
           const appearances = propositionIdToAppearanceInfos.get(
             entity.apparitionId
           );
@@ -522,86 +613,6 @@ const stylesheet = [
   },
 ];
 
-interface AppearanceInfo {
-  mediaExcerpt: MediaExcerpt;
-}
-
-type PropositionNodeData = Proposition & {
-  appearances: AppearanceInfo[] | undefined;
-};
-
-const reactNodesConfig = [
-  {
-    query: `node[type="Proposition"]`,
-    template: function (data: PropositionNodeData) {
-      const appearanceCount = data.appearances?.length;
-      const apearanceNoun = "appearance" + (appearanceCount ? "s" : "");
-      return (
-        <>
-          {appearanceCount ? (
-            <span
-              title={`${appearanceCount} ${apearanceNoun}`}
-              className="appearances-icon"
-            >
-              <Icon
-                name="crosshairs-gps"
-                onPress={(event) => {
-                  const canonicalUrl =
-                    data.appearances?.[0].mediaExcerpt.canonicalUrl;
-                  if (!canonicalUrl) {
-                    return;
-                  }
-                  event.preventDefault();
-                  event.stopPropagation();
-                  openUrlInActiveTab(canonicalUrl);
-                }}
-              />
-            </span>
-          ) : undefined}
-          <p>{data.text}</p>
-        </>
-      );
-    },
-    syncClasses: ["hover-highlight", "dragging"],
-    containerCSS: {
-      padding: "1em",
-      backgroundColor: peterRiver,
-      borderRadius: "8px",
-    },
-  },
-  {
-    query: `node[type="MediaExcerpt"]`,
-    template: function (data: MediaExcerpt) {
-      return (
-        <>
-          <p>{data.quotation}</p>
-          <a
-            href={data.canonicalUrl}
-            title={data.canonicalUrl}
-            onClick={(event) => {
-              if (!data.canonicalUrl) {
-                return;
-              }
-              event.preventDefault();
-              event.stopPropagation();
-              openUrlInActiveTab(data.canonicalUrl);
-              return false;
-            }}
-          >
-            {data.sourceName}
-          </a>
-        </>
-      );
-    },
-    syncClasses: ["hover-highlight", "dragging"],
-    containerCSS: {
-      padding: "1em",
-      backgroundColor: peterRiver,
-      borderRadius: "8px",
-    },
-  },
-];
-
 function layoutPropositionCompoundAtomsVertically(cy: cytoscape.Core) {
   const compoundNodes = cy
     .nodes()
@@ -750,28 +761,6 @@ function styleLengthToPx(length: string | number): number {
     return parseFloat(length) * fontSize;
   }
   throw new Error(`Unsupported length unit: ${length}`);
-}
-
-function openUrlInActiveTab(url: string) {
-  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-    const activeTab = tabs[0];
-    if (!activeTab.id) {
-      return;
-    }
-    // chrome:// tabs e.g. have no URL
-    if (!activeTab.url) {
-      window.open(url);
-      return;
-    }
-    chrome.tabs
-      .sendMessage(activeTab.id, {
-        action: "openUrl",
-        url,
-      })
-      .catch((reason) => {
-        console.error(`Failed to open URL in active tab`, reason);
-      });
-  });
 }
 
 const elkLayout = {

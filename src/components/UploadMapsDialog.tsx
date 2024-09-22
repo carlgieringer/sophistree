@@ -3,7 +3,7 @@ import { Dialog, Button, Portal } from "react-native-paper";
 import { useDispatch } from "react-redux";
 import { createMap } from "../store/entitiesSlice";
 
-const FileUploadDialog = ({
+const UploadMapsDialog = ({
   onDismiss,
   visible,
 }: {
@@ -44,21 +44,19 @@ const FileUploadDialog = ({
   };
 
   return (
-    <Portal>
-      <Dialog visible={visible} onDismiss={handleClose}>
-        <Dialog.Title>Upload File</Dialog.Title>
-        <Dialog.Content>
-          <input type="file" onChange={handleFileChange} />
-        </Dialog.Content>
-        <Dialog.Actions>
-          <Button onPress={handleClose}>Cancel</Button>
-          <Button onPress={handleUpload} disabled={!file}>
-            Upload
-          </Button>
-        </Dialog.Actions>
-      </Dialog>
-    </Portal>
+    <Dialog visible={visible} onDismiss={handleClose}>
+      <Dialog.Title>Upload File</Dialog.Title>
+      <Dialog.Content>
+        <input type="file" onChange={handleFileChange} />
+      </Dialog.Content>
+      <Dialog.Actions>
+        <Button onPress={handleClose}>Cancel</Button>
+        <Button onPress={handleUpload} disabled={!file}>
+          Upload
+        </Button>
+      </Dialog.Actions>
+    </Dialog>
   );
 };
 
-export default FileUploadDialog;
+export default UploadMapsDialog;

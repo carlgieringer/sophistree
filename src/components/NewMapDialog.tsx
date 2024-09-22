@@ -4,7 +4,7 @@ import { useDispatch } from "react-redux";
 
 import { createMap } from "../store/entitiesSlice";
 
-export default function NewMapModal({
+export default function NewMapDialog({
   onDismiss,
   visible,
 }: {
@@ -28,22 +28,20 @@ export default function NewMapModal({
   }
 
   return (
-    <Portal>
-      <Dialog visible={visible} onDismiss={hideModal}>
-        <Dialog.Title>Create new map</Dialog.Title>
-        <Dialog.Content>
-          <TextInput
-            label="Map Name"
-            value={mapName}
-            onChangeText={(text) => setMapName(text)}
-          />
-        </Dialog.Content>
+    <Dialog visible={visible} onDismiss={hideModal}>
+      <Dialog.Title>Create new map</Dialog.Title>
+      <Dialog.Content>
+        <TextInput
+          label="Map Name"
+          value={mapName}
+          onChangeText={(text) => setMapName(text)}
+        />
+      </Dialog.Content>
 
-        <Dialog.Actions>
-          <Button onPress={hideModal}>Cancel</Button>
-          <Button onPress={handleCreateMap}>Create Map</Button>
-        </Dialog.Actions>
-      </Dialog>
-    </Portal>
+      <Dialog.Actions>
+        <Button onPress={hideModal}>Cancel</Button>
+        <Button onPress={handleCreateMap}>Create Map</Button>
+      </Dialog.Actions>
+    </Dialog>
   );
 }

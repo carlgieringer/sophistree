@@ -36,18 +36,16 @@ export default function DownloadMapsDialog({
   ));
 
   return (
-    <Portal>
-      <Dialog visible={visible} onDismiss={hideModal}>
-        <Dialog.Title>Open a map</Dialog.Title>
-        <Dialog.Content>
-          {buttons}
-          <Button onPress={downloadAllMaps}>Download all maps</Button>
-        </Dialog.Content>
-        <Dialog.Actions>
-          <Button onPress={hideModal}>Done</Button>
-        </Dialog.Actions>
-      </Dialog>
-    </Portal>
+    <Dialog visible={visible} onDismiss={hideModal}>
+      <Dialog.Title>Open a map</Dialog.Title>
+      <Dialog.Content>
+        {buttons}
+        <Button onPress={downloadAllMaps}>Download all maps</Button>
+      </Dialog.Content>
+      <Dialog.Actions>
+        <Button onPress={hideModal}>Done</Button>
+      </Dialog.Actions>
+    </Dialog>
   );
 }
 

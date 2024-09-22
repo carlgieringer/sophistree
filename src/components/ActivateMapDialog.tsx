@@ -34,14 +34,12 @@ export default function ActiveMapDialog({
   ));
 
   return (
-    <Portal>
-      <Dialog visible={visible} onDismiss={hideModal}>
-        <Dialog.Title>Open a map</Dialog.Title>
-        <Dialog.Content>{buttons}</Dialog.Content>
-        <Dialog.Actions>
-          <Button onPress={hideModal}>Cancel</Button>
-        </Dialog.Actions>
-      </Dialog>
-    </Portal>
+    <Dialog visible={visible} onDismiss={hideModal}>
+      <Dialog.Title>Open a map</Dialog.Title>
+      <Dialog.Content>{buttons}</Dialog.Content>
+      <Dialog.Actions>
+        <Button onPress={hideModal}>Cancel</Button>
+      </Dialog.Actions>
+    </Dialog>
   );
 }

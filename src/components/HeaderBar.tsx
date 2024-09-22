@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { Appbar, Divider, Menu } from "react-native-paper";
+import { Appbar, Divider, Menu, Portal } from "react-native-paper";
 import { useDispatch, useSelector } from "react-redux";
 
 import { RootState } from "../store";
 import { deleteMap } from "../store/entitiesSlice";
-import NewMapModal from "./NewMapDialog";
+import NewMapDialog from "./NewMapDialog";
 import ActivateMapDialog from "./ActivateMapDialog";
 import DownloadMapsDialog from "./DownloadMapsDialog";
 import UploadMapsDialog from "./UploadMapsDialog";
@@ -97,22 +97,24 @@ function HeaderBar({ id }: { id?: string }) {
           <Menu.Item onPress={handleReload} title="Reload extension" />
         </Menu>
       </Appbar.Header>
-      <NewMapModal
-        visible={isNewMapDialogVisible}
-        onDismiss={() => setNewMapDialogVisible(false)}
-      />
-      <ActivateMapDialog
-        visible={isActivateMapDialogVisible}
-        onDismiss={() => setActivateMapDialogVisible(false)}
-      />
-      <DownloadMapsDialog
-        visible={isDownloadMapsDialogVisible}
-        onDismiss={() => setDownloadMapsDialogVisible(false)}
-      />
-      <UploadMapsDialog
-        visible={isUploadMapsDialogVisible}
-        onDismiss={() => setUploadMapsDialogVisible(false)}
-      />
+      <Portal>
+        <NewMapDialog
+          visible={isNewMapDialogVisible}
+          onDismiss={() => setNewMapDialogVisible(false)}
+        />
+        <ActivateMapDialog
+          visible={isActivateMapDialogVisible}
+          onDismiss={() => setActivateMapDialogVisible(false)}
+        />
+        <DownloadMapsDialog
+          visible={isDownloadMapsDialogVisible}
+          onDismiss={() => setDownloadMapsDialogVisible(false)}
+        />
+        <UploadMapsDialog
+          visible={isUploadMapsDialogVisible}
+          onDismiss={() => setUploadMapsDialogVisible(false)}
+        />
+      </Portal>
     </>
   );
 }
