@@ -39,10 +39,10 @@ this extension and use that in place of Sophistree?
 TODO:
 
 - Proposition Appearances
-  - Support multiple appearances per proposition
+  - When click highlight, select all propositions appearing at the highlight and media excerpts
+  - Highlights don't appear until mouse over when opening appearance
   - Scroll to excerpt in openUrlInActiveTab.
   - Navigate to excerpt on same page if already open.
-  - Selecting node from highlight is broken.
 - Counter justification intermediate nodes
 - Node list for disconnected nodes? (Filter by all nodes and disconnected?)
   - Propositions, MediaExcerpts

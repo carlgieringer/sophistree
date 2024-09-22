@@ -88,15 +88,14 @@ export default function GraphView({ id, style }: GraphViewProps) {
               <span
                 title={`${appearanceCount} ${appearanceNoun}`}
                 className="appearances-icon"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setVisitAppearancesDialogProposition(data);
+                }}
               >
-                <Icon
-                  name="crosshairs-gps"
-                  onPress={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    setVisitAppearancesDialogProposition(data);
-                  }}
-                />
+                <Icon name="crosshairs-gps" />
+                {appearanceCount}
               </span>
             ) : undefined}
             <p>{data.text}</p>
