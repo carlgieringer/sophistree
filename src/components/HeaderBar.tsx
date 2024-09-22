@@ -8,6 +8,7 @@ import NewMapModal from "./NewMapDialog";
 import ActivateMapDialog from "./ActivateMapDialog";
 import DownloadMapsDialog from "./DownloadMapsDialog";
 import UploadMapsDialog from "./UploadMapsDialog";
+import * as selectors from "../store/selectors";
 
 function HeaderBar({ id }: { id?: string }) {
   const dispatch = useDispatch();
@@ -26,11 +27,8 @@ function HeaderBar({ id }: { id?: string }) {
   const [isUploadMapsDialogVisible, setUploadMapsDialogVisible] =
     useState(false);
 
-  const maps = useSelector((state: RootState) => state.entities.maps);
-  const activeMapId = useSelector(
-    (state: RootState) => state.entities.activeMapId
-  );
-  const activeMapName = maps.find((m) => m.id === activeMapId)?.name || "";
+  const activeMapId = useSelector(selectors.activeMapId);
+  const activeMapName = useSelector(selectors.activeMapName);
 
   const handleReload = () => {
     chrome.runtime.reload();

@@ -1,6 +1,6 @@
 import React from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { TextInput } from "react-native-paper";
+import { TextInput, Text } from "react-native-paper";
 import { View } from "react-native";
 
 import { RootState } from "../store";
@@ -13,22 +13,13 @@ import {
   Justification,
   MediaExcerpt,
 } from "../store/entitiesSlice";
+import * as selectors from "../store/selectors";
 
 const EntityEditor: React.FC = () => {
-  const activeMapId = useSelector(
-    (state: RootState) => state.entities.activeMapId
-  );
-  const selectedEntityId = useSelector(
-    (state: RootState) => state.entities.selectedEntityId
-  );
-  const selectedEntity = useSelector((state: RootState) =>
-    state.entities.maps
-      .find((map) => map.id === activeMapId)
-      ?.entities.find((entity) => entity.id === selectedEntityId)
-  );
+  const selectedEntity = useSelector(selectors.selectedEntity);
 
   if (!selectedEntity) {
-    return <View>No entity selected</View>;
+    return <Text>No entity selected</Text>;
   }
 
   const editor = chooseEditor(selectedEntity);
@@ -44,7 +35,7 @@ function chooseEditor(entity: Entity) {
     case "MediaExcerpt":
       return <MediaExcerptEditor entity={entity} />;
     default:
-      return <View>Unknown entity type</View>;
+      return <Text>Unknown entity type</Text>;
   }
 }
 
@@ -83,7 +74,7 @@ function JustificationEditor({ entity }: { entity: Justification }) {
 }
 
 function MediaExcerptEditor({ entity }: { entity: MediaExcerpt }) {
-  return <View>MediaExcerptEditor</View>;
+  return <Text>MediaExcerptEditor</Text>;
 }
 
 export default EntityEditor;

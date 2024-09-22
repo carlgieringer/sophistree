@@ -10,6 +10,8 @@ const options = {
   entryPoints: ["src/main.tsx", "src/background.ts", "src/content.ts"],
   bundle: true,
   minify: true,
+  // React error messages are much more helpful when the Component names are not minimized
+  keepNames: !prod,
   external: [
     // Required by cytoscape-elk
     "web-worker",

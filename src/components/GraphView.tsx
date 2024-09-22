@@ -1,4 +1,4 @@
-import React, { CSSProperties, useEffect, useMemo, useRef } from "react";
+import { CSSProperties, useEffect, useMemo, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import cytoscape, {
   NodeSingular,
@@ -15,7 +15,6 @@ import elk from "cytoscape-elk";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 import htmlNode from "../cytoscape/reactNodes";
-import { RootState } from "../store";
 import {
   addEntity,
   completeDrag,
@@ -25,6 +24,7 @@ import {
   Entity,
   MediaExcerpt,
   Proposition,
+  defaultVisibilityProps,
 } from "../store/entitiesSlice";
 import {
   carrot,
@@ -33,20 +33,22 @@ import {
   pomegranate,
   sunflower,
 } from "../colors";
-
 import "cytoscape-context-menus/cytoscape-context-menus.css";
 import "./GraphView.css";
+import { activeMapEntities } from "../store/selectors";
+import * as selectors from "../store/selectors";
 
 cytoscape.use(elk);
 cytoscape.use(contextMenus);
 cytoscape.use(htmlNode);
 
-function GraphView({ id, style }: { id?: string; style?: CSSProperties }) {
-  const activeMapId = useSelector(
-    (state: RootState) => state.entities.activeMapId
-  );
-  const maps = useSelector((state: RootState) => state.entities.maps);
-  const entities = maps.find((map) => map.id === activeMapId)?.entities || [];
+interface GraphViewProps {
+  id?: string;
+  style?: CSSProperties;
+}
+
+export default function GraphView({ id, style }: GraphViewProps) {
+  const entities = useSelector(activeMapEntities);
   const elements = useMemo(() => makeElements(entities), [entities]);
 
   const cyRef = useRef<cytoscape.Core | undefined>(undefined);
@@ -55,9 +57,7 @@ function GraphView({ id, style }: { id?: string; style?: CSSProperties }) {
     correctInvalidNodes(cyRef.current, elements);
   }
 
-  const selectedEntityId = useSelector(
-    (state: RootState) => state.entities.selectedEntityId
-  );
+  const selectedEntityId = useSelector(selectors.selectedEntityId);
   useEffect(() => {
     cyRef.current?.nodes().subtract(`#${selectedEntityId}`).unselect();
     cyRef.current?.nodes(`#${selectedEntityId}`).select();
@@ -115,6 +115,7 @@ function GraphView({ id, style }: { id?: string; style?: CSSProperties }) {
             id: uuidv4(),
             type: "Proposition" as const,
             text: "New Node",
+            ...defaultVisibilityProps,
           };
           dispatch(addEntity(newNode));
           cy.add({
@@ -245,10 +246,7 @@ function GraphView({ id, style }: { id?: string; style?: CSSProperties }) {
   );
 }
 
-export default GraphView;
-
 function makeElements(entities: Entity[]) {
-  // TODO hide media excerpts that are only appearances
   const mediaExcerptsById = entities
     .filter((e) => e.type === "MediaExcerpt")
     .reduce((acc, e) => {
@@ -297,9 +295,6 @@ function makeElements(entities: Entity[]) {
         case "Appearance":
           const mediaExcerpt = mediaExcerptsById.get(entity.mediaExcerptId);
           if (!mediaExcerpt) {
-            console.error(
-              `Appearance's mediaExcerpt ${entity.mediaExcerptId} was missing from entities.`
-            );
             break;
           }
           const appearanceInfo = { mediaExcerpt };
@@ -330,11 +325,20 @@ function makeElements(entities: Entity[]) {
     }
   );
 
+  const visibleEntities = entities.filter(function (e) {
+    return (
+      (e.explicitVisibility ?? e.autoVisibility ?? "Visible") === "Visible"
+    );
+  });
+  const visibleEntityIds = new Set(visibleEntities.map((e) => e.id));
+  const visibleEdges = edges.filter(
+    (e) => visibleEntityIds.has(e.source) && visibleEntityIds.has(e.target)
+  );
   const canonicalJustifications = new Set(
     canonicalJustificationByBasisId.values()
   );
   const elements = [
-    ...entities
+    ...visibleEntities
       .filter(
         (entity) =>
           entity.type !== "Appearance" &&
@@ -358,7 +362,7 @@ function makeElements(entities: Entity[]) {
           },
         };
       }),
-    ...edges.map((edge) => ({
+    ...visibleEdges.map((edge) => ({
       data: { ...edge },
     })),
   ];
@@ -530,11 +534,13 @@ const reactNodesConfig = [
   {
     query: `node[type="Proposition"]`,
     template: function (data: PropositionNodeData) {
+      const appearanceCount = data.appearances?.length;
+      const apearanceNoun = "appearance" + (appearanceCount ? "s" : "");
       return (
         <>
-          {data.appearances?.length ? (
+          {appearanceCount ? (
             <span
-              title={`${data.appearances.length} appearances`}
+              title={`${appearanceCount} ${apearanceNoun}`}
               className="appearances-icon"
             >
               <Icon
@@ -571,6 +577,7 @@ const reactNodesConfig = [
           <p>{data.quotation}</p>
           <a
             href={data.canonicalUrl}
+            title={data.canonicalUrl}
             onClick={(event) => {
               if (!data.canonicalUrl) {
                 return;

@@ -5,7 +5,14 @@ import { DomAnchor } from "../anchors";
 
 interface BaseEntity {
   id: string;
+  // if explicitVisibility is missing, falls back to autoVisibility
+  explicitVisibility?: Visibility | undefined;
+  autoVisibility: Visibility;
 }
+
+type Visibility = "Visible" | "Hidden";
+
+export const defaultVisibilityProps = { autoVisibility: "Visible" as const };
 
 export type Entity =
   | Proposition
@@ -61,6 +68,8 @@ const initialState = {
   selectedEntityId: undefined as string | undefined,
 };
 
+type State = typeof initialState;
+
 export interface AddMediaExcerptData {
   id: string;
   quotation: string;
@@ -105,6 +114,7 @@ export const entitiesSlice = createSlice({
       if (activeMap) {
         const newNode: MediaExcerpt = {
           type: "MediaExcerpt",
+          ...defaultVisibilityProps,
           ...action.payload,
         };
         activeMap.entities.push(newNode);
@@ -210,6 +220,7 @@ export const entitiesSlice = createSlice({
                   type: "PropositionCompound" as const,
                   id: uuidv4(),
                   atomIds: [sourceId],
+                  ...defaultVisibilityProps,
                 };
                 activeMap.entities.push(propositionCompound);
               }
@@ -219,19 +230,21 @@ export const entitiesSlice = createSlice({
             case "MediaExcerpt": {
               const apparitionId = sourceId;
               const mediaExcerptId = targetId;
-              const extantMediaExcerpt = activeMap.entities.find(
+              const extantAppearance = activeMap.entities.find(
                 (e) =>
                   e.type === "Appearance" &&
                   e.apparitionId === apparitionId &&
                   e.mediaExcerptId === mediaExcerptId
               );
-              if (!extantMediaExcerpt) {
+              if (!extantAppearance) {
                 activeMap.entities.push({
                   type: "Appearance" as const,
                   id: uuidv4(),
                   apparitionId,
                   mediaExcerptId,
+                  ...defaultVisibilityProps,
                 });
+                updateMediaExcerptAutoVisibility(state, mediaExcerptId);
               }
               return;
             }
@@ -273,6 +286,7 @@ export const entitiesSlice = createSlice({
         targetId,
         basisId,
         polarity,
+        ...defaultVisibilityProps,
       };
       activeMap.entities.push(newJustification);
     },
@@ -337,8 +351,39 @@ export const entitiesSlice = createSlice({
         state.selectedEntityId = undefined;
       }
     },
+    showEntity(state, action: PayloadAction<string>) {
+      updateEntityVisibility(state, action.payload, "Visible");
+    },
+    hideEntity(state, action: PayloadAction<string>) {
+      updateEntityVisibility(state, action.payload, "Hidden");
+    },
+    automateEntityVisibility(state, action: PayloadAction<string>) {
+      updateEntityVisibility(state, action.payload, undefined);
+    },
   },
 });
+
+function updateEntityVisibility(
+  state: State,
+  entityId: string,
+  visibility: Visibility | undefined
+) {
+  const activeMap = state.maps.find((map) => map.id === state.activeMapId);
+  if (!activeMap) {
+    console.error(
+      `Unable to update entity visibility because the active map ${state.activeMapId} was not found.`
+    );
+    return;
+  }
+  const entity = activeMap.entities.find((entity) => entity.id === entityId);
+  if (!entity) {
+    console.error(
+      `Unable to update entity visibility because the entity with ID ${state.activeMapId} was not found.`
+    );
+    return;
+  }
+  entity.explicitVisibility = visibility;
+}
 
 function updatePropositionCompound(
   entity: PropositionCompound,
@@ -350,6 +395,42 @@ function updatePropositionCompound(
     allEntityIdsToDelete.add(entity.id);
   }
 }
+
+function updateMediaExcerptAutoVisibility(
+  state: State,
+  mediaExcerptId: string
+) {
+  const activeMap = state.maps.find((map) => map.id === state.activeMapId);
+  if (!activeMap) return;
+
+  // If a MediaExcerpt is only used in appearances, hide it.
+  // If a MediaExcerpt is unused or used in Justifications, show it.
+  let autoVisibility: Visibility = "Visible";
+  for (const entity of activeMap.entities) {
+    if (entity.type === "Justification" && entity.basisId === mediaExcerptId) {
+      autoVisibility = "Visible";
+      break;
+    }
+    if (
+      entity.type === "Appearance" &&
+      entity.mediaExcerptId === mediaExcerptId
+    ) {
+      autoVisibility = "Hidden";
+    }
+  }
+  const mediaExcerpt = activeMap.entities.find(
+    (entity) => entity.id === mediaExcerptId
+  );
+  if (!mediaExcerpt) {
+    console.error(
+      `Unable to update MediaExcerpt visibility because MediaExcerpt with ID ${mediaExcerptId} was missing`
+    );
+    return;
+  }
+  mediaExcerpt.autoVisibility = autoVisibility;
+}
+
+function isMediaExcerptUsed(entity: Entity, mediaExcerptId: string) {}
 
 export const {
   createMap,
@@ -364,6 +445,9 @@ export const {
   completeDrag,
   resetSelection,
   selectEntity,
+  showEntity,
+  hideEntity,
+  automateEntityVisibility,
 } = entitiesSlice.actions;
 
 export default entitiesSlice.reducer;

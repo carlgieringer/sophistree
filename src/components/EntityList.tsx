@@ -5,17 +5,13 @@ import { StyleProp, ViewStyle } from "react-native";
 
 import { RootState } from "../store";
 import { Entity } from "../store/entitiesSlice";
+import VisibilityDropdown from "./VisibilityDropdown";
+import { activeMapEntities } from "../store/selectors";
 
 const tableEntityTypes = new Set(["Proposition", "MediaExcerpt"]);
 
 function EntityList({ style }: { style?: StyleProp<ViewStyle> }) {
-  const activeMapId = useSelector(
-    (state: RootState) => state.entities.activeMapId
-  );
-  const allEntities = useSelector(
-    (state: RootState) =>
-      state.entities.maps.find((map) => map.id === activeMapId)?.entities || []
-  );
+  const allEntities = useSelector(activeMapEntities);
   const tableEntities = allEntities.filter((e) => tableEntityTypes.has(e.type));
 
   return (
@@ -23,11 +19,15 @@ function EntityList({ style }: { style?: StyleProp<ViewStyle> }) {
       <DataTable.Header>
         <DataTable.Title>Type</DataTable.Title>
         <DataTable.Title>Description</DataTable.Title>
+        <DataTable.Title>Visibility</DataTable.Title>
       </DataTable.Header>
       {tableEntities.map((entity) => (
         <DataTable.Row key={entity.id}>
           <DataTable.Cell>{entity.type}</DataTable.Cell>
           <DataTable.Cell>{makeDescription(entity)}</DataTable.Cell>
+          <DataTable.Cell>
+            <VisibilityDropdown entity={entity} />
+          </DataTable.Cell>
         </DataTable.Row>
       ))}
     </DataTable>

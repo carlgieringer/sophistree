@@ -8,18 +8,14 @@ import EntityEditor from "./components/EntityEditor";
 import GraphView from "./components/GraphView";
 import HeaderBar from "./components/HeaderBar";
 import { ChromeRuntimeMessage } from "./content";
-import { RootState } from "./store";
 import { addMediaExcerpt, selectEntity } from "./store/entitiesSlice";
 import EntityList from "./components/EntityList";
+import * as selectors from "./store/selectors";
 
 const App: React.FC = () => {
   const dispatch = useDispatch();
 
-  const maps = useSelector((state: RootState) => state.entities.maps);
-  const activeMapId = useSelector(
-    (state: RootState) => state.entities.activeMapId
-  );
-  const entities = maps.find((m) => m.id === activeMapId)?.entities || [];
+  const entities = useSelector(selectors.activeMapEntities);
 
   useEffect(() => {
     function handleChromeRuntimeMessage(
@@ -56,11 +52,21 @@ const App: React.FC = () => {
     };
   }, [dispatch, entities]);
 
+  const activeMapId = useSelector(selectors.activeMapId);
+  const graphView = activeMapId ? (
+    <GraphView style={styles.graphView} />
+  ) : (
+    <View style={styles.graphViewPlaceholder}>
+      <Text>No active map.</Text>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
       <HeaderBar />
       <View style={styles.content}>
-        <GraphView style={styles.graphView} />
+        {graphView}
+
         <View style={styles.entityEditorContainer}>
           <Text variant="titleMedium">Entity Editor</Text>
           <EntityEditor />
@@ -87,6 +93,11 @@ const styles = StyleSheet.create({
   },
   graphView: {
     flex: 1,
+  },
+  graphViewPlaceholder: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   entityListScrollView: {
     flexShrink: 0,

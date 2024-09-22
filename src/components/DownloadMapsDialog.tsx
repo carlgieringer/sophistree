@@ -1,7 +1,7 @@
 import { Button, Dialog, Portal } from "react-native-paper";
 import { useSelector } from "react-redux";
 
-import { RootState } from "../store";
+import * as selectors from "../store/selectors";
 import { Map } from "../store/entitiesSlice";
 
 const sophistreeMapFileVersion = 1;
@@ -13,7 +13,7 @@ export default function DownloadMapsDialog({
   onDismiss?: () => void;
   visible: boolean;
 }) {
-  const maps = useSelector((state: RootState) => state.entities.maps);
+  const maps = useSelector(selectors.allMaps);
 
   function hideModal() {
     if (onDismiss) {
@@ -30,7 +30,9 @@ export default function DownloadMapsDialog({
   }
 
   const buttons = maps.map((m) => (
-    <Button onPress={() => downloadMap(m)}>Download {m.name}</Button>
+    <Button key={m.id} onPress={() => downloadMap(m)}>
+      Download {m.name}
+    </Button>
   ));
 
   return (

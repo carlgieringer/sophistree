@@ -6,6 +6,7 @@ import reducer, {
   Justification,
   Proposition,
   PropositionCompound,
+  defaultVisibilityProps,
 } from "./entitiesSlice";
 
 describe("entitiesSlice", () => {
@@ -29,6 +30,7 @@ describe("entitiesSlice", () => {
         id: "prop1",
         type: "Proposition",
         text: "Test proposition",
+        ...defaultVisibilityProps,
       };
 
       // Create a justification
@@ -38,6 +40,7 @@ describe("entitiesSlice", () => {
         basisId: "basis1", // This could be any valid entity ID
         targetId: proposition.id,
         polarity: "Positive",
+        ...defaultVisibilityProps,
       };
 
       // Add entities to the state
@@ -67,16 +70,19 @@ describe("entitiesSlice", () => {
         id: "prop1",
         type: "Proposition",
         text: "Test proposition",
+        ...defaultVisibilityProps,
       };
       const target1: Proposition = {
         id: "target1",
         type: "Proposition",
         text: "Target proposition 1",
+        ...defaultVisibilityProps,
       };
       const target2: Proposition = {
         id: "target2",
         type: "Proposition",
         text: "Target proposition 2",
+        ...defaultVisibilityProps,
       };
 
       let state = reducer(initialState, addEntity(proposition));

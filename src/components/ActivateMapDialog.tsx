@@ -1,10 +1,10 @@
 import { Button, Dialog, Portal } from "react-native-paper";
 import { useDispatch, useSelector } from "react-redux";
 
-import { RootState } from "../store";
 import { setActiveMap } from "../store/entitiesSlice";
+import * as selectors from "../store/selectors";
 
-export default function ActiveMapSelector({
+export default function ActiveMapDialog({
   onDismiss,
   visible,
 }: {
@@ -13,7 +13,7 @@ export default function ActiveMapSelector({
 }) {
   const dispatch = useDispatch();
 
-  const maps = useSelector((state: RootState) => state.entities.maps);
+  const maps = useSelector(selectors.allMaps);
 
   function hideModal() {
     if (onDismiss) {
@@ -23,6 +23,7 @@ export default function ActiveMapSelector({
 
   const buttons = maps.map((m) => (
     <Button
+      key={m.id}
       onPress={() => {
         dispatch(setActiveMap(m.id));
         hideModal();
