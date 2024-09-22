@@ -103,6 +103,12 @@ export const entitiesSlice = createSlice({
     setActiveMap(state, action: PayloadAction<string | undefined>) {
       state.activeMapId = action.payload;
     },
+    renameActiveMap(state, action: PayloadAction<string>) {
+      const activeMap = state.maps.find((map) => map.id === state.activeMapId);
+      if (activeMap) {
+        activeMap.name = action.payload;
+      }
+    },
     addEntity(state, action: PayloadAction<Entity>) {
       const activeMap = state.maps.find((map) => map.id === state.activeMapId);
       if (activeMap) {
@@ -445,6 +451,7 @@ export const {
   completeDrag,
   resetSelection,
   selectEntity,
+  renameActiveMap,
   showEntity,
   hideEntity,
   automateEntityVisibility,

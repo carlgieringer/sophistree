@@ -9,6 +9,8 @@ import ActivateMapDialog from "./ActivateMapDialog";
 import DownloadMapsDialog from "./DownloadMapsDialog";
 import UploadMapsDialog from "./UploadMapsDialog";
 import * as selectors from "../store/selectors";
+import RenameMapDialog from "./RenameMapDialog";
+import ConfirmationDialog from "./ConfirmationDialog";
 
 function HeaderBar({ id }: { id?: string }) {
   const dispatch = useDispatch();
@@ -17,7 +19,9 @@ function HeaderBar({ id }: { id?: string }) {
   const hideMenu = () => setMenuVisible(false);
   const showMenu = () => setMenuVisible(true);
 
-  const [isNewMapDialogVisible, setNewMapDialogVisible] = React.useState(false);
+  const [isRenameMapDialogVisible, setRenameMapDialogVisible] = useState(false);
+
+  const [isNewMapDialogVisible, setNewMapDialogVisible] = useState(false);
   const [isActivateMapDialogVisible, setActivateMapDialogVisible] =
     React.useState(false);
 
@@ -29,6 +33,8 @@ function HeaderBar({ id }: { id?: string }) {
 
   const activeMapId = useSelector(selectors.activeMapId);
   const activeMapName = useSelector(selectors.activeMapName);
+
+  const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const handleReload = () => {
     chrome.runtime.reload();
@@ -42,6 +48,16 @@ function HeaderBar({ id }: { id?: string }) {
     dispatch(deleteMap(activeMapId));
   }
 
+  const deleteDialog = (
+    <ConfirmationDialog
+      visible={isDeleteDialogOpen}
+      onDismiss={() => setDeleteDialogOpen(false)}
+      onConfirm={deleteActiveMap}
+      title="Delete Map"
+      message={`Are you sure you want to delete the map "${activeMapName}"? This action cannot be undone.`}
+    />
+  );
+
   return (
     <>
       <Appbar.Header id={id}>
@@ -51,6 +67,26 @@ function HeaderBar({ id }: { id?: string }) {
           visible={isMenuVisible}
           anchor={<Appbar.Action icon="dots-vertical" onPress={showMenu} />}
         >
+          <Menu.Item
+            title="Rename map…"
+            leadingIcon="pencil"
+            key="rename-map"
+            onPress={() => {
+              setRenameMapDialogVisible(true);
+              hideMenu();
+            }}
+          />
+          <Menu.Item
+            key="delete-map"
+            onPress={() => {
+              setDeleteDialogOpen(true);
+              hideMenu();
+            }}
+            leadingIcon="delete"
+            title={`Delete ${activeMapName}`}
+            disabled={!activeMapId}
+          />
+          <Divider />
           <Menu.Item
             title="Open map…"
             leadingIcon="folder-open"
@@ -89,15 +125,14 @@ function HeaderBar({ id }: { id?: string }) {
             }}
           />
           <Divider />
-          <Menu.Item
-            onPress={deleteActiveMap}
-            title={`Delete ${activeMapName}`}
-            disabled={!activeMapId}
-          />
           <Menu.Item onPress={handleReload} title="Reload extension" />
         </Menu>
       </Appbar.Header>
       <Portal>
+        <RenameMapDialog
+          visible={isRenameMapDialogVisible}
+          onDismiss={() => setRenameMapDialogVisible(false)}
+        />
         <NewMapDialog
           visible={isNewMapDialogVisible}
           onDismiss={() => setNewMapDialogVisible(false)}
@@ -114,6 +149,7 @@ function HeaderBar({ id }: { id?: string }) {
           visible={isUploadMapsDialogVisible}
           onDismiss={() => setUploadMapsDialogVisible(false)}
         />
+        {deleteDialog}
       </Portal>
     </>
   );
