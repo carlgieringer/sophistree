@@ -1,4 +1,5 @@
 interface Highlight {
+  mediaExcerptId: string;
   ranges: Range[];
   elements: HTMLElement[];
   onClick?: (highlight: Highlight) => void;
@@ -51,7 +52,38 @@ class HighlightManager {
     this.addEventListeners();
   }
 
+  activateHighlightForMediaExcerptId(mediaExcerptId: string) {
+    const highlightIndex = this.highlights.findIndex(
+      (h) => h.mediaExcerptId === mediaExcerptId
+    );
+    if (highlightIndex < 0) {
+      console.error(
+        `Could not activate highlight for mediaExcerptId ${mediaExcerptId} because the highlight wasn't found.`
+      );
+      return;
+    }
+    const highlight = this.highlights[highlightIndex];
+
+    highlight.elements[0].scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+      inline: "center",
+    });
+    this.applyHoverStyle(this.highlights.indexOf(highlight));
+  }
+
+  private applyHoverStyle(highlightIndex: number) {
+    const highlight = this.highlights[highlightIndex];
+    const color = this.getHighlightColor(highlightIndex);
+
+    highlight.elements.forEach((element) => {
+      element.style.backgroundColor = color.hover;
+      element.style.borderColor = color.hover;
+    });
+  }
+
   createHighlight(
+    mediaExcerptId: string,
     ranges: Range[],
     handlers?: {
       onClick: (highlight: Highlight) => void;
@@ -59,6 +91,7 @@ class HighlightManager {
   ): Highlight {
     const elements: HTMLElement[] = [];
     const highlight: Highlight = {
+      mediaExcerptId,
       ranges,
       elements,
       onClick: handlers?.onClick,
@@ -75,10 +108,17 @@ class HighlightManager {
     return highlight;
   }
 
+  private getHighlightColor(highlight: Highlight | number) {
+    const highlightIndex =
+      typeof highlight === "number"
+        ? highlight
+        : this.highlights.indexOf(highlight);
+    return this.colors[highlightIndex % this.colors.length];
+  }
+
   private updateStyles() {
     this.sortedHighlightElements.forEach(({ highlight, element }, index) => {
-      const highlightIndex = this.highlights.indexOf(highlight);
-      const color = this.colors[highlightIndex % this.colors.length];
+      const color = this.getHighlightColor(highlight);
 
       element.style.backgroundColor = color.bg;
       element.style.border = `1px solid ${color.border}`;
@@ -160,13 +200,7 @@ class HighlightManager {
 
     if (highlightElement && highlightElement.dataset.highlightIndex) {
       const highlightIndex = parseInt(highlightElement.dataset.highlightIndex);
-      const highlight = this.highlights[highlightIndex];
-      const color = this.colors[highlightIndex % this.colors.length];
-
-      highlight.elements.forEach((element) => {
-        element.style.backgroundColor = color.hover;
-        element.style.borderColor = color.hover;
-      });
+      this.applyHoverStyle(highlightIndex);
     }
   }
 

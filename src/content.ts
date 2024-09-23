@@ -25,24 +25,37 @@ interface GetMediaExcerptsMessage {
   };
 }
 
+interface CreateMediaExcerptMessage {
+  action: "createMediaExcerpt";
+  selectedText: string;
+}
+export interface ActivateMediaExcerptMessage {
+  action: "activateMediaExcerpt";
+  mediaExcerpt: MediaExcerpt;
+}
+
+type ContentMessage = CreateMediaExcerptMessage | ActivateMediaExcerptMessage;
+
 export type ChromeRuntimeMessage =
   | AddMediaExcerptMessage
   | SelectMediaExcerptMessage
   | GetMediaExcerptsMessage;
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  switch (message.action) {
-    case "createMediaExcerpt":
-      createMediaExcerpt(message);
-      break;
-    case "openUrl":
-      openUrl(message.url);
-      break;
+chrome.runtime.onMessage.addListener(
+  (message: ContentMessage, sender, sendResponse) => {
+    switch (message.action) {
+      case "createMediaExcerpt":
+        createMediaExcerpt(message);
+        break;
+      case "activateMediaExcerpt":
+        activateMediaExcerpt(message.mediaExcerpt);
+        break;
+    }
   }
-});
+);
 
-function openUrl(url: string) {
-  window.location.href = url;
+function activateMediaExcerpt(mediaExcerpt: MediaExcerpt) {
+  highlightManager.activateHighlightForMediaExcerptId(mediaExcerpt.id);
 }
 
 function createMediaExcerpt(message: any) {
@@ -182,7 +195,7 @@ function highlightCurrentSelection(mediaExcerptId: string) {
 const highlightManager = new HighlightManager(document.body);
 
 function highlightRanges(ranges: Range[], mediaExcerptId: string) {
-  highlightManager.createHighlight(ranges, {
+  highlightManager.createHighlight(mediaExcerptId, ranges, {
     onClick: function highlightOnClick() {
       const message: SelectMediaExcerptMessage = {
         action: "selectMediaExcerpt",

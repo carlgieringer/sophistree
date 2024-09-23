@@ -40,7 +40,7 @@ import { activeMapEntities } from "../store/selectors";
 import * as selectors from "../store/selectors";
 import VisitPropositionAppearanceDialog, {
   AppearanceInfo,
-  openUrlInActiveTab,
+  activateMediaExcerpt,
   PropositionNodeData,
 } from "./VisitPropositionAppearanceDialog";
 
@@ -124,7 +124,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
                 }
                 event.preventDefault();
                 event.stopPropagation();
-                openUrlInActiveTab(data.canonicalUrl);
+                activateMediaExcerpt(data);
                 return false;
               }}
             >
