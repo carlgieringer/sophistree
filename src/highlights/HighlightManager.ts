@@ -103,7 +103,11 @@ class HighlightManager {
     console.log(this.sortedHighlightElements.map((e) => e.element));
     this.container.append(...newElements);
 
-    this.updateStyles();
+    // Allow the elements to be added to the DOM before updating the styles.
+    // Otherwise they don't show up until a mouseover event occurs
+    setTimeout(() => {
+      this.updateStyles();
+    });
 
     return highlight;
   }
@@ -308,6 +312,7 @@ class HighlightManager {
       highlight.elements[i].style.display = "none";
     }
 
+    // Allow the elements rects to update before sorting them
     setTimeout(() => {
       highlight.elements.forEach((element) => {
         this.removeSortedElement(element);

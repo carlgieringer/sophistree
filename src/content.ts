@@ -34,7 +34,14 @@ export interface ActivateMediaExcerptMessage {
   mediaExcerpt: MediaExcerpt;
 }
 
-type ContentMessage = CreateMediaExcerptMessage | ActivateMediaExcerptMessage;
+export interface RequestUrlMessage {
+  action: "requestUrl";
+}
+
+type ContentMessage =
+  | CreateMediaExcerptMessage
+  | ActivateMediaExcerptMessage
+  | RequestUrlMessage;
 
 export type ChromeRuntimeMessage =
   | AddMediaExcerptMessage
@@ -49,6 +56,12 @@ chrome.runtime.onMessage.addListener(
         break;
       case "activateMediaExcerpt":
         activateMediaExcerpt(message.mediaExcerpt);
+        break;
+      case "requestUrl":
+        sendResponse(getCanonicalOrFullUrl());
+        break;
+      default:
+        console.error(`Unknown message action: ${message}`);
         break;
     }
   }
@@ -101,6 +114,10 @@ function getCanonicalUrl() {
     document.querySelector('link[rel="canonical"]')?.getAttribute("href") ||
     undefined
   );
+}
+
+function getCanonicalOrFullUrl() {
+  return getCanonicalUrl() || getUrl();
 }
 
 function getTitle() {

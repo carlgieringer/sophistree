@@ -3,7 +3,7 @@ import { Dialog, Button, Text, Tooltip } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 import { MediaExcerpt, Proposition } from "../store/entitiesSlice";
-import { ActivateMediaExcerptMessage } from "../content";
+import { ActivateMediaExcerptMessage, RequestUrlMessage } from "../content";
 
 export interface AppearanceInfo {
   id: string;
@@ -65,8 +65,12 @@ const styles = StyleSheet.create({
 export async function activateMediaExcerpt(mediaExcerpt: MediaExcerpt) {
   const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
   const activeTab = tabs[0];
-  const url = mediaExcerpt.canonicalUrl ?? mediaExcerpt.url;
-  const tabId = await getOrOpenTab(activeTab, url);
+  const mediaExcerptUrl = mediaExcerpt.canonicalUrl ?? mediaExcerpt.url;
+  const tabId = await getOrOpenTab(activeTab, mediaExcerptUrl);
+  if (!tabId) {
+    console.error("Unable to activate media excerpt.");
+    return;
+  }
 
   const message: ActivateMediaExcerptMessage = {
     action: "activateMediaExcerpt",
@@ -82,16 +86,28 @@ export async function activateMediaExcerpt(mediaExcerpt: MediaExcerpt) {
 async function getOrOpenTab(
   activeTab: chrome.tabs.Tab,
   url: string
-): Promise<number> {
-  if (activeTab.url && activeTab.id) {
+): Promise<number | undefined> {
+  if (!activeTab.id) {
+    console.error("Active tab ID was missing. This should never happen.");
+    return undefined;
+  }
+  // activeTab.url is often missing, so we request it from the tab.
+  const message: RequestUrlMessage = {
+    action: "requestUrl",
+  };
+  let tabUrl;
+  try {
+    tabUrl = await chrome.tabs.sendMessage(activeTab.id, message);
+  } catch (error) {}
+  if (tabUrl === url) {
     return activeTab.id;
   }
-  const tabIdPromise = waitForTab(url);
+  const tabIdPromise = waitForTabId(url);
   window.open(url);
   return tabIdPromise;
 }
 
-function waitForTab(url: string): Promise<number> {
+function waitForTabId(url: string): Promise<number> {
   return new Promise((resolve) => {
     const tabCreatedListener = (tab: chrome.tabs.Tab) => {
       if (tab.pendingUrl === url) {
