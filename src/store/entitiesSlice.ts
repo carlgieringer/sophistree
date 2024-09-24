@@ -297,18 +297,21 @@ export const entitiesSlice = createSlice({
       activeMap.entities.push(newJustification);
     },
     selectEntities(state, action: PayloadAction<string[]>) {
-      state.selectedEntityIds = action.payload;
-    },
-    selectEntitiesForMediaExcerpt(state, action: PayloadAction<string>) {
       const activeMap = state.maps.find((map) => map.id === state.activeMapId);
-      if (!activeMap) return;
-      // Select the mediaExcerpt and all its appearances
-      const mediaExcerptId = action.payload;
+      if (!activeMap) {
+        console.warn("Cannot select entities because there is no active map");
+        return;
+      }
+      const selectedEntityIds = action.payload;
+
+      // Whenever we select a MediaExcerpt, also select its Appearances
       const appearances = activeMap.entities.filter(
-        (e) => e.type === "Appearance" && e.mediaExcerptId === mediaExcerptId
+        (e) =>
+          e.type === "Appearance" &&
+          selectedEntityIds.includes(e.mediaExcerptId)
       );
       state.selectedEntityIds = [
-        mediaExcerptId,
+        ...selectedEntityIds,
         ...appearances.map((a) => a.id),
       ];
     },
@@ -461,7 +464,6 @@ export const {
   completeDrag,
   resetSelection,
   selectEntities,
-  selectEntitiesForMediaExcerpt,
   renameActiveMap,
   showEntity,
   hideEntity,

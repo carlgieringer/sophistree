@@ -1,18 +1,22 @@
 import React from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { DataTable } from "react-native-paper";
 import { StyleProp, ViewStyle } from "react-native";
 
-import { RootState } from "../store";
-import { Entity } from "../store/entitiesSlice";
+import { Entity, selectEntities } from "../store/entitiesSlice";
 import VisibilityDropdown from "./VisibilityDropdown";
-import { activeMapEntities } from "../store/selectors";
+import * as selectors from "../store/selectors";
 
 const tableEntityTypes = new Set(["Proposition", "MediaExcerpt"]);
 
 function EntityList({ style }: { style?: StyleProp<ViewStyle> }) {
-  const allEntities = useSelector(activeMapEntities);
+  const dispatch = useDispatch();
+
+  const allEntities = useSelector(selectors.activeMapEntities);
   const tableEntities = allEntities.filter((e) => tableEntityTypes.has(e.type));
+  const selectedEntityIds = useSelector(selectors.selectedEntityIds);
+
+  const selectEntity = (id: string) => dispatch(selectEntities([id]));
 
   return (
     <DataTable style={style}>
@@ -22,7 +26,15 @@ function EntityList({ style }: { style?: StyleProp<ViewStyle> }) {
         <DataTable.Title>Visibility</DataTable.Title>
       </DataTable.Header>
       {tableEntities.map((entity) => (
-        <DataTable.Row key={entity.id}>
+        <DataTable.Row
+          key={entity.id}
+          style={
+            selectedEntityIds.includes(entity.id)
+              ? { backgroundColor: "lightblue" }
+              : undefined
+          }
+          onPress={() => selectEntity(entity.id)}
+        >
           <DataTable.Cell>{entity.type}</DataTable.Cell>
           <DataTable.Cell>{makeDescription(entity)}</DataTable.Cell>
           <DataTable.Cell>

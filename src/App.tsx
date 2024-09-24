@@ -8,10 +8,7 @@ import EntityEditor from "./components/EntityEditor";
 import GraphView from "./components/GraphView";
 import HeaderBar from "./components/HeaderBar";
 import { ChromeRuntimeMessage } from "./content";
-import {
-  addMediaExcerpt,
-  selectEntitiesForMediaExcerpt,
-} from "./store/entitiesSlice";
+import { addMediaExcerpt, selectEntities } from "./store/entitiesSlice";
 import EntityList from "./components/EntityList";
 import * as selectors from "./store/selectors";
 
@@ -32,7 +29,7 @@ const App: React.FC = () => {
           break;
         }
         case "selectMediaExcerpt": {
-          dispatch(selectEntitiesForMediaExcerpt(message.data.mediaExcerptId));
+          dispatch(selectEntities([message.data.mediaExcerptId]));
           break;
         }
         case "getMediaExcerpts": {
