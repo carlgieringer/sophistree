@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 
 import { AddMediaExcerptData, MediaExcerpt } from "./store/entitiesSlice";
-import { makeDomAnchorFromSelection, getRangesFromDomAnchor } from "./anchors";
+import { makeDomAnchorFromSelection, DomAnchor } from "./anchors";
 import { opacity50, sunflower } from "./colors";
 import { HighlightManager } from "./highlights";
 
@@ -77,32 +77,35 @@ function createMediaExcerpt(message: any) {
   const url = getUrl();
   const canonicalUrl = getCanonicalUrl();
   const sourceName = getTitle();
-  const domAnchor = getDomAnchorFromCurrentSelection();
 
   if (!quotation) {
     console.error(`Cannot createMediaExcerpt for empty quotation`);
     return;
   }
-  if (!domAnchor) {
-    console.error(`Cannot createMediaExcerpt for empty domAnchor`);
+
+  const highlight = highlightCurrentSelection(id);
+  if (!highlight) {
+    console.error(`Faild to highlight current selection.`);
     return;
   }
 
-  const data: AddMediaExcerptData = {
-    id,
-    quotation,
-    url,
-    canonicalUrl,
-    sourceName,
-    domAnchor,
-  };
-  const sidebarMessage: ChromeRuntimeMessage = {
-    action: "addMediaExcerpt",
-    data,
-  };
-  chrome.runtime.sendMessage(sidebarMessage);
-
-  highlightCurrentSelection(id);
+  if (highlight.mediaExcerptId === id) {
+    const data: AddMediaExcerptData = {
+      id: highlight.mediaExcerptId,
+      quotation,
+      url,
+      canonicalUrl,
+      sourceName,
+      domAnchor: highlight.domAnchor,
+    };
+    const sidebarMessage: ChromeRuntimeMessage = {
+      action: "addMediaExcerpt",
+      data,
+    };
+    chrome.runtime.sendMessage(sidebarMessage);
+  } else {
+    selectMediaExcerpt(highlight.mediaExcerptId);
+  }
 }
 
 function getUrl() {
@@ -147,78 +150,49 @@ function getMediaExcerpts() {
       response?: GetMediaExcerptsMessageResponse
     ) {
       if (!response) {
+        console.error("Unable to get media excerpts");
         return;
       }
       const { mediaExcerpts } = response;
-      const mediaExcerptRanges = mediaExcerpts
-        .flatMap(({ id: mediaExcerptId, domAnchor }) => {
-          const ranges = getRangesFromDomAnchor(
-            window.document.body,
-            domAnchor
-          );
-          if (!ranges.length) {
-            console.error(
-              `Unable to highlight domAnchor for mediaExcerptId ${mediaExcerptId}: ${JSON.stringify(
-                domAnchor
-              )}`
-            );
-            return [];
-          }
-          return { mediaExcerptId, ranges };
-        })
-        // Sort the ranges so that those that encompass others come first, and
-        // the inner ones will cover the outer ones so that they are clickable
-        .sort((a, b) => {
-          const comparison = a.ranges[0].compareBoundaryPoints(
-            Range.START_TO_START,
-            b.ranges[0]
-          );
-          return comparison === 0
-            ? a.ranges[a.ranges.length - 1].compareBoundaryPoints(
-                Range.END_TO_END,
-                b.ranges[b.ranges.length - 1]
-              )
-            : comparison;
-        });
-
-      mediaExcerptRanges.forEach(({ mediaExcerptId, ranges }) =>
-        highlightRanges(ranges, mediaExcerptId)
-      );
+      highlightMediaExcerpts(mediaExcerpts);
     }
   );
 }
 getMediaExcerpts();
 
-function getDomAnchorFromCurrentSelection() {
-  const selection = window.getSelection();
-  if (!selection || selection.isCollapsed) {
-    return undefined;
-  }
-  return makeDomAnchorFromSelection(selection);
+function highlightMediaExcerpts(mediaExcerpts: MediaExcerpt[]) {
+  mediaExcerpts.forEach(({ id, domAnchor }) => highlightRanges(id, domAnchor));
 }
 
 function highlightCurrentSelection(mediaExcerptId: string) {
   const selection = window.getSelection();
   if (!selection || selection.isCollapsed) {
-    return;
+    console.error(`Cannot highlight empty selection.`);
+    return undefined;
   }
-  const ranges = [];
-  for (let i = 0; i < selection.rangeCount; i++) {
-    ranges.push(selection.getRangeAt(i));
+
+  const domAnchor = makeDomAnchorFromSelection(selection);
+  if (!domAnchor) {
+    console.error(`Cannot createMediaExcerpt for empty domAnchor`);
+    return undefined;
   }
-  highlightRanges(ranges, mediaExcerptId);
+  return highlightRanges(mediaExcerptId, domAnchor);
 }
 
 const highlightManager = new HighlightManager(document.body);
 
-function highlightRanges(ranges: Range[], mediaExcerptId: string) {
-  highlightManager.createHighlight(mediaExcerptId, ranges, {
+function highlightRanges(mediaExcerptId: string, domAnchor: DomAnchor) {
+  return highlightManager.createHighlight(mediaExcerptId, domAnchor, {
     onClick: function highlightOnClick() {
-      const message: SelectMediaExcerptMessage = {
-        action: "selectMediaExcerpt",
-        data: { mediaExcerptId },
-      };
-      chrome.runtime.sendMessage(message);
+      selectMediaExcerpt(mediaExcerptId);
     },
   });
+}
+
+function selectMediaExcerpt(mediaExcerptId: string) {
+  const message: SelectMediaExcerptMessage = {
+    action: "selectMediaExcerpt",
+    data: { mediaExcerptId },
+  };
+  chrome.runtime.sendMessage(message);
 }

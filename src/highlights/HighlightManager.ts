@@ -1,5 +1,8 @@
+import { DomAnchor, getRangesFromDomAnchor } from "../anchors";
+
 interface Highlight {
   mediaExcerptId: string;
+  domAnchor: DomAnchor;
   ranges: Range[];
   elements: HTMLElement[];
   onClick?: (highlight: Highlight) => void;
@@ -46,6 +49,7 @@ class HighlightManager {
     element: HTMLElement;
   }> = [];
   private colors = defaultColors;
+  private colorTransitionDuration = "0.3s";
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -84,14 +88,21 @@ class HighlightManager {
 
   createHighlight(
     mediaExcerptId: string,
-    ranges: Range[],
+    domAnchor: DomAnchor,
     handlers?: {
       onClick: (highlight: Highlight) => void;
     }
   ): Highlight {
+    const ranges = getRangesFromDomAnchor(this.container, domAnchor);
+    const coextensiveHighlight = this.getCoextensiveHighlight(ranges);
+    if (coextensiveHighlight) {
+      return coextensiveHighlight;
+    }
+
     const elements: HTMLElement[] = [];
     const highlight: Highlight = {
       mediaExcerptId,
+      domAnchor,
       ranges,
       elements,
       onClick: handlers?.onClick,
@@ -104,12 +115,30 @@ class HighlightManager {
     this.container.append(...newElements);
 
     // Allow the elements to be added to the DOM before updating the styles.
-    // Otherwise they don't show up until a mouseover event occurs
+    // Otherwise they don't show up until a mousemove event occurs
     setTimeout(() => {
       this.updateStyles();
     });
 
     return highlight;
+  }
+
+  private getCoextensiveHighlight(ranges: Range[]): Highlight | undefined {
+    // Check if the new highlight is coextensive with an existing highlight
+    // If it is, return the existing highlight
+    // Otherwise, return undefined
+    return this.highlights.find((highlight) => {
+      if (highlight.ranges.length !== ranges.length) {
+        return false;
+      }
+      return highlight.ranges.every((range, index) => {
+        const newRange = ranges[index];
+        return (
+          range.compareBoundaryPoints(Range.START_TO_START, newRange) === 0 &&
+          range.compareBoundaryPoints(Range.END_TO_END, newRange) === 0
+        );
+      });
+    });
   }
 
   private getHighlightColor(highlight: Highlight | number) {
@@ -125,11 +154,9 @@ class HighlightManager {
       const color = this.getHighlightColor(highlight);
 
       element.style.backgroundColor = color.bg;
-      element.style.border = `1px solid ${color.border}`;
+      element.style.borderColor = color.border;
       // Set the z-index so that later highlight elements are on top of earlier highlights.
       element.style.zIndex = (index + 1).toString();
-      element.style.cursor = highlight.onClick ? "pointer" : "default";
-      element.style.mixBlendMode = "multiply"; // This helps with color blending
 
       // Elements immediately adjacent to other elements in the same highlight
       // don't need a left/right border touching the adjacent element.
@@ -174,7 +201,21 @@ class HighlightManager {
       if (rect1.left !== rect2.left) {
         return rect1.left < rect2.left;
       }
-      return rect2.right > rect1.right;
+      if (rect1.right !== rect2.right) {
+        return rect1.right > rect2.right;
+      }
+      // return whether rect1's highlight ends before rect2's highlight ends
+      const range1 = item.highlight.ranges[item.highlight.ranges.length - 1];
+      const range2 =
+        existing.highlight.ranges[existing.highlight.ranges.length - 1];
+      const comparison = range1.compareBoundaryPoints(Range.END_TO_END, range2);
+      if (comparison !== 0) {
+        return comparison > 0;
+      }
+      console.error(
+        "Encountered coextensive highlights. This should not happen."
+      );
+      return false;
     });
 
     if (index === -1) {
@@ -281,7 +322,20 @@ class HighlightManager {
 
     let elementIndex = 0;
 
-    highlight.ranges.forEach((range) => {
+    if (highlight.ranges.every((r) => r.collapsed)) {
+      // If all ranges are collapsed, we need to recreate the ranges.
+      highlight.elements.forEach((element) => {
+        element.remove();
+        this.removeSortedElement(element);
+      });
+      highlight.elements = [];
+      highlight.ranges = getRangesFromDomAnchor(
+        this.container,
+        highlight.domAnchor
+      );
+    }
+
+    highlight.ranges.forEach((range, index) => {
       const rangeRects = Array.from(range.getClientRects());
       const combinedRects = this.combineAdjacentRects(rangeRects);
 
@@ -330,6 +384,11 @@ class HighlightManager {
     element.classList.add("sophistree-highlight");
     element.style.position = "absolute";
     element.style.pointerEvents = "none";
+    element.style.transition = `background-color ${this.colorTransitionDuration} ease, border-color ${this.colorTransitionDuration} ease`;
+    element.style.borderWidth = "1px";
+    element.style.borderStyle = "solid";
+    element.style.cursor = highlight.onClick ? "pointer" : "default";
+    element.style.mixBlendMode = "multiply"; // This helps with color blending
     element.dataset.highlightIndex = this.highlights
       .indexOf(highlight)
       .toString();
