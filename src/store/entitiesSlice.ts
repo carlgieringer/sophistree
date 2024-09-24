@@ -70,6 +70,8 @@ const initialState = {
 
 type State = typeof initialState;
 
+const emptySelection: string[] = [];
+
 export interface AddMediaExcerptData {
   id: string;
   quotation: string;
@@ -316,7 +318,7 @@ export const entitiesSlice = createSlice({
       ];
     },
     resetSelection(state) {
-      state.selectedEntityIds = [];
+      state.selectedEntityIds = emptySelection;
     },
     deleteEntity(state, action: PayloadAction<string>) {
       const activeMap = state.maps.find((map) => map.id === state.activeMapId);

@@ -1,4 +1,11 @@
-import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+import {
+  CSSProperties,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useSelector, useDispatch } from "react-redux";
 import cytoscape, {
   NodeSingular,
@@ -48,6 +55,10 @@ import VisitPropositionAppearanceDialog, {
 cytoscape.use(elk);
 cytoscape.use(contextMenus);
 cytoscape.use(htmlNode);
+
+const zoomFactor = 0.03;
+const zoomInFactor = 1 + zoomFactor;
+const zoomOutFactor = 1 - zoomFactor;
 
 interface GraphViewProps {
   id?: string;
@@ -150,7 +161,6 @@ export default function GraphView({ id, style }: GraphViewProps) {
     },
   ];
 
-  const dispatch = useDispatch();
   useEffect(() => {
     if (cyRef.current) {
       const cy = cyRef.current;
@@ -159,6 +169,92 @@ export default function GraphView({ id, style }: GraphViewProps) {
         layout: getLayout(),
         nodes: reactNodesConfig,
       });
+
+      cy.on("layoutstop", () => {
+        layoutPropositionCompoundAtomsVertically(cy);
+      });
+    }
+  }, [cyRef.current]);
+
+  function zoomIn(event: EventObject) {
+    const cy = cyRef.current;
+    if (!cy) {
+      return;
+    }
+    cy.zoom({
+      level: cy.zoom() * zoomInFactor ** 5,
+      renderedPosition: { x: event.position?.x, y: event.position?.y },
+    });
+  }
+
+  function zoomOut(event: EventObject) {
+    const cy = cyRef.current;
+    if (!cy) {
+      return;
+    }
+    cy.zoom({
+      level: cy.zoom() * zoomOutFactor ** 5,
+      renderedPosition: { x: event.position?.x, y: event.position?.y },
+    });
+  }
+
+  const handleWheel = useCallback((event: WheelEvent) => {
+    event.preventDefault();
+    if (!cyRef.current) return;
+
+    const cy = cyRef.current;
+    const delta = event.deltaY;
+    const deltaX = event.deltaX;
+
+    if (event.ctrlKey || event.metaKey) {
+      // Pinch zoom
+      const zoomFactor = delta > 0 ? zoomOutFactor : zoomInFactor;
+      cy.zoom({
+        level: cy.zoom() * zoomFactor,
+        renderedPosition: { x: event.offsetX, y: event.offsetY },
+      });
+    } else {
+      // Pan
+      cy.panBy({ x: -deltaX, y: -delta });
+    }
+  }, []);
+
+  const handleGesture = useCallback((event: any) => {
+    event.preventDefault();
+    if (!cyRef.current) return;
+
+    const cy = cyRef.current;
+    const scale = event.scale;
+
+    cy.zoom({
+      level: cy.zoom() * scale,
+      renderedPosition: { x: event.offsetX, y: event.offsetY },
+    });
+  }, []);
+
+  useEffect(() => {
+    const container = cyRef.current?.container();
+    if (container) {
+      container.addEventListener("wheel", handleWheel);
+      container.addEventListener("gesturestart", handleGesture);
+      container.addEventListener("gesturechange", handleGesture);
+      container.addEventListener("gestureend", handleGesture);
+    }
+
+    return () => {
+      if (container) {
+        container.removeEventListener("wheel", handleWheel);
+        container.removeEventListener("gesturestart", handleGesture);
+        container.removeEventListener("gesturechange", handleGesture);
+        container.removeEventListener("gestureend", handleGesture);
+      }
+    };
+  }, [id, handleWheel, handleGesture]);
+
+  const dispatch = useDispatch();
+  useEffect(() => {
+    if (cyRef.current) {
+      const cy = cyRef.current;
 
       cy.contextMenus({
         menuItems: [
@@ -172,6 +268,20 @@ export default function GraphView({ id, style }: GraphViewProps) {
               dispatch(deleteEntity(target.id()));
             },
             hasTrailingDivider: true,
+          },
+          {
+            id: "zoom-out",
+            content: "Zoom out",
+            selector: "*",
+            onClickFunction: zoomOut,
+            coreAsWell: true,
+          },
+          {
+            id: "zoom-in",
+            content: "Zoom in",
+            selector: "*",
+            onClickFunction: zoomIn,
+            coreAsWell: true,
           },
           {
             id: "layout",
@@ -289,20 +399,8 @@ export default function GraphView({ id, style }: GraphViewProps) {
           cy.nodes().removeClass("hover-highlight");
         }
       });
-
-      cy.on("zoom", (event: any) => {
-        const zoom = cy.zoom();
-        cy.zoom({
-          level: zoom,
-          renderedPosition: event.position,
-        });
-      });
-
-      cy.on("layoutstop", () => {
-        layoutPropositionCompoundAtomsVertically(cy);
-      });
     }
-  }, [dispatch]);
+  }, [cyRef.current, dispatch]);
 
   useEffect(() => layoutGraph, [elements]);
 
@@ -319,17 +417,17 @@ export default function GraphView({ id, style }: GraphViewProps) {
         stylesheet={stylesheet}
         style={{
           ...style,
-          ...{
-            overflow: "hidden",
-          },
+          overflow: "hidden",
         }}
         cy={(cy) => {
           cyRef.current = cy;
         }}
         zoom={1}
         pan={{ x: 0, y: 0 }}
-        minZoom={0.5}
-        maxZoom={2}
+        userPanningEnabled={false}
+        userZoomingEnabled={false}
+        minZoom={0.1}
+        maxZoom={10}
       />
       {visitAppearancesDialogProposition && (
         <Portal>

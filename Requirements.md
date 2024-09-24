@@ -42,7 +42,6 @@ TODO:
 - Node list for disconnected nodes? (Filter by all nodes and disconnected?)
   - Propositions, MediaExcerpts
 - Collapsing
-- Trackpad scrolling?
 
 - Support setting Justification polarity via drag.
   - https://github.com/cytoscape/cytoscape.js-popper for polarity targets?
