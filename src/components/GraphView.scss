@@ -1,19 +1,27 @@
+@import "../colors";
+
 p {
   margin: 0;
 }
 
 .hover-highlight {
   border-width: 3px;
-  border-color: #e67e22;
+  border-color: $carrot;
   border-style: solid;
   transition: border 0.1s ease;
 }
 
-.dragging  {
+.selected {
+  border-width: 3px;
+  border-color: $sunflower;
+  border-style: solid;
+  transition: border 0.1s ease;
+}
+
+.dragging {
   opacity: 0.5;
   z-index: 10;
 }
-
 
 .appearances-icon {
   float: right;

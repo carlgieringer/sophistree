@@ -22,7 +22,7 @@ describe("entitiesSlice", () => {
             entities: [],
           },
         ],
-        selectedEntityId: undefined,
+        selectedEntityIds: [],
       };
 
       // Create a proposition (target)

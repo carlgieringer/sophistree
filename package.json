@@ -17,6 +17,7 @@
   "license": "ISC",
   "dependencies": {
     "@reduxjs/toolkit": "^2.2.7",
+    "classnames": "^2.5.1",
     "cytoscape": "^3.30.2",
     "cytoscape-context-menus": "^4.2.1",
     "cytoscape-elk": "^2.2.0",

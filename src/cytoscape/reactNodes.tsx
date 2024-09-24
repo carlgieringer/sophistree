@@ -30,7 +30,7 @@ const defaultReactNodeOptions: ReactNodeOptions = {
   },
 };
 
-interface ReactNodeOptions {
+export interface ReactNodeOptions {
   query: string;
   template: (data: any) => JSX.Element;
   /** CSS classes to copy from the node to the HTML container */

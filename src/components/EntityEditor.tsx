@@ -16,7 +16,7 @@ import {
 import * as selectors from "../store/selectors";
 
 const EntityEditor: React.FC = () => {
-  const selectedEntity = useSelector(selectors.selectedEntity);
+  const selectedEntity = useSelector(selectors.selectedEntities);
 
   if (!selectedEntity) {
     return <Text>No entity selected</Text>;

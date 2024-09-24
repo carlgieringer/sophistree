@@ -65,7 +65,7 @@ export interface Map {
 const initialState = {
   activeMapId: undefined as string | undefined,
   maps: [] as Map[],
-  selectedEntityId: undefined as string | undefined,
+  selectedEntityIds: [] as string[],
 };
 
 type State = typeof initialState;
@@ -296,11 +296,24 @@ export const entitiesSlice = createSlice({
       };
       activeMap.entities.push(newJustification);
     },
-    selectEntity(state, action: PayloadAction<string>) {
-      state.selectedEntityId = action.payload;
+    selectEntities(state, action: PayloadAction<string[]>) {
+      state.selectedEntityIds = action.payload;
+    },
+    selectEntitiesForMediaExcerpt(state, action: PayloadAction<string>) {
+      const activeMap = state.maps.find((map) => map.id === state.activeMapId);
+      if (!activeMap) return;
+      // Select the mediaExcerpt and all its appearances
+      const mediaExcerptId = action.payload;
+      const appearances = activeMap.entities.filter(
+        (e) => e.type === "Appearance" && e.mediaExcerptId === mediaExcerptId
+      );
+      state.selectedEntityIds = [
+        mediaExcerptId,
+        ...appearances.map((a) => a.id),
+      ];
     },
     resetSelection(state) {
-      state.selectedEntityId = undefined;
+      state.selectedEntityIds = [];
     },
     deleteEntity(state, action: PayloadAction<string>) {
       const activeMap = state.maps.find((map) => map.id === state.activeMapId);
@@ -350,12 +363,9 @@ export const entitiesSlice = createSlice({
         (entity) => !allEntityIdsToDelete.has(entity.id)
       );
 
-      if (
-        state.selectedEntityId &&
-        allEntityIdsToDelete.has(state.selectedEntityId)
-      ) {
-        state.selectedEntityId = undefined;
-      }
+      state.selectedEntityIds = state.selectedEntityIds.filter(
+        (id) => !allEntityIdsToDelete.has(id)
+      );
     },
     showEntity(state, action: PayloadAction<string>) {
       updateEntityVisibility(state, action.payload, "Visible");
@@ -450,7 +460,8 @@ export const {
   deleteEntity,
   completeDrag,
   resetSelection,
-  selectEntity,
+  selectEntities,
+  selectEntitiesForMediaExcerpt,
   renameActiveMap,
   showEntity,
   hideEntity,

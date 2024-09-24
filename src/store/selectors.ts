@@ -23,12 +23,12 @@ export const activeMapEntities = (state: RootState) => {
   return activeMap(state)?.entities || emptyEntities;
 };
 
-export const selectedEntityId = (state: RootState) => {
-  return state.entities.selectedEntityId;
+export const selectedEntityIds = (state: RootState) => {
+  return state.entities.selectedEntityIds;
 };
 
-export const selectedEntity = (state: RootState) => {
-  return activeMapEntities(state)?.find(
-    (entity) => entity.id === selectedEntityId(state)
+export const selectedEntities = (state: RootState) => {
+  return activeMapEntities(state)?.find((entity) =>
+    selectedEntityIds(state).includes(entity.id)
   );
 };

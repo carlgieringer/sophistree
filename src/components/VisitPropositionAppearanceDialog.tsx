@@ -12,6 +12,7 @@ export interface AppearanceInfo {
 
 export type PropositionNodeData = Proposition & {
   appearances: AppearanceInfo[] | undefined;
+  isAnyAppearanceSelected: boolean;
 };
 
 export default function VisitPropositionAppearanceDialog({

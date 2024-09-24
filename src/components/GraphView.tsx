@@ -14,12 +14,13 @@ import { v4 as uuidv4 } from "uuid";
 import elk from "cytoscape-elk";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { Portal } from "react-native-paper";
+import cn from "classnames";
 
-import htmlNode from "../cytoscape/reactNodes";
+import htmlNode, { ReactNodeOptions } from "../cytoscape/reactNodes";
 import {
   addEntity,
   completeDrag,
-  selectEntity,
+  selectEntities,
   deleteEntity,
   resetSelection,
   Entity,
@@ -35,7 +36,7 @@ import {
   sunflower,
 } from "../colors";
 import "cytoscape-context-menus/cytoscape-context-menus.css";
-import "./GraphView.css";
+import "./GraphView.scss";
 import { activeMapEntities } from "../store/selectors";
 import * as selectors from "../store/selectors";
 import VisitPropositionAppearanceDialog, {
@@ -55,7 +56,11 @@ interface GraphViewProps {
 
 export default function GraphView({ id, style }: GraphViewProps) {
   const entities = useSelector(activeMapEntities);
-  const elements = useMemo(() => makeElements(entities), [entities]);
+  const selectedEntityIds = useSelector(selectors.selectedEntityIds);
+  const elements = useMemo(
+    () => makeElements(entities, selectedEntityIds),
+    [entities, selectedEntityIds]
+  );
 
   const cyRef = useRef<cytoscape.Core | undefined>(undefined);
 
@@ -63,31 +68,34 @@ export default function GraphView({ id, style }: GraphViewProps) {
     correctInvalidNodes(cyRef.current, elements);
   }
 
-  const selectedEntityId = useSelector(selectors.selectedEntityId);
   useEffect(() => {
-    cyRef.current?.nodes().subtract(`#${selectedEntityId}`).unselect();
-    cyRef.current?.nodes(`#${selectedEntityId}`).select();
-  }, [selectedEntityId]);
+    const idsSelector = selectedEntityIds.map((id) => `#${id}`).join(",");
+    cyRef.current?.nodes().subtract(idsSelector).unselect();
+    if (idsSelector) {
+      cyRef.current?.nodes(idsSelector).select();
+    }
+  }, [selectedEntityIds]);
 
   const [
     visitAppearancesDialogProposition,
     setVisitAppearancesDialogProposition,
   ] = useState(undefined as PropositionNodeData | undefined);
 
-  const reactNodesConfig = [
+  const reactNodesConfig: ReactNodeOptions[] = [
     {
       query: `node[type="Proposition"]`,
       template: function (data: PropositionNodeData) {
         const appearanceCount = data.appearances?.length;
         const appearanceNoun =
           "appearance" + (appearanceCount === 1 ? "" : "s");
-
         return (
           <>
             {appearanceCount ? (
               <span
                 title={`${appearanceCount} ${appearanceNoun}`}
-                className="appearances-icon"
+                className={cn("appearances-icon", {
+                  selected: data.isAnyAppearanceSelected,
+                })}
                 onClick={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
@@ -178,7 +186,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
 
       cy.on("tap", "node", (event: EventObjectNode) => {
         const nodeId = event.target.id();
-        dispatch(selectEntity(nodeId));
+        dispatch(selectEntities([nodeId]));
       });
 
       cy.on("tap", (event: EventObject) => {
@@ -336,7 +344,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
   );
 }
 
-function makeElements(entities: Entity[]) {
+function makeElements(entities: Entity[], selectedEntityIds: string[]) {
   const mediaExcerptsById = entities
     .filter((e) => e.type === "MediaExcerpt")
     .reduce((acc, e) => {
@@ -437,10 +445,15 @@ function makeElements(entities: Entity[]) {
       )
       .map((entity) => {
         if (entity.type === "Proposition") {
+          const appearances = propositionIdToAppearanceInfos.get(entity.id);
+          const isAnyAppearanceSelected = appearances?.some((a) =>
+            selectedEntityIds.includes(a.id)
+          );
           return {
             data: {
               ...entity,
-              appearances: propositionIdToAppearanceInfos.get(entity.id),
+              appearances,
+              isAnyAppearanceSelected,
               parent: entityIdToParentId.get(entity.id),
             },
           };

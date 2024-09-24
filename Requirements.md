@@ -38,8 +38,6 @@ this extension and use that in place of Sophistree?
 
 TODO:
 
-- Proposition Appearances
-  - When click highlight, select all propositions appearing at the highlight and media excerpts
 - Counter justification intermediate nodes
 - Node list for disconnected nodes? (Filter by all nodes and disconnected?)
   - Propositions, MediaExcerpts
