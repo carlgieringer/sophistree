@@ -166,7 +166,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
       const cy = cyRef.current;
 
       cy.reactNodes({
-        layout: getLayout(),
+        layout: getLayout(false),
         nodes: reactNodesConfig,
       });
 
@@ -176,27 +176,50 @@ export default function GraphView({ id, style }: GraphViewProps) {
     }
   }, [cyRef.current]);
 
-  function zoomIn(event: EventObject) {
-    const cy = cyRef.current;
-    if (!cy) {
-      return;
-    }
-    cy.zoom({
-      level: cy.zoom() * zoomInFactor ** 5,
-      renderedPosition: { x: event.position?.x, y: event.position?.y },
+  const zoomIn = useCallback((event: EventObject) => {
+    zoomByFactor(zoomInFactor ** 5, {
+      x: event.position?.x,
+      y: event.position?.y,
     });
-  }
+  }, []);
 
-  function zoomOut(event: EventObject) {
-    const cy = cyRef.current;
-    if (!cy) {
-      return;
-    }
-    cy.zoom({
-      level: cy.zoom() * zoomOutFactor ** 5,
-      renderedPosition: { x: event.position?.x, y: event.position?.y },
+  const zoomOut = useCallback((event: EventObject) => {
+    zoomByFactor(zoomOutFactor ** 5, {
+      x: event.position?.x,
+      y: event.position?.y,
     });
-  }
+  }, []);
+
+  const zoomByFactor = useCallback(
+    (factor: number, renderedPosition: { x: number; y: number }) => {
+      const cy = cyRef.current;
+      if (!cy) {
+        console.warn("Cannot zoom because there is no cy ref.");
+        return;
+      }
+      const level = cy.zoom() * factor;
+      zoom({ level, renderedPosition });
+    },
+    []
+  );
+
+  const zoom = useCallback(
+    ({
+      level,
+      renderedPosition,
+    }: {
+      level: number;
+      renderedPosition: { x: number; y: number };
+    }) => {
+      const cy = cyRef.current;
+      if (!cy) {
+        console.warn("Cannot zoom because there is no cy ref.");
+        return;
+      }
+      cy.zoom({ level, renderedPosition });
+    },
+    []
+  );
 
   const handleWheel = useCallback((event: WheelEvent) => {
     event.preventDefault();
@@ -209,10 +232,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
     if (event.ctrlKey || event.metaKey) {
       // Pinch zoom
       const zoomFactor = delta > 0 ? zoomOutFactor : zoomInFactor;
-      cy.zoom({
-        level: cy.zoom() * zoomFactor,
-        renderedPosition: { x: event.offsetX, y: event.offsetY },
-      });
+      zoomByFactor(zoomFactor, { x: event.offsetX, y: event.offsetY });
     } else {
       // Pan
       cy.panBy({ x: -deltaX, y: -delta });
@@ -226,10 +246,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
     const cy = cyRef.current;
     const scale = event.scale;
 
-    cy.zoom({
-      level: cy.zoom() * scale,
-      renderedPosition: { x: event.offsetX, y: event.offsetY },
-    });
+    zoomByFactor(scale, { x: event.offsetX, y: event.offsetY });
   }, []);
 
   useEffect(() => {
@@ -288,7 +305,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
             content: "Layout",
             selector: "*",
             tooltipText: "Layout graph",
-            onClickFunction: layoutGraph,
+            onClickFunction: () => layoutGraph(),
             coreAsWell: true,
           },
         ],
@@ -307,7 +324,6 @@ export default function GraphView({ id, style }: GraphViewProps) {
 
       cy.on("dbltap", (event: EventObject) => {
         if (event.target === cy) {
-          const pos = event.position;
           const newNode = {
             id: uuidv4(),
             type: "Proposition" as const,
@@ -315,13 +331,6 @@ export default function GraphView({ id, style }: GraphViewProps) {
             ...defaultVisibilityProps,
           };
           dispatch(addEntity(newNode));
-          cy.add({
-            data: {
-              ...newNode,
-              label: newNode.text,
-            },
-            position: pos,
-          });
         }
       });
 
@@ -400,12 +409,26 @@ export default function GraphView({ id, style }: GraphViewProps) {
         }
       });
     }
-  }, [cyRef.current, dispatch]);
+  }, [dispatch]);
+
+  // Fit the graph once on load
+  const initialFit = useCallback(() => {
+    layoutGraph(true);
+    cyRef.current?.off("layoutstop", initialFit);
+  }, []);
+
+  useEffect(() => {
+    const cy = cyRef.current;
+    if (!cy) {
+      return;
+    }
+    cy.on("layoutstop", initialFit);
+  }, []);
 
   useEffect(() => layoutGraph, [elements]);
 
-  function layoutGraph() {
-    cyRef.current?.layout(getLayout()).run();
+  function layoutGraph(fit = false) {
+    cyRef.current?.layout(getLayout(fit)).run();
   }
 
   return (
@@ -413,7 +436,6 @@ export default function GraphView({ id, style }: GraphViewProps) {
       <CytoscapeComponent
         id={id}
         elements={elements}
-        layout={getLayout()}
         stylesheet={stylesheet}
         style={{
           ...style,
@@ -873,31 +895,31 @@ function styleLengthToPx(length: string | number): number {
   throw new Error(`Unsupported length unit: ${length}`);
 }
 
-const elkLayout = {
-  name: "elk",
-  // All options are available at http://www.eclipse.org/elk/reference.html
-  //
-  // 'org.eclipse.' can be dropped from the identifier. The subsequent identifier has to be used as property key in quotes.
-  // E.g. for 'org.eclipse.elk.direction' use:
-  // 'elk.direction'
-  //
-  // Enums use the name of the enum as string e.g. instead of Direction.DOWN use:
-  // 'elk.direction': 'DOWN'
-  //
-  // The main field to set is `algorithm`, which controls which particular layout algorithm is used.
-  // Example (downwards layered layout):
-  elk: {
-    algorithm: "layered",
-    "elk.direction": "UP",
-    "elk.spacing.nodeNode": "50",
-    "elk.layered.spacing.nodeNodeBetweenLayers": "100",
-    "elk.hierarchyHandling": "INCLUDE_CHILDREN",
-    "elk.aspectRatio": "1.5",
-    "elk.padding": "[top=50,left=50,bottom=50,right=50]",
-    "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
-  },
-};
-
-function getLayout() {
-  return elkLayout;
+function getLayout(fit = false) {
+  return {
+    name: "elk",
+    fit,
+    animate: true,
+    // All options are available at http://www.eclipse.org/elk/reference.html
+    //
+    // 'org.eclipse.' can be dropped from the identifier. The subsequent identifier has to be used as property key in quotes.
+    // E.g. for 'org.eclipse.elk.direction' use:
+    // 'elk.direction'
+    //
+    // Enums use the name of the enum as string e.g. instead of Direction.DOWN use:
+    // 'elk.direction': 'DOWN'
+    //
+    // The main field to set is `algorithm`, which controls which particular layout algorithm is used.
+    // Example (downwards layered layout):
+    elk: {
+      algorithm: "layered",
+      "elk.direction": "UP",
+      "elk.spacing.nodeNode": "50",
+      "elk.layered.spacing.nodeNodeBetweenLayers": "100",
+      "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+      "elk.aspectRatio": "1.5",
+      "elk.padding": "[top=50,left=50,bottom=50,right=50]",
+      "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
+    },
+  };
 }
