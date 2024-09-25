@@ -68,7 +68,7 @@ interface GraphViewProps {
 export default function GraphView({ id, style }: GraphViewProps) {
   const entities = useSelector(activeMapEntities);
   const selectedEntityIds = useSelector(selectors.selectedEntityIds);
-  const elements = useMemo(
+  const { elements, focusedNodeIds } = useMemo(
     () => makeElements(entities, selectedEntityIds),
     [entities, selectedEntityIds]
   );
@@ -80,12 +80,53 @@ export default function GraphView({ id, style }: GraphViewProps) {
   }
 
   useEffect(() => {
-    const idsSelector = selectedEntityIds.map((id) => `#${id}`).join(",");
-    cyRef.current?.nodes().subtract(idsSelector).unselect();
-    if (idsSelector) {
-      cyRef.current?.nodes(idsSelector).select();
+    cyRef.current
+      ?.nodes()
+      .filter((n) => !selectedEntityIds.includes(n.id()))
+      .unselect();
+    if (selectedEntityIds.length) {
+      cyRef.current
+        ?.nodes()
+        .filter((n) => selectedEntityIds.includes(n.id()))
+        .select();
     }
   }, [selectedEntityIds]);
+
+  useEffect(() => {
+    const cy = cyRef.current;
+    if (!cy) return;
+    if (focusedNodeIds.length) {
+      panToNodes(focusedNodeIds);
+    }
+  }, [focusedNodeIds]);
+
+  /**
+   * Pan the graph to include the given nodes. Currently just centers
+   * on the nodes. I'd prefer to pan the minimum amount to include the
+   * nodes (with some padding) and also decrease the zoom as necessary to
+   * encompass all the nodes, but I couldn't figure out how to do that.
+   */
+  const panToNodes = useCallback((nodeIds: string[]) => {
+    const cy = cyRef.current;
+    if (!cy) return;
+
+    const nodes = cy.nodes().filter((node) => nodeIds.includes(node.id()));
+    if (nodes.length === 0) return;
+
+    const nodesBoundingBox = nodes.boundingBox();
+    const padding = 50;
+
+    const extent = cy.extent();
+    const viewIncludesNodes =
+      nodesBoundingBox.x1 - padding >= extent.x1 &&
+      nodesBoundingBox.x2 + padding <= extent.x2 &&
+      nodesBoundingBox.y1 - padding >= extent.y1 &&
+      nodesBoundingBox.y2 + padding <= extent.y2;
+
+    if (!viewIncludesNodes) {
+      cy.animate({ center: { eles: nodes } });
+    }
+  }, []);
 
   const [
     visitAppearancesDialogProposition,
@@ -555,41 +596,52 @@ function makeElements(entities: Entity[], selectedEntityIds: string[]) {
   const canonicalJustifications = new Set(
     canonicalJustificationByBasisId.values()
   );
-  const elements = [
-    ...visibleEntities
-      .filter(
-        (entity) =>
-          entity.type !== "Appearance" &&
-          (entity.type !== "Justification" ||
-            canonicalJustifications.has(entity.id))
-      )
-      .map((entity) => {
-        if (entity.type === "Proposition") {
-          const appearances = propositionIdToAppearanceInfos.get(entity.id);
-          const isAnyAppearanceSelected = appearances?.some((a) =>
-            selectedEntityIds.includes(a.id)
-          );
-          return {
-            data: {
-              ...entity,
-              appearances,
-              isAnyAppearanceSelected,
-              parent: entityIdToParentId.get(entity.id),
-            },
-          };
-        }
+
+  const nodes = visibleEntities
+    .filter(
+      (entity) =>
+        entity.type !== "Appearance" &&
+        (entity.type !== "Justification" ||
+          canonicalJustifications.has(entity.id))
+    )
+    .map((entity) => {
+      if (entity.type === "Proposition") {
+        const appearances = propositionIdToAppearanceInfos.get(entity.id);
+        const isAnyAppearanceSelected = appearances?.some((a) =>
+          selectedEntityIds.includes(a.id)
+        );
         return {
           data: {
             ...entity,
+            appearances,
+            isAnyAppearanceSelected,
             parent: entityIdToParentId.get(entity.id),
           },
         };
-      }),
+      }
+      return {
+        data: {
+          ...entity,
+          parent: entityIdToParentId.get(entity.id),
+        },
+      };
+    });
+  const focusedNodeIds = nodes.reduce((acc, node) => {
+    if (selectedEntityIds.includes(node.data.id)) {
+      acc.push(node.data.id);
+    }
+    if (node.data.type === "Proposition" && node.data.isAnyAppearanceSelected) {
+      acc.push(node.data.id);
+    }
+    return acc;
+  }, [] as string[]);
+  const elements = [
+    ...nodes,
     ...visibleEdges.map((edge) => ({
       data: { ...edge },
     })),
   ];
-  return elements;
+  return { elements, focusedNodeIds };
 }
 
 /** After we delete entities we need to remove them from Cytoscape */
