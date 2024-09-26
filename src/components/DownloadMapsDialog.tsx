@@ -2,7 +2,7 @@ import { Button, Dialog, Portal } from "react-native-paper";
 import { useSelector } from "react-redux";
 
 import * as selectors from "../store/selectors";
-import { Map } from "../store/entitiesSlice";
+import { ArgumentMap } from "../store/entitiesSlice";
 
 const sophistreeMapFileVersion = 1;
 
@@ -21,7 +21,7 @@ export default function DownloadMapsDialog({
     }
   }
 
-  function downloadMap(map: Map) {
+  function downloadMap(map: ArgumentMap) {
     downloadJSON(`${map.name}.json`, { map, sophistreeMapFileVersion });
   }
 

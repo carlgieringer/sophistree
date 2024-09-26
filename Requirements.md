@@ -38,13 +38,17 @@ this extension and use that in place of Sophistree?
 
 TODO:
 
-- Counter justification intermediate nodes
+- Workaround: click on highlight, scroll to find in table, make visible.
+  - At least scroll table to visible?
+  - Filter table
+  - Right click on node to "add appearance" and search media excerpts.
+- Justification appearances
+- Collapsing
 - Node list for disconnected nodes? (Filter by all nodes and disconnected?)
   - Propositions, MediaExcerpts
-- Collapsing
 
+- Counter justification intermediate nodes
 - Support setting Justification polarity via drag.
   - https://github.com/cytoscape/cytoscape.js-popper for polarity targets?
 - Message origin checks
 - Retrieve MediaExcerpts from background scripts instead of sidebar?
-- Voting?

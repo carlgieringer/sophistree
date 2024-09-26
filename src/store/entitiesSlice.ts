@@ -56,7 +56,7 @@ interface DragPayload {
   polarity?: Polarity;
 }
 
-export interface Map {
+export interface ArgumentMap {
   id: string;
   name: string;
   entities: Entity[];
@@ -64,7 +64,7 @@ export interface Map {
 
 const initialState = {
   activeMapId: undefined as string | undefined,
-  maps: [] as Map[],
+  maps: [] as ArgumentMap[],
   selectedEntityIds: [] as string[],
 };
 
@@ -85,8 +85,8 @@ export const entitiesSlice = createSlice({
   name: "entities",
   initialState,
   reducers: {
-    createMap(state, action: PayloadAction<Partial<Map>>) {
-      const newMap: Map = {
+    createMap(state, action: PayloadAction<Partial<ArgumentMap>>) {
+      const newMap: ArgumentMap = {
         name: "New map",
         entities: [],
         ...action.payload,
@@ -371,6 +371,13 @@ export const entitiesSlice = createSlice({
       state.selectedEntityIds = state.selectedEntityIds.filter(
         (id) => !allEntityIdsToDelete.has(id)
       );
+
+      // This must come after updating the activeMap.entities.
+      updateMediaExcerptAutoVisibilityForDeletedJustifications(
+        state,
+        entitiesById,
+        allEntityIdsToDelete
+      );
     },
     showEntity(state, action: PayloadAction<string>) {
       updateEntityVisibility(state, action.payload, "Visible");
@@ -383,6 +390,26 @@ export const entitiesSlice = createSlice({
     },
   },
 });
+
+function updateMediaExcerptAutoVisibilityForDeletedJustifications(
+  state: State,
+  entitiesById: Map<string, Entity>,
+  allEntityIdsToDelete: Set<string>
+) {
+  const deletedJustificationMediaExcerptBasisIds: string[] = [];
+  allEntityIdsToDelete.forEach((id) => {
+    const entity = entitiesById.get(id);
+    if (entity?.type === "Justification") {
+      const basis = entitiesById.get(entity.basisId);
+      if (basis?.type === "MediaExcerpt") {
+        deletedJustificationMediaExcerptBasisIds.push(basis.id);
+      }
+    }
+  });
+  deletedJustificationMediaExcerptBasisIds.forEach((id) =>
+    updateMediaExcerptAutoVisibility(state, id)
+  );
+}
 
 function updateEntityVisibility(
   state: State,
