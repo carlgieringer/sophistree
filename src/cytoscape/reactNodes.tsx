@@ -35,7 +35,7 @@ const defaultReactNodeOptions: ReactNodeOptions = {
 export interface ReactNodeOptions {
   query: string;
   template: (data: any) => JSX.Element;
-  mode: "replace" | "append" | "prepend";
+  mode?: "replace";
   /** CSS classes to copy from the node to the HTML container */
   syncClasses?: string[];
   containerCSS?: Partial<CSSStyleDeclaration>;
@@ -81,8 +81,7 @@ function makeReactNode(
       case "replace":
         node.style("opacity", 0);
         break;
-      case "prepend":
-      case "append":
+      default:
         console.error(`reactNodes doesnt' support mode ${options.mode}`);
     }
 

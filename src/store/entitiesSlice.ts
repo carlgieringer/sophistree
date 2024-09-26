@@ -512,8 +512,6 @@ function updateMediaExcerptAutoVisibility(
   mediaExcerpt.autoVisibility = autoVisibility;
 }
 
-function isMediaExcerptUsed(entity: Entity, mediaExcerptId: string) {}
-
 export const {
   createMap,
   deleteMap,
