@@ -236,80 +236,8 @@ export const entitiesSlice = createSlice({
       if (!activeMap) return;
 
       const entityIdToDelete = action.payload;
-      const entitiesById = new Map(
-        activeMap.entities.map((entity) => [entity.id, entity])
-      );
-      const allEntityIdsToDelete = new Set([entityIdToDelete]);
-      activeMap.entities.forEach((entity) => {
-        // Process PropositionCompounds first since they may delete justifications
-        if (entity.type === "PropositionCompound") {
-          updatePropositionCompound(
-            entity,
-            entityIdToDelete,
-            allEntityIdsToDelete
-          );
-        }
-        // Delete justifications if either their basis or target will be deleted.
-        if (
-          entity.type === "Justification" &&
-          (allEntityIdsToDelete.has(entity.basisId) ||
-            allEntityIdsToDelete.has(entity.targetId))
-        ) {
-          allEntityIdsToDelete.add(entity.id);
-          const basis = entitiesById.get(entity.basisId);
-          // The point of PropositionCompounds is to wrap propositions in a justification.
-          // So if the justification is going away, we should delete the PropositionCompound too.
-          if (basis && basis.type === "PropositionCompound") {
-            // If no other justifications are using the proposition compound, delete it
-            const otherJustificationsUsingCompound = activeMap.entities.some(
-              (e) =>
-                e.type === "Justification" &&
-                e.basisId === basis.id &&
-                !allEntityIdsToDelete.has(e.id)
-            );
-            if (!otherJustificationsUsingCompound) {
-              allEntityIdsToDelete.add(basis.id);
-            }
-          }
-        }
-      });
 
-      // Remove all the collected entities
-      activeMap.entities = activeMap.entities.filter(
-        (entity) => !allEntityIdsToDelete.has(entity.id)
-      );
-
-      state.selectedEntityIds = state.selectedEntityIds.filter(
-        (id) => !allEntityIdsToDelete.has(id)
-      );
-
-      activeMap.entities = activeMap.entities.filter((entity) => {
-        switch (entity.type) {
-          case "PropositionCompound": {
-            // delete proposition compounds if their last justification was deleted.
-            const hasJustification = activeMap.entities.some(
-              (e) => e.type === "Justification" && e.basisId === entity.id
-            );
-            return hasJustification;
-          }
-          case "Appearance": {
-            // Delete appearances for deleted dependencies
-            return (
-              !allEntityIdsToDelete.has(entity.mediaExcerptId) &&
-              !allEntityIdsToDelete.has(entity.apparitionId)
-            );
-          }
-          default:
-            return true;
-        }
-      });
-
-      // This must come after updating the activeMap.entities.
-      updateMediaExcerptAutoVisibilityForDeletedJustifications(
-        state,
-        entitiesById,
-        allEntityIdsToDelete
-      );
+      applyDeleteOperation(state, activeMap, entityIdToDelete);
     },
     showEntity(state, action: PayloadAction<string>) {
       updateEntityVisibility(state, action.payload, "Visible");
@@ -322,6 +250,83 @@ export const entitiesSlice = createSlice({
     },
   },
 });
+
+function applyDeleteOperation(
+  state: State,
+  activeMap: ArgumentMap,
+  entityIdToDelete: string
+) {
+  const entitiesById = new Map(
+    activeMap.entities.map((entity) => [entity.id, entity])
+  );
+  const allEntityIdsToDelete = new Set([entityIdToDelete]);
+  activeMap.entities.forEach((entity) => {
+    // Process PropositionCompounds first since they may delete justifications
+    if (entity.type === "PropositionCompound") {
+      updatePropositionCompound(entity, entityIdToDelete, allEntityIdsToDelete);
+    }
+    // Delete justifications if either their basis or target will be deleted.
+    if (
+      entity.type === "Justification" &&
+      (allEntityIdsToDelete.has(entity.basisId) ||
+        allEntityIdsToDelete.has(entity.targetId))
+    ) {
+      allEntityIdsToDelete.add(entity.id);
+      const basis = entitiesById.get(entity.basisId);
+      // The point of PropositionCompounds is to wrap propositions in a justification.
+      // So if the justification is going away, we should delete the PropositionCompound too.
+      if (basis && basis.type === "PropositionCompound") {
+        // If no other justifications are using the proposition compound, delete it
+        const otherJustificationsUsingCompound = activeMap.entities.some(
+          (e) =>
+            e.type === "Justification" &&
+            e.basisId === basis.id &&
+            !allEntityIdsToDelete.has(e.id)
+        );
+        if (!otherJustificationsUsingCompound) {
+          allEntityIdsToDelete.add(basis.id);
+        }
+      }
+    }
+  });
+
+  // Remove all the collected entities
+  activeMap.entities = activeMap.entities.filter(
+    (entity) => !allEntityIdsToDelete.has(entity.id)
+  );
+
+  state.selectedEntityIds = state.selectedEntityIds.filter(
+    (id) => !allEntityIdsToDelete.has(id)
+  );
+
+  activeMap.entities = activeMap.entities.filter((entity) => {
+    switch (entity.type) {
+      case "PropositionCompound": {
+        // delete proposition compounds if their last justification was deleted.
+        const hasJustification = activeMap.entities.some(
+          (e) => e.type === "Justification" && e.basisId === entity.id
+        );
+        return hasJustification;
+      }
+      case "Appearance": {
+        // Delete appearances for deleted dependencies
+        return (
+          !allEntityIdsToDelete.has(entity.mediaExcerptId) &&
+          !allEntityIdsToDelete.has(entity.apparitionId)
+        );
+      }
+      default:
+        return true;
+    }
+  });
+
+  // This must come after updating the activeMap.entities.
+  updateMediaExcerptAutoVisibilityForDeletedJustifications(
+    state,
+    entitiesById,
+    allEntityIdsToDelete
+  );
+}
 
 function applyDragOperation(
   state: State,
