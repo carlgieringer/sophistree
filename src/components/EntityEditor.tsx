@@ -47,7 +47,12 @@ function PropositionEditor({ entity }: { entity: Proposition }) {
   }
   return (
     <View>
-      <TextInput value={entity.text} onChangeText={handleTextChange} />
+      <TextInput
+        value={entity.text}
+        multiline={true}
+        numberOfLines={1}
+        onChangeText={handleTextChange}
+      />
     </View>
   );
 }
