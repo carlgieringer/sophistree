@@ -12,7 +12,6 @@ import cytoscape, {
   EventObjectNode,
   Position,
   EventObject,
-  EdgeSingular,
   EdgeDataDefinition,
 } from "cytoscape";
 import CytoscapeComponent from "react-cytoscapejs";
@@ -23,7 +22,7 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { Portal } from "react-native-paper";
 import cn from "classnames";
 
-import htmlNode, { ReactNodeOptions } from "../cytoscape/reactNodes";
+import reactNodes, { ReactNodeOptions } from "../cytoscape/reactNodes";
 import {
   addEntity,
   completeDrag,
@@ -32,7 +31,6 @@ import {
   resetSelection,
   Entity,
   MediaExcerpt,
-  Proposition,
   defaultVisibilityProps,
 } from "../store/entitiesSlice";
 import {
@@ -54,7 +52,7 @@ import VisitPropositionAppearanceDialog, {
 
 cytoscape.use(elk);
 cytoscape.use(contextMenus);
-cytoscape.use(htmlNode);
+cytoscape.use(reactNodes);
 
 const zoomFactor = 0.03;
 const zoomInFactor = 1 + zoomFactor;
@@ -222,10 +220,6 @@ export default function GraphView({ id, style }: GraphViewProps) {
       cy.reactNodes({
         layout: getLayout(false),
         nodes: reactNodesConfig,
-      });
-
-      cy.on("layoutstop", () => {
-        layoutPropositionCompoundAtomsVertically(cy);
       });
     }
   }, [cyRef.current]);
@@ -751,19 +745,7 @@ const stylesheet = [
       "target-arrow-shape": "triangle",
       "arrow-scale": 1.5,
       "curve-style": "straight",
-      "target-endpoint": (ele: EdgeSingular) => {
-        const target = ele.target();
-        const parent = target.parent();
-        if (
-          parent.data("type") === "PropositionCompound" &&
-          parent.children().length > 1
-        ) {
-          const isSourceLeftOfTarget =
-            ele.source().position().x < target.position().x;
-          return isSourceLeftOfTarget ? "270deg" : "90deg";
-        }
-        return "outside-to-node";
-      },
+      "target-endpoint": "outside-to-node",
     },
   },
   {
