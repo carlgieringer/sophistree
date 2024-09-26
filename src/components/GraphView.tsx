@@ -363,8 +363,13 @@ export default function GraphView({ id, style }: GraphViewProps) {
       });
 
       cy.on("tap", "node", (event: EventObjectNode) => {
-        const nodeId = event.target.id();
-        dispatch(selectEntities([nodeId]));
+        const entityId = event.target.id();
+        dispatch(selectEntities([entityId]));
+      });
+
+      cy.on("tap", "edge", (event: EventObjectNode) => {
+        const entityId = event.target.data("entityId");
+        dispatch(selectEntities([entityId]));
       });
 
       cy.on("tap", (event: EventObject) => {
