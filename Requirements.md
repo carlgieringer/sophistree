@@ -42,9 +42,14 @@ TODO:
   - At least scroll table to visible?
   - Filter table
   - Right click on node to "add appearance" and search media excerpts.
+- Equivalent propositions:
+  - combine appearances
+  - combine justifications
+- Proposition can't appear in two justifications (e.g. two different compounds).
 - Justification appearances
 - Collapsing
 - Node list for disconnected nodes? (Filter by all nodes and disconnected?)
+
   - Propositions, MediaExcerpts
 
 - Counter justification intermediate nodes

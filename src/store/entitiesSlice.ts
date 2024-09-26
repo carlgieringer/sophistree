@@ -372,15 +372,25 @@ export const entitiesSlice = createSlice({
         (id) => !allEntityIdsToDelete.has(id)
       );
 
-      // delete proposition compounds if their last justification was deleted.
       activeMap.entities = activeMap.entities.filter((entity) => {
-        if (entity.type === "PropositionCompound") {
-          const hasJustification = activeMap.entities.some(
-            (e) => e.type === "Justification" && e.basisId === entity.id
-          );
-          return hasJustification;
+        switch (entity.type) {
+          case "PropositionCompound": {
+            // delete proposition compounds if their last justification was deleted.
+            const hasJustification = activeMap.entities.some(
+              (e) => e.type === "Justification" && e.basisId === entity.id
+            );
+            return hasJustification;
+          }
+          case "Appearance": {
+            // Delete appearances for deleted dependencies
+            return (
+              !allEntityIdsToDelete.has(entity.mediaExcerptId) &&
+              !allEntityIdsToDelete.has(entity.apparitionId)
+            );
+          }
+          default:
+            return true;
         }
-        return true;
       });
 
       // This must come after updating the activeMap.entities.
