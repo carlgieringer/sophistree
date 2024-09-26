@@ -207,96 +207,7 @@ export const entitiesSlice = createSlice({
         return;
       }
 
-      let basisId: string;
-      switch (source.type) {
-        case "Proposition": {
-          switch (target.type) {
-            case "PropositionCompound": {
-              target.atomIds.push(sourceId);
-              return;
-            }
-            case "Justification":
-            case "Proposition": {
-              let propositionCompound = activeMap.entities.find(
-                (e) =>
-                  e.type === "PropositionCompound" &&
-                  e.atomIds.length === 1 &&
-                  e.atomIds[0] === source.id
-              );
-              if (!propositionCompound) {
-                propositionCompound = {
-                  type: "PropositionCompound" as const,
-                  id: uuidv4(),
-                  atomIds: [sourceId],
-                  ...defaultVisibilityProps,
-                };
-                activeMap.entities.push(propositionCompound);
-              }
-              basisId = propositionCompound.id;
-              break;
-            }
-            case "MediaExcerpt": {
-              const apparitionId = sourceId;
-              const mediaExcerptId = targetId;
-              const extantAppearance = activeMap.entities.find(
-                (e) =>
-                  e.type === "Appearance" &&
-                  e.apparitionId === apparitionId &&
-                  e.mediaExcerptId === mediaExcerptId
-              );
-              if (!extantAppearance) {
-                activeMap.entities.push({
-                  type: "Appearance" as const,
-                  id: uuidv4(),
-                  apparitionId,
-                  mediaExcerptId,
-                  ...defaultVisibilityProps,
-                });
-                updateMediaExcerptAutoVisibility(state, mediaExcerptId);
-              }
-              return;
-            }
-            default: {
-              console.error(
-                `Invalid target type ${target.type} for source type ${source.type}`
-              );
-              return;
-            }
-          }
-          break;
-        }
-        case "MediaExcerpt": {
-          switch (target.type) {
-            case "MediaExcerpt":
-            case "PropositionCompound":
-              console.error(
-                `Invalid target type ${target.type} for source type ${source.type}`
-              );
-              return;
-          }
-          basisId = sourceId;
-          break;
-        }
-        default:
-          console.error(`Invalid drag source type type: ${source.type}`);
-          return;
-      }
-
-      const newJustificationId = uuidv4();
-      const polarity =
-        // Counter justifications must be negative
-        target.type === "Justification"
-          ? "Negative"
-          : actionPolarity ?? "Positive";
-      const newJustification: Justification = {
-        id: newJustificationId,
-        type: "Justification",
-        targetId,
-        basisId,
-        polarity,
-        ...defaultVisibilityProps,
-      };
-      activeMap.entities.push(newJustification);
+      applyDragOperation(state, activeMap, source, target, actionPolarity);
     },
     selectEntities(state, action: PayloadAction<string[]>) {
       const activeMap = state.maps.find((map) => map.id === state.activeMapId);
@@ -411,6 +322,103 @@ export const entitiesSlice = createSlice({
     },
   },
 });
+
+function applyDragOperation(
+  state: State,
+  activeMap: ArgumentMap,
+  source: Entity,
+  target: Entity,
+  actionPolarity: Polarity | undefined
+) {
+  let basisId: string;
+  switch (source.type) {
+    case "Proposition": {
+      switch (target.type) {
+        case "PropositionCompound": {
+          target.atomIds.push(source.id);
+          return;
+        }
+        case "Justification":
+        case "Proposition": {
+          let propositionCompound = activeMap.entities.find(
+            (e) =>
+              e.type === "PropositionCompound" &&
+              e.atomIds.length === 1 &&
+              e.atomIds[0] === source.id
+          );
+          if (!propositionCompound) {
+            propositionCompound = {
+              type: "PropositionCompound" as const,
+              id: uuidv4(),
+              atomIds: [source.id],
+              ...defaultVisibilityProps,
+            };
+            activeMap.entities.push(propositionCompound);
+          }
+          basisId = propositionCompound.id;
+          break;
+        }
+        case "MediaExcerpt": {
+          const apparitionId = source.id;
+          const mediaExcerptId = target.id;
+          const extantAppearance = activeMap.entities.find(
+            (e) =>
+              e.type === "Appearance" &&
+              e.apparitionId === apparitionId &&
+              e.mediaExcerptId === mediaExcerptId
+          );
+          if (!extantAppearance) {
+            activeMap.entities.push({
+              type: "Appearance" as const,
+              id: uuidv4(),
+              apparitionId,
+              mediaExcerptId,
+              ...defaultVisibilityProps,
+            });
+            updateMediaExcerptAutoVisibility(state, mediaExcerptId);
+          }
+          return;
+        }
+        default: {
+          console.error(
+            `Invalid target type ${target.type} for source type ${source.type}`
+          );
+          return;
+        }
+      }
+      break;
+    }
+    case "MediaExcerpt": {
+      switch (target.type) {
+        case "MediaExcerpt":
+        case "PropositionCompound":
+          console.error(
+            `Invalid target type ${target.type} for source type ${source.type}`
+          );
+          return;
+      }
+      basisId = source.id;
+      break;
+    }
+    default:
+      console.error(`Invalid drag source type type: ${source.type}`);
+      return;
+  }
+
+  const newJustificationId = uuidv4();
+  const polarity =
+    // Counter justifications must be negative
+    target.type === "Justification" ? "Negative" : actionPolarity ?? "Positive";
+  const newJustification: Justification = {
+    id: newJustificationId,
+    type: "Justification",
+    targetId: target.id,
+    basisId,
+    polarity,
+    ...defaultVisibilityProps,
+  };
+  activeMap.entities.push(newJustification);
+}
 
 function updateMediaExcerptAutoVisibilityForDeletedJustifications(
   state: State,
