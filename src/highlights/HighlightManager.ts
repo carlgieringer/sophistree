@@ -1,4 +1,5 @@
 import { DomAnchor, getRangesFromDomAnchor } from "../anchors";
+import { debounce } from "../functionUtils";
 
 interface Highlight {
   mediaExcerptId: string;
@@ -184,7 +185,10 @@ class HighlightManager {
       this.handleMouseMove.bind(this)
     );
     this.container.addEventListener("click", this.handleClick.bind(this));
-    window.addEventListener("resize", this.handleResize.bind(this));
+    window.addEventListener(
+      "resize",
+      debounce(this.handleResize.bind(this), 300)
+    );
   }
 
   private insertSortedElement(item: {

@@ -1,6 +1,7 @@
 import cytoscape from "cytoscape";
 import ReactDOM from "react-dom/client";
 import { sunflower } from "../colors";
+import { debounce } from "../functionUtils";
 
 declare module "cytoscape" {
   interface Core {
@@ -179,26 +180,6 @@ function makeReactNode(
   cy.on("add", options.query, function (event) {
     createHtmlNode(event.target);
   });
-}
-
-function debounce<T extends (...args: any[]) => void>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout | undefined;
-
-  return function executedFunction(
-    this: ThisParameterType<T>,
-    ...args: Parameters<T>
-  ): void {
-    const later = () => {
-      clearTimeout(timeout);
-      func.apply(this, args);
-    };
-
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
 }
 
 function getInnerHorizontalSpacing(element: HTMLElement) {
