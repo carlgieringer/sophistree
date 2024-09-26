@@ -23,6 +23,7 @@ const defaultReactNodeOptions: ReactNodeOptions = {
     // function to generate HTML
     return <div>{data.id}</div>;
   },
+  mode: "replace",
   containerCSS: {
     // CSS for the HTML container
     textAlign: "center",
@@ -34,6 +35,7 @@ const defaultReactNodeOptions: ReactNodeOptions = {
 export interface ReactNodeOptions {
   query: string;
   template: (data: any) => JSX.Element;
+  mode: "replace" | "append" | "prepend";
   /** CSS classes to copy from the node to the HTML container */
   syncClasses?: string[];
   containerCSS?: Partial<CSSStyleDeclaration>;
@@ -75,6 +77,15 @@ function makeReactNode(
   options = Object.assign({}, defaultReactNodeOptions, options);
 
   function createHtmlNode(node: cytoscape.NodeSingular) {
+    switch (options.mode) {
+      case "replace":
+        node.style("opacity", 0);
+        break;
+      case "prepend":
+      case "append":
+        console.error(`reactNodes doesnt' support mode ${options.mode}`);
+    }
+
     var htmlElement = document.createElement("div");
     var jsxElement = options.template(node.data());
     const root = ReactDOM.createRoot(htmlElement);

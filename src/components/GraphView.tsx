@@ -173,6 +173,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
           </>
         );
       },
+      mode: "replace",
       syncClasses: ["hover-highlight", "dragging"],
       containerCSS: {
         padding: "1em",
@@ -204,6 +205,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
           </>
         );
       },
+      mode: "replace",
       syncClasses: ["hover-highlight", "dragging"],
       containerCSS: {
         padding: "1em",
@@ -697,8 +699,6 @@ const stylesheet = [
       label: "data(text)",
       width: "label",
       height: "label",
-      // Hide the default cytoscape content in favor of the reactNodes content
-      opacity: 0,
     },
   },
   {
@@ -727,8 +727,6 @@ const stylesheet = [
       label: "data(quotation)",
       width: "label",
       height: "label",
-      // Hide the default cytoscape content in favor of the reactNodes content
-      opacity: 0,
     },
   },
   {

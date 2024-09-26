@@ -38,20 +38,18 @@ this extension and use that in place of Sophistree?
 
 TODO:
 
-- Workaround: click on highlight, scroll to find in table, make visible.
-  - At least scroll table to visible?
-  - Filter table
-  - Right click on node to "add appearance" and search media excerpts.
-- Equivalent propositions:
-  - combine appearances
-  - combine justifications
+- Voting
+  - Color proposition, justifications, highlights
 - Proposition can't appear in two justifications (e.g. two different compounds).
 - Justification appearances
 - Collapsing
-- Node list for disconnected nodes? (Filter by all nodes and disconnected?)
-
+- Filter entity list for disconnected nodes?
+  - (Filter by all nodes and disconnected?)
   - Propositions, MediaExcerpts
 
+- Equivalent propositions:
+  - combine appearances
+  - combine justifications
 - Counter justification intermediate nodes
 - Support setting Justification polarity via drag.
   - https://github.com/cytoscape/cytoscape.js-popper for polarity targets?
