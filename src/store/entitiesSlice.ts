@@ -372,6 +372,17 @@ export const entitiesSlice = createSlice({
         (id) => !allEntityIdsToDelete.has(id)
       );
 
+      // delete proposition compounds if their last justification was deleted.
+      activeMap.entities = activeMap.entities.filter((entity) => {
+        if (entity.type === "PropositionCompound") {
+          const hasJustification = activeMap.entities.some(
+            (e) => e.type === "Justification" && e.basisId === entity.id
+          );
+          return hasJustification;
+        }
+        return true;
+      });
+
       // This must come after updating the activeMap.entities.
       updateMediaExcerptAutoVisibilityForDeletedJustifications(
         state,
