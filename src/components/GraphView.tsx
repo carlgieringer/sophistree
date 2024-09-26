@@ -330,7 +330,10 @@ export default function GraphView({ id, style }: GraphViewProps) {
             selector: "node, edge",
             onClickFunction: function (event) {
               var target = event.target;
-              dispatch(deleteEntity(target.id()));
+              const id = target.isNode()
+                ? target.id()
+                : target.data("entityId");
+              dispatch(deleteEntity(id));
             },
             hasTrailingDivider: true,
           },
@@ -548,6 +551,7 @@ function makeElements(entities: Entity[], selectedEntityIds: string[]) {
           edges.push({
             // Give the edge related to the justification for debugging.
             id: `justification-edge-${entity.id}`,
+            entityId: entity.id,
             source,
             target: entity.targetId,
             polarity: entity.polarity,
