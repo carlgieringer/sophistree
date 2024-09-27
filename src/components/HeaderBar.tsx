@@ -75,6 +75,7 @@ function HeaderBar({ id }: { id?: string }) {
               setRenameMapDialogVisible(true);
               hideMenu();
             }}
+            disabled={!activeMapId}
           />
           <Menu.Item
             key="delete-map"
@@ -129,10 +130,12 @@ function HeaderBar({ id }: { id?: string }) {
         </Menu>
       </Appbar.Header>
       <Portal>
-        <RenameMapDialog
-          visible={isRenameMapDialogVisible}
-          onDismiss={() => setRenameMapDialogVisible(false)}
-        />
+        {activeMapName && (
+          <RenameMapDialog
+            visible={isRenameMapDialogVisible}
+            onDismiss={() => setRenameMapDialogVisible(false)}
+          />
+        )}
         <NewMapDialog
           visible={isNewMapDialogVisible}
           onDismiss={() => setNewMapDialogVisible(false)}
