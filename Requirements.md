@@ -41,24 +41,24 @@ TODO:
 - Add to Argument:
   - Conclusion(s)
   - Source(s) (appearances of conclusions; preferably one source.)
-- Color highlights according to fact-check.
+  - requires migration
+- Color highlights according to critique.
   - "Conclusion" is a root proposition (must have at least one justification)
   - "Argument" is a conclusion and all justification based on any of the conclusion's appearances.
     If the conclusion has no appearances, then the argument is all justifications.
   - Argument appearance is an argument whose conclusion has an appearance.
-  - "Fact-check" is any justification that is not from the conclusion's appearance.
-- Justification of any argument proposition appearing in the source
-- Proposition can't appear in two justifications (e.g. two different compounds).
+  - "Critique" is any justification that is not from the conclusion's appearances.
 - Justification appearances
+  - Counter justification intermediate nodes
+- Proposition can't appear in two justifications (e.g. two different compounds).
 - Collapsing
+
 - Filter entity list for disconnected nodes?
   - (Filter by all nodes and disconnected?)
   - Propositions, MediaExcerpts
-
 - Equivalent propositions:
   - combine appearances
   - combine justifications
-- Counter justification intermediate nodes
 - Support setting Justification polarity via drag.
   - https://github.com/cytoscape/cytoscape.js-popper for polarity targets?
 - Message origin checks
