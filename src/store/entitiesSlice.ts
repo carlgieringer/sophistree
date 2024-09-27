@@ -40,8 +40,21 @@ export interface Justification extends BaseEntity {
   polarity: Polarity;
 }
 
-export interface MediaExcerpt extends BaseEntity, AddMediaExcerptData {
+export interface MediaExcerpt extends BaseEntity {
   type: "MediaExcerpt";
+  quotation: string;
+  urlInfo: UrlInfo;
+  sourceInfo: SourceInfo;
+  domAnchor: DomAnchor;
+}
+
+interface UrlInfo {
+  url: string;
+  canonicalUrl?: string;
+}
+
+interface SourceInfo {
+  name: string;
 }
 
 export interface Appearance extends BaseEntity {
@@ -120,10 +133,16 @@ export const entitiesSlice = createSlice({
     addMediaExcerpt(state, action: PayloadAction<AddMediaExcerptData>) {
       const activeMap = state.maps.find((map) => map.id === state.activeMapId);
       if (activeMap) {
+        const { quotation, url, canonicalUrl, sourceName, domAnchor, id } =
+          action.payload;
         const newNode: MediaExcerpt = {
           type: "MediaExcerpt",
           ...defaultVisibilityProps,
-          ...action.payload,
+          id,
+          quotation,
+          urlInfo: { url, canonicalUrl },
+          sourceInfo: { name: sourceName },
+          domAnchor,
         };
         activeMap.entities.push(newNode);
       }

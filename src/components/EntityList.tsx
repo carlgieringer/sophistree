@@ -85,7 +85,7 @@ function makeDescription(entity: Entity): string {
     case "Proposition":
       return entity.text;
     case "MediaExcerpt":
-      return `"${entity.quotation}" ${entity.sourceName} <${entity.canonicalUrl}>`;
+      return `"${entity.quotation}" ${entity.sourceInfo.name} <${entity.urlInfo.canonicalUrl}>`;
     default:
       return `${entity.type}`;
   }

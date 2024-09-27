@@ -3,8 +3,9 @@ import { useSelector } from "react-redux";
 
 import * as selectors from "../store/selectors";
 import { ArgumentMap } from "../store/entitiesSlice";
+import { persistedStateVersion } from "../store/migrations";
 
-const sophistreeMapFileVersion = 1;
+export const sophistreeMapFileVersion = persistedStateVersion;
 
 export default function DownloadMapsDialog({
   onDismiss,

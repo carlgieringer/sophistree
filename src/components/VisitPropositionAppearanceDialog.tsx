@@ -30,13 +30,14 @@ export default function VisitPropositionAppearanceDialog({
       <Dialog.Content>
         {data.appearances?.map((appearance) => {
           const url =
-            appearance.mediaExcerpt.canonicalUrl ?? appearance.mediaExcerpt.url;
+            appearance.mediaExcerpt.urlInfo.canonicalUrl ??
+            appearance.mediaExcerpt.urlInfo.url;
           const hostname = new URL(url).hostname;
           return (
             <View key={appearance.id}>
               <Text>“{appearance.mediaExcerpt.quotation}”</Text>
               <Text style={styles.sourceName}>
-                {appearance.mediaExcerpt.sourceName}
+                {appearance.mediaExcerpt.sourceInfo.name}
               </Text>
               <Button
                 onPress={() => activateMediaExcerpt(appearance.mediaExcerpt)}
@@ -66,7 +67,8 @@ const styles = StyleSheet.create({
 export async function activateMediaExcerpt(mediaExcerpt: MediaExcerpt) {
   const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
   const activeTab = tabs[0];
-  const mediaExcerptUrl = mediaExcerpt.canonicalUrl ?? mediaExcerpt.url;
+  const mediaExcerptUrl =
+    mediaExcerpt.urlInfo.canonicalUrl ?? mediaExcerpt.urlInfo.url;
   const tabId = await getOrOpenTab(activeTab, mediaExcerptUrl);
   if (!tabId) {
     console.error("Unable to activate media excerpt.");

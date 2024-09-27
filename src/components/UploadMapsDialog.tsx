@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { Dialog, Button, Portal } from "react-native-paper";
 import { useDispatch } from "react-redux";
 import { createMap } from "../store/entitiesSlice";
+import { sophistreeMapFileVersion } from "./DownloadMapsDialog";
+import { migrateMap } from "../store/migrations";
 
 const UploadMapsDialog = ({
   onDismiss,
@@ -36,7 +38,18 @@ const UploadMapsDialog = ({
       }
 
       const maps = jsonContent.maps || [jsonContent.map];
-      maps.forEach((map: any) => {
+      const updatedMaps = maps.map((map: any) => {
+        let updatedMap = map;
+        for (
+          let i = jsonContent.sophistreeMapFileVersion;
+          i < sophistreeMapFileVersion;
+          i++
+        ) {
+          updatedMap = migrateMap(updatedMap, i);
+        }
+        return updatedMap;
+      });
+      updatedMaps.forEach((map: any) => {
         dispatch(createMap(map));
       });
     }

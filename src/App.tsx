@@ -37,9 +37,9 @@ const App: React.FC = () => {
           const mediaExcerpts = entities.filter(
             (entity) =>
               entity.type === "MediaExcerpt" &&
-              (entity.canonicalUrl
-                ? entity.canonicalUrl === canonicalUrl
-                : entity.url === url)
+              (entity.urlInfo.canonicalUrl
+                ? entity.urlInfo.canonicalUrl === canonicalUrl
+                : entity.urlInfo.url === url)
           );
           sendResponse({ mediaExcerpts });
           break;

@@ -184,23 +184,21 @@ export default function GraphView({ id, style }: GraphViewProps) {
     {
       query: `node[type="MediaExcerpt"]`,
       template: function (data: MediaExcerpt) {
+        const url = data.urlInfo.url ?? data.urlInfo.canonicalUrl;
         return (
           <>
             <p>{data.quotation}</p>
             <a
-              href={data.canonicalUrl}
-              title={data.canonicalUrl}
+              href={url}
+              title={url}
               onClick={(event) => {
-                if (!data.canonicalUrl) {
-                  return;
-                }
                 event.preventDefault();
                 event.stopPropagation();
                 activateMediaExcerpt(data);
                 return false;
               }}
             >
-              {data.sourceName}
+              {data.sourceInfo.name}
             </a>
           </>
         );
