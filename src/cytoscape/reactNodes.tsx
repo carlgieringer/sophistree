@@ -1,7 +1,8 @@
 import cytoscape from "cytoscape";
 import ReactDOM from "react-dom/client";
+import debounce from "lodash.debounce";
+
 import { sunflower } from "../colors";
-import { debounce } from "../functionUtils";
 
 declare module "cytoscape" {
   interface Core {

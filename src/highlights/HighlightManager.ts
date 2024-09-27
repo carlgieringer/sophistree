@@ -1,12 +1,13 @@
-import { DomAnchor, getRangesFromDomAnchor } from "../anchors";
-import { debounce } from "../functionUtils";
+import debounce from "lodash.debounce";
 
-interface Highlight {
-  mediaExcerptId: string;
-  domAnchor: DomAnchor;
+interface Highlight<Anchor, Data> {
+  /** The object that anchors the highlight to the document */
+  anchor: Anchor;
+  /** Arbitrary data to associate with the highlight. Can be used to activate the highlight later. */
+  data: Data;
   ranges: Range[];
   elements: HTMLElement[];
-  onClick?: (highlight: Highlight) => void;
+  onClick?: (highlight: Highlight<Anchor, Data>) => void;
 }
 
 const defaultColors = [
@@ -42,32 +43,37 @@ const defaultColors = [
   },
 ];
 
-class HighlightManager {
-  private container: HTMLElement;
-  private highlights: Highlight[] = [];
+type GetRangesFromAnchorFunction<Anchor> = (
+  container: HTMLElement,
+  anchor: Anchor
+) => Range[];
+
+class HighlightManager<Anchor, Data> {
+  private highlights: Highlight<Anchor, Data>[] = [];
   private sortedHighlightElements: Array<{
-    highlight: Highlight;
+    highlight: Highlight<Anchor, Data>;
     element: HTMLElement;
   }> = [];
   private colors = defaultColors;
   private colorTransitionDuration = "0.3s";
 
-  constructor(container: HTMLElement) {
+  constructor(
+    private readonly container: HTMLElement,
+    private readonly getRangesFromAnchor: GetRangesFromAnchorFunction<Anchor>
+  ) {
     this.container = container;
+    this.getRangesFromAnchor = getRangesFromAnchor;
     this.addEventListeners();
   }
 
-  activateHighlightForMediaExcerptId(mediaExcerptId: string) {
-    const highlightIndex = this.highlights.findIndex(
-      (h) => h.mediaExcerptId === mediaExcerptId
-    );
-    if (highlightIndex < 0) {
+  activateHighlight(selector: (highlight: Highlight<Anchor, Data>) => boolean) {
+    const highlight = this.highlights.find(selector);
+    if (!highlight) {
       console.error(
-        `Could not activate highlight for mediaExcerptId ${mediaExcerptId} because the highlight wasn't found.`
+        `Could not activate highlight for selector ${selector} because the highlight wasn't found.`
       );
       return;
     }
-    const highlight = this.highlights[highlightIndex];
 
     highlight.elements[0].scrollIntoView({
       behavior: "smooth",
@@ -88,22 +94,22 @@ class HighlightManager {
   }
 
   createHighlight(
-    mediaExcerptId: string,
-    domAnchor: DomAnchor,
+    anchor: Anchor,
+    data: Data,
     handlers?: {
-      onClick: (highlight: Highlight) => void;
+      onClick: (highlight: Highlight<Anchor, Data>) => void;
     }
-  ): Highlight {
-    const ranges = getRangesFromDomAnchor(this.container, domAnchor);
+  ): Highlight<Anchor, Data> {
+    const ranges = this.getRangesFromAnchor(this.container, anchor);
     const coextensiveHighlight = this.getCoextensiveHighlight(ranges);
     if (coextensiveHighlight) {
       return coextensiveHighlight;
     }
 
     const elements: HTMLElement[] = [];
-    const highlight: Highlight = {
-      mediaExcerptId,
-      domAnchor,
+    const highlight: Highlight<Anchor, Data> = {
+      data,
+      anchor,
       ranges,
       elements,
       onClick: handlers?.onClick,
@@ -124,7 +130,9 @@ class HighlightManager {
     return highlight;
   }
 
-  private getCoextensiveHighlight(ranges: Range[]): Highlight | undefined {
+  private getCoextensiveHighlight(
+    ranges: Range[]
+  ): Highlight<Anchor, Data> | undefined {
     // Check if the new highlight is coextensive with an existing highlight
     // If it is, return the existing highlight
     // Otherwise, return undefined
@@ -142,7 +150,7 @@ class HighlightManager {
     });
   }
 
-  private getHighlightColor(highlight: Highlight | number) {
+  private getHighlightColor(highlight: Highlight<Anchor, Data> | number) {
     const highlightIndex =
       typeof highlight === "number"
         ? highlight
@@ -192,7 +200,7 @@ class HighlightManager {
   }
 
   private insertSortedElement(item: {
-    highlight: Highlight;
+    highlight: Highlight<Anchor, Data>;
     element: HTMLElement;
   }) {
     const index = this.sortedHighlightElements.findIndex((existing) => {
@@ -321,7 +329,7 @@ class HighlightManager {
    * Updates the highlight's elements to have the right coordinates. Adds
    * new elements as necessary, and hides unnecessary ones.
    */
-  private updateHighlightElements(highlight: Highlight) {
+  private updateHighlightElements(highlight: Highlight<Anchor, Data>) {
     const newElements = [] as HTMLElement[];
 
     let elementIndex = 0;
@@ -333,9 +341,9 @@ class HighlightManager {
         this.removeSortedElement(element);
       });
       highlight.elements = [];
-      highlight.ranges = getRangesFromDomAnchor(
+      highlight.ranges = this.getRangesFromAnchor(
         this.container,
-        highlight.domAnchor
+        highlight.anchor
       );
     }
 
@@ -383,7 +391,9 @@ class HighlightManager {
     return newElements;
   }
 
-  private createElementForHighlight(highlight: Highlight): HTMLElement {
+  private createElementForHighlight(
+    highlight: Highlight<Anchor, Data>
+  ): HTMLElement {
     const element = document.createElement("div");
     element.classList.add("sophistree-highlight");
     element.style.position = "absolute";
@@ -449,7 +459,7 @@ class HighlightManager {
     );
   }
 
-  removeHighlight(highlight: Highlight) {
+  removeHighlight(highlight: Highlight<Anchor, Data>) {
     const index = this.highlights.indexOf(highlight);
     if (index < 0) {
       return;

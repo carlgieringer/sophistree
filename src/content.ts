@@ -1,8 +1,11 @@
 import { v4 as uuidv4 } from "uuid";
 
 import { AddMediaExcerptData, MediaExcerpt } from "./store/entitiesSlice";
-import { makeDomAnchorFromSelection, DomAnchor } from "./anchors";
-import { opacity50, sunflower } from "./colors";
+import {
+  makeDomAnchorFromSelection,
+  DomAnchor,
+  getRangesFromDomAnchor,
+} from "./anchors";
 import { HighlightManager } from "./highlights";
 
 interface AddMediaExcerptMessage {
@@ -68,7 +71,9 @@ chrome.runtime.onMessage.addListener(
 );
 
 function activateMediaExcerpt(mediaExcerpt: MediaExcerpt) {
-  highlightManager.activateHighlightForMediaExcerptId(mediaExcerpt.id);
+  highlightManager.activateHighlight(
+    (anchor) => anchor.data.mediaExcerptId === mediaExcerpt.id
+  );
 }
 
 function createMediaExcerpt(message: any) {
@@ -89,14 +94,14 @@ function createMediaExcerpt(message: any) {
     return;
   }
 
-  if (highlight.mediaExcerptId === id) {
+  if (highlight.data.mediaExcerptId === id) {
     const data: AddMediaExcerptData = {
-      id: highlight.mediaExcerptId,
+      id: highlight.data.mediaExcerptId,
       quotation,
       url,
       canonicalUrl,
       sourceName,
-      domAnchor: highlight.domAnchor,
+      domAnchor: highlight.anchor,
     };
     const sidebarMessage: ChromeRuntimeMessage = {
       action: "addMediaExcerpt",
@@ -104,7 +109,7 @@ function createMediaExcerpt(message: any) {
     };
     chrome.runtime.sendMessage(sidebarMessage);
   } else {
-    selectMediaExcerpt(highlight.mediaExcerptId);
+    selectMediaExcerpt(highlight.data.mediaExcerptId);
   }
 }
 
@@ -179,14 +184,25 @@ function highlightCurrentSelection(mediaExcerptId: string) {
   return highlightRanges(mediaExcerptId, domAnchor);
 }
 
-const highlightManager = new HighlightManager(document.body);
+interface HighlightData {
+  mediaExcerptId: string;
+}
+
+const highlightManager = new HighlightManager<DomAnchor, HighlightData>(
+  document.body,
+  getRangesFromDomAnchor
+);
 
 function highlightRanges(mediaExcerptId: string, domAnchor: DomAnchor) {
-  return highlightManager.createHighlight(mediaExcerptId, domAnchor, {
-    onClick: function highlightOnClick() {
-      selectMediaExcerpt(mediaExcerptId);
-    },
-  });
+  return highlightManager.createHighlight(
+    domAnchor,
+    { mediaExcerptId },
+    {
+      onClick: function highlightOnClick() {
+        selectMediaExcerpt(mediaExcerptId);
+      },
+    }
+  );
 }
 
 function selectMediaExcerpt(mediaExcerptId: string) {
