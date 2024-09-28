@@ -1,6 +1,8 @@
 # Sophistree Browser Extension
 
-Sophistree is a browser extension for mapping arguments, built with React, Redux, and TypeScript.
+Sophistree is a Chrome extension for mapping arguments.
+
+![screenshot](https://github.com/carlgieringer/sophistree/blob/main/docs/screenshot.png?raw=true)
 
 ## Development Setup
 
@@ -9,8 +11,8 @@ Sophistree is a browser extension for mapping arguments, built with React, Redux
 1. Clone the repository:
 
    ```sh
-   git clone https://github.com/your-username/sophistree-extension.git
-   cd sophistree-extension
+   git clone https://github.com/carlgieringer/sophistree.git
+   cd sophistree
    ```
 
 2. Install dependencies:
@@ -29,7 +31,8 @@ This continuously builds the javascript:
 npm run build:dev
 ```
 
-If you change the manifest you must restart this command.
+This will build the javascript and watch for changes. Changes to static files
+in public don't trigger changes, but are picked up when the JS changes.
 
 #### Loading the Extension in Chrome
 
@@ -37,30 +40,8 @@ If you change the manifest you must restart this command.
 2. Enable "Developer mode" in the top right corner.
 3. Click "Load unpacked" and select the `dist` folder created in the previous step.
 
-You'll need to reload the extension any time the code changes. I couldn't figure
-out how to do hot reload in a Chrome extension (I got permissions errors I didn't
-figure out how to fix.)
+To reload JS changes, you can just close and re-open the sidebar using the action button in Chrome's
+toolbar.
 
-### Building for Production
-
-To create a production build of the extension:
-
-```sh
-npm run build
-```
-
-This will create a production-ready version of the extension in the `dist` folder.
-
-### Project Structure
-
-- `src/`: Contains the React application and TypeScript source files
-- `public/`: Contains static assets and manifest files
-- `dist/`: Contains the built extension (created after running build scripts)
-
-## Contributing
-
-[Include information about how to contribute to the project, coding standards, pull request process, etc.]
-
-## License
-
-[Include license information here]
+You'll need to reload the extension any time the manifest changes. You can do this from the in-app
+menu or from Chrome's extension page.
