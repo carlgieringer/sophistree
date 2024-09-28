@@ -45,3 +45,20 @@ toolbar.
 
 You'll need to reload the extension any time the manifest changes. You can do this from the in-app
 menu or from Chrome's extension page.
+
+## Using the extension
+
+- Select text on a page and there will be a context menu item that creates a MediaExcerpt.
+- Click a highlight on a page to select the MediaExcerpt and any Appearances in the graph.
+- Double click on the graph to create a new Proposition (select it to edit its text.)
+- Everthing else is drag-and-drop:
+  - Drag a Proposition to a MediaExcerpt to say "the Proposition appears
+    at that MediaExcerpt". The MediaExcerpt will then be hidden by default, but you can
+    show it using the table.
+  - Drag a Proposition or MediaExcerpt to a Proposition to create a
+    Justification.
+  - Drag a Proposition to a PropositionCompound (wrapper around Proposition(s) already
+    in a Justification) to combine the Propositions into a Justification basis.
+
+The model is the same as Howdju, and is explained here with a graph:
+https://docs.howdju.com/concepts
