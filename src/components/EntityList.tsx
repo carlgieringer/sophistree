@@ -4,7 +4,7 @@ import { DataTable, Searchbar } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { StyleProp, ViewStyle, View } from "react-native";
 
-import { Entity, selectEntities } from "../store/entitiesSlice";
+import { Entity, preferredUrl, selectEntities } from "../store/entitiesSlice";
 import VisibilityDropdown from "./VisibilityDropdown";
 import * as selectors from "../store/selectors";
 
@@ -85,7 +85,8 @@ function makeDescription(entity: Entity): string {
     case "Proposition":
       return entity.text;
     case "MediaExcerpt":
-      return `"${entity.quotation}" ${entity.sourceInfo.name} <${entity.urlInfo.canonicalUrl}>`;
+      const url = preferredUrl(entity.urlInfo);
+      return `"${entity.quotation}" ${entity.sourceInfo.name} <${url}>`;
     default:
       return `${entity.type}`;
   }

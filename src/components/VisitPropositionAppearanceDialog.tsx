@@ -2,7 +2,11 @@ import { StyleSheet, View } from "react-native";
 import { Dialog, Button, Text, Tooltip } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
-import { MediaExcerpt, Proposition } from "../store/entitiesSlice";
+import {
+  MediaExcerpt,
+  preferredUrl,
+  Proposition,
+} from "../store/entitiesSlice";
 import { ActivateMediaExcerptMessage, RequestUrlMessage } from "../content";
 
 export interface AppearanceInfo {
@@ -29,9 +33,7 @@ export default function VisitPropositionAppearanceDialog({
       <Dialog.Title>Appearances for “{data.text}”</Dialog.Title>
       <Dialog.Content>
         {data.appearances?.map((appearance) => {
-          const url =
-            appearance.mediaExcerpt.urlInfo.canonicalUrl ??
-            appearance.mediaExcerpt.urlInfo.url;
+          const url = preferredUrl(appearance.mediaExcerpt.urlInfo);
           const hostname = new URL(url).hostname;
           return (
             <View key={appearance.id}>
@@ -67,8 +69,7 @@ const styles = StyleSheet.create({
 export async function activateMediaExcerpt(mediaExcerpt: MediaExcerpt) {
   const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
   const activeTab = tabs[0];
-  const mediaExcerptUrl =
-    mediaExcerpt.urlInfo.canonicalUrl ?? mediaExcerpt.urlInfo.url;
+  const mediaExcerptUrl = preferredUrl(mediaExcerpt.urlInfo);
   const tabId = await getOrOpenTab(activeTab, mediaExcerptUrl);
   if (!tabId) {
     console.error("Unable to activate media excerpt.");

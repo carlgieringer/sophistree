@@ -32,6 +32,7 @@ import {
   Entity,
   MediaExcerpt,
   defaultVisibilityProps,
+  preferredUrl,
 } from "../store/entitiesSlice";
 import {
   carrot,
@@ -184,7 +185,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
     {
       query: `node[type="MediaExcerpt"]`,
       template: function (data: MediaExcerpt) {
-        const url = data.urlInfo.url ?? data.urlInfo.canonicalUrl;
+        const url = preferredUrl(data.urlInfo);
         return (
           <>
             <p>{data.quotation}</p>
