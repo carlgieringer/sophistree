@@ -1,4 +1,4 @@
-import { RootState } from ".";
+import { RootState } from "./store";
 import { Entity } from "./entitiesSlice";
 
 const emptyEntities: Entity[] = [];

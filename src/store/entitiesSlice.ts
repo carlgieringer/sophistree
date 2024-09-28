@@ -69,10 +69,30 @@ interface DragPayload {
   polarity?: Polarity;
 }
 
+/**
+ * Conclusions are any roots of justification trees in the map. To count as a
+ * conclusion, a proposition must be the target of at least one justification,
+ * and it must not be the basis of any justification.
+ *
+ * A ConclusionInfo must have at least one propositionId. It can have multiple
+ * if all those propositions have the same source names and URLs. Ideally
+ * Conclusions' propositionIds are combined into the fewest ConclusionInfos for
+ * streamlined display.
+ */
+interface ConclusionInfo {
+  /** The proposition IDs of the conclusions. */
+  propositionIds: string[];
+  /** The distinct sourceInfo.names for appearances of the proposition.  */
+  sourceNames: string[];
+  /** The distinct preferred URLs for appearances of the proposition. */
+  urls: string[];
+}
+
 export interface ArgumentMap {
   id: string;
   name: string;
   entities: Entity[];
+  conclusions: ConclusionInfo[];
 }
 
 const initialState = {
@@ -102,6 +122,7 @@ export const entitiesSlice = createSlice({
       const newMap: ArgumentMap = {
         name: "New map",
         entities: [],
+        conclusions: [],
         ...action.payload,
         // Overwrite any ID from the payload to ensure that uploaded maps do not replace existing ones.
         id: uuidv4(),
@@ -126,9 +147,12 @@ export const entitiesSlice = createSlice({
     },
     addEntity(state, action: PayloadAction<Entity>) {
       const activeMap = state.maps.find((map) => map.id === state.activeMapId);
-      if (activeMap) {
-        activeMap.entities.push(action.payload);
+      if (!activeMap) {
+        console.error(`Cannot addEntity because there is no activeMap`);
+        return;
       }
+      activeMap.entities.push(action.payload);
+      updateConclusions(activeMap);
     },
     addMediaExcerpt(state, action: PayloadAction<AddMediaExcerptData>) {
       const activeMap = state.maps.find((map) => map.id === state.activeMapId);
@@ -155,16 +179,24 @@ export const entitiesSlice = createSlice({
       }>
     ) {
       const activeMap = state.maps.find((map) => map.id === state.activeMapId);
-      if (!activeMap) return;
+      if (!activeMap) {
+        console.error(`Cannot updateEntity because there is no activeMap`);
+        return;
+      }
       const index = activeMap.entities.findIndex(
         (entity) => entity.id === action.payload.id
       );
-      if (index !== -1) {
-        activeMap.entities[index] = {
-          ...activeMap.entities[index],
-          ...action.payload.updates,
-        };
+      if (index < 1) {
+        console.error(
+          `Cannot updateEntity because there is no entity with id ${action.payload.id}`
+        );
+        return;
       }
+      activeMap.entities[index] = {
+        ...activeMap.entities[index],
+        ...action.payload.updates,
+      };
+      updateConclusions(activeMap);
     },
     updateProposition(
       state,
@@ -227,6 +259,7 @@ export const entitiesSlice = createSlice({
       }
 
       applyDragOperation(state, activeMap, source, target, actionPolarity);
+      updateConclusions(activeMap);
     },
     selectEntities(state, action: PayloadAction<string[]>) {
       const activeMap = state.maps.find((map) => map.id === state.activeMapId);
@@ -257,6 +290,7 @@ export const entitiesSlice = createSlice({
       const entityIdToDelete = action.payload;
 
       applyDeleteOperation(state, activeMap, entityIdToDelete);
+      updateConclusions(activeMap);
     },
     showEntity(state, action: PayloadAction<string>) {
       updateEntityVisibility(state, action.payload, "Visible");
@@ -269,6 +303,109 @@ export const entitiesSlice = createSlice({
     },
   },
 });
+
+export function updateConclusions(map: ArgumentMap) {
+  const {
+    propositionIds,
+    justificationBasisIds,
+    justificationTargetIds,
+    mediaExcerptsById,
+    propositionCompoundAtomIds,
+  } = map.entities.reduce(
+    (acc, entity) => {
+      if (entity.type === "Justification") {
+        acc.justificationBasisIds.add(entity.basisId);
+        if (!acc.justificationBasisIds.has(entity.targetId)) {
+          acc.justificationTargetIds.add(entity.targetId);
+        }
+      } else if (entity.type === "Proposition") {
+        acc.propositionIds.add(entity.id);
+      } else if (entity.type === "MediaExcerpt") {
+        acc.mediaExcerptsById.set(entity.id, entity);
+      } else if (entity.type === "PropositionCompound") {
+        entity.atomIds.forEach((id) => acc.propositionCompoundAtomIds.add(id));
+      }
+      return acc;
+    },
+    {
+      propositionIds: new Set<string>(),
+      justificationBasisIds: new Set<string>(),
+      justificationTargetIds: new Set<string>(),
+      mediaExcerptsById: new Map<string, MediaExcerpt>(),
+      propositionCompoundAtomIds: new Set<string>(),
+    }
+  );
+
+  const { sourceNamesByPropositionId, urlsByPropositionId } =
+    map.entities.reduce(
+      (acc, entity) => {
+        if (entity.type === "Appearance") {
+          const mediaExcerpt = mediaExcerptsById.get(entity.mediaExcerptId);
+          if (mediaExcerpt) {
+            if (!acc.sourceNamesByPropositionId.has(entity.apparitionId)) {
+              acc.sourceNamesByPropositionId.set(
+                entity.apparitionId,
+                new Set()
+              );
+            }
+            acc.sourceNamesByPropositionId
+              .get(entity.apparitionId)!
+              .add(mediaExcerpt.sourceInfo.name);
+
+            if (!acc.urlsByPropositionId.has(entity.apparitionId)) {
+              acc.urlsByPropositionId.set(entity.apparitionId, new Set());
+            }
+            acc.urlsByPropositionId
+              .get(entity.apparitionId)!
+              .add(preferredUrl(mediaExcerpt.urlInfo));
+          } else {
+            console.warn(`MediaExcerpt not found for Appearance: ${entity.id}`);
+          }
+        }
+        return acc;
+      },
+      {
+        sourceNamesByPropositionId: new Map<string, Set<string>>(),
+        urlsByPropositionId: new Map<string, Set<string>>(),
+      }
+    );
+
+  // Conclusions must be propositions that are not the basis of any justification.
+  // Because PropositionCompounds only exist to be justification bases, we exclude
+  // any proposition that is an atom.
+  const conclusionPropositionIds = [...justificationTargetIds].filter(
+    (id) =>
+      propositionIds.has(id) &&
+      !justificationBasisIds.has(id) &&
+      !propositionCompoundAtomIds.has(id)
+  );
+
+  // Group conclusions by their source names and URLs
+  const { conclusionGroups } = conclusionPropositionIds.reduce(
+    (acc, id) => {
+      const sourceNames = Array.from(sourceNamesByPropositionId.get(id) || []);
+      const urls = Array.from(urlsByPropositionId.get(id) || []);
+      const key = JSON.stringify({ sourceNames, urls });
+
+      if (!acc.conclusionGroups.has(key)) {
+        acc.conclusionGroups.set(key, {
+          propositionIds: [],
+          sourceNames,
+          urls,
+        });
+      }
+      acc.conclusionGroups.get(key)!.propositionIds.push(id);
+      return acc;
+    },
+    { conclusionGroups: new Map<string, ConclusionInfo>() }
+  );
+
+  map.conclusions = Array.from(conclusionGroups.values());
+}
+
+export function preferredUrl(urlInfo: UrlInfo): string {
+  return urlInfo.canonicalUrl ?? urlInfo.url;
+}
 
 function applyDeleteOperation(
   state: State,

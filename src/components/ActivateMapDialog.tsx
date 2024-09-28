@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 
 import { setActiveMap } from "../store/entitiesSlice";
 import * as selectors from "../store/selectors";
+import ArgumentMapView from "./ArgumentMapView";
 
 export default function ActiveMapDialog({
   onDismiss,
@@ -21,16 +22,21 @@ export default function ActiveMapDialog({
     }
   }
 
-  const buttons = maps.map((m) => (
-    <Button
-      key={m.id}
-      onPress={() => {
-        dispatch(setActiveMap(m.id));
-        hideModal();
-      }}
-    >
-      Open {m.name}
-    </Button>
+  const buttons = maps.map((map) => (
+    <ArgumentMapView
+      key={map.id}
+      map={map}
+      titleButton={
+        <Button
+          onPress={() => {
+            dispatch(setActiveMap(map.id));
+            hideModal();
+          }}
+        >
+          Open
+        </Button>
+      }
+    />
   ));
 
   return (

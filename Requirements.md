@@ -38,10 +38,6 @@ this extension and use that in place of Sophistree?
 
 TODO:
 
-- Add to Argument:
-  - Conclusion(s)
-  - Source(s) (appearances of conclusions; preferably one source.)
-  - requires migration
 - Color highlights according to critique.
   - "Conclusion" is a root proposition (must have at least one justification)
   - "Argument" is a conclusion and all justification based on any of the conclusion's appearances.
@@ -53,6 +49,7 @@ TODO:
 - Proposition can't appear in two justifications (e.g. two different compounds).
 - Collapsing
 
+- Appearance justifications
 - Filter entity list for disconnected nodes?
   - (Filter by all nodes and disconnected?)
   - Propositions, MediaExcerpts

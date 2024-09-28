@@ -1,4 +1,7 @@
 import { produce, current } from "immer";
+import { updateConclusions } from "./entitiesSlice";
+
+export const persistedStateVersion = 3;
 
 export const reduxPersistMigrations = {
   0: (state: any) => state,
@@ -8,6 +11,17 @@ export const reduxPersistMigrations = {
       mapMigrations[2](map);
     });
   }),
+  3: produce((state: any) => {
+    state.maps.forEach((map: any) => {
+      mapMigrations[3](map);
+    });
+  }),
+};
+
+export const migrateMap = (map: any, version: keyof typeof mapMigrations) => {
+  return produce(map, (draft: any) => {
+    mapMigrations[version](draft);
+  });
 };
 
 const mapMigrations = {
@@ -25,12 +39,7 @@ const mapMigrations = {
       }
     });
   },
+  3: (map: any) => {
+    updateConclusions(map);
+  },
 };
-
-export const migrateMap = (map: any, version: keyof typeof mapMigrations) => {
-  return produce(map, (draft: any) => {
-    mapMigrations[version](draft);
-  });
-};
-
-export const persistedStateVersion = 2;
