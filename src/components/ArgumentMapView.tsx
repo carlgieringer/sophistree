@@ -1,4 +1,4 @@
-import React, { ReactNode } from "react";
+import React, { ReactNode, useMemo } from "react";
 import { View, ScrollView } from "react-native";
 import {
   Card,
@@ -21,15 +21,20 @@ const ArgumentMapView = ({
   map: ArgumentMap;
   titleButton: ReactNode;
 }) => {
-  const propositionTextById = Object.fromEntries(
-    useSelector((state: RootState) =>
-      state.entities.maps.flatMap((map) =>
-        map.entities
-          .filter((entity) => entity.type === "Proposition")
-          .map((entity) => [entity.id, entity.text])
-      )
+  const allPropositions = useSelector((state: RootState) =>
+    state.entities.maps.flatMap((m) =>
+      m.entities.filter((entity) => entity.type === "Proposition")
     )
   );
+
+  const propositionTextById = useMemo(() => {
+    const neededIds = new Set(map.conclusions.flatMap((c) => c.propositionIds));
+    return Object.fromEntries(
+      allPropositions
+        .filter((prop) => neededIds.has(prop.id))
+        .map((prop) => [prop.id, prop.text])
+    );
+  }, [map.conclusions, allPropositions]);
   return (
     <ScrollView>
       <Card style={{ marginTop: 16 }}>
