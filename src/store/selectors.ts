@@ -1,3 +1,5 @@
+import { createSelector } from "@reduxjs/toolkit";
+
 import { RootState } from "./store";
 import { Entity } from "./entitiesSlice";
 
@@ -33,7 +35,10 @@ export const selectedEntities = (state: RootState) => {
   );
 };
 
-export const allPropositions = (state: RootState) =>
-  state.entities.maps.flatMap((m) =>
+const selectAllMaps = (state: RootState) => state.entities.maps;
+
+export const allPropositions = createSelector([selectAllMaps], (allMaps) =>
+  allMaps.flatMap((m) =>
     m.entities.filter((entity) => entity.type === "Proposition")
-  );
+  )
+);

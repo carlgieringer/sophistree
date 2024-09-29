@@ -38,10 +38,6 @@ this extension and use that in place of Sophistree?
 
 TODO:
 
-- Weird thing happened with graph with either an unnecessary intermediate counter node or a counter
-  to an empty justification.
-- Can't scroll open map dialog
-
 - Color highlights according to critique.
   - "Conclusion" is a root proposition (must have at least one justification)
   - "Argument" is a conclusion and all justification based on any of the conclusion's appearances.

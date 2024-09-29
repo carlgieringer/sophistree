@@ -1,6 +1,6 @@
 import { Button, Dialog, Portal } from "react-native-paper";
 import { useDispatch, useSelector } from "react-redux";
-import { ScrollView } from "react-native";
+import { ScrollView, StyleSheet } from "react-native";
 
 import { setActiveMap } from "../store/entitiesSlice";
 import * as selectors from "../store/selectors";
@@ -48,9 +48,9 @@ export default function ActiveMapDialog({
   });
 
   return (
-    <Dialog visible={visible} onDismiss={hideModal}>
+    <Dialog visible={visible} onDismiss={hideModal} style={styles.dialog}>
       <Dialog.ScrollArea>
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 24 }}>
+        <ScrollView>
           <Dialog.Title>Open a map</Dialog.Title>
           <Dialog.Content>{mapCards}</Dialog.Content>
           <Dialog.Actions>
@@ -61,3 +61,11 @@ export default function ActiveMapDialog({
     </Dialog>
   );
 }
+
+const styles = StyleSheet.create({
+  dialog: {
+    // Otherwise the dialog is not scrollable, and for lots of maps it renders
+    // offscreen.
+    maxHeight: "100%",
+  },
+});
