@@ -75,7 +75,6 @@ export default function GraphView({ id, style }: GraphViewProps) {
     () => makeElements(entities, selectedEntityIds),
     [entities, selectedEntityIds]
   );
-  console.debug({ elements });
 
   const cyRef = useRef<cytoscape.Core | undefined>(undefined);
 
@@ -97,8 +96,6 @@ export default function GraphView({ id, style }: GraphViewProps) {
   }, [selectedEntityIds]);
 
   useEffect(() => {
-    const cy = cyRef.current;
-    if (!cy) return;
     if (focusedNodeIds.length) {
       panToNodes(focusedNodeIds);
     }
@@ -127,9 +124,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
     const cy = cyRef.current;
     if (!cy) return;
 
-    const nodes = cy
-      .nodes()
-      .filter((node) => nodeIds.includes(node.data("entityId")));
+    const nodes = cy.nodes().filter((node) => nodeIds.includes(node.id()));
     if (nodes.length === 0) return;
 
     const nodesBoundingBox = nodes.boundingBox();
@@ -143,7 +138,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
       nodesBoundingBox.y2 + padding <= extent.y2;
 
     if (!viewIncludesNodes) {
-      cy.animate({ center: { eles: nodes } });
+      cy.animate({ center: { eles: nodes }, duration: 300 });
     }
   }, []);
 
@@ -630,7 +625,7 @@ function makeElements(entities: Entity[], selectedEntityIds: string[]) {
     }
   );
 
-  const { nodes, edges } = entities.reduce(
+  const { nodes: visibleNodes, edges: allEdges } = entities.reduce(
     (acc, entity) => {
       if (!visibleEntityIds.has(entity.id)) {
         return acc;
@@ -784,12 +779,12 @@ function makeElements(entities: Entity[], selectedEntityIds: string[]) {
     }
   );
 
-  const visibleNodeIds = new Set(nodes.map((n) => n.id));
-  const visibleEdges = edges.filter(
+  const visibleNodeIds = new Set(visibleNodes.map((n) => n.id));
+  const visibleEdges = allEdges.filter(
     (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
   );
 
-  const focusedNodeIds = nodes.reduce((acc, node) => {
+  const focusedNodeIds = visibleNodes.reduce((acc, node) => {
     if (selectedEntityIds.includes(node.entityId)) {
       acc.push(node.id);
     }
@@ -799,7 +794,7 @@ function makeElements(entities: Entity[], selectedEntityIds: string[]) {
     return acc;
   }, [] as string[]);
 
-  const elements: ElementDefinition[] = [...nodes, ...visibleEdges].map(
+  const elements: ElementDefinition[] = [...visibleNodes, ...visibleEdges].map(
     (data) => ({ data })
   );
 
