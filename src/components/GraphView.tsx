@@ -521,7 +521,33 @@ export default function GraphView({ id, style }: GraphViewProps) {
   );
 }
 
+/** Creates the Cytoscape elements for displaying the entities as a graph. Also returns
+ * the focused node ids, which are the nodes that should be centered in the graph.
+ *
+ * @param entities The entities to display
+ * @param selectedEntityIds The ids of the entities that are selected
+ * @returns The Cytoscape elements and the focused node ids
+ */
 function makeElements(entities: Entity[], selectedEntityIds: string[]) {
+  const { nodes, edges } = getNodesAndEdges(entities, selectedEntityIds);
+  const focusedNodeIds = nodes.reduce((acc, node) => {
+    if (selectedEntityIds.includes(node.entityId)) {
+      acc.push(node.id);
+    }
+    if (node.type === "Proposition" && node.isAnyAppearanceSelected) {
+      acc.push(node.id);
+    }
+    return acc;
+  }, [] as string[]);
+
+  const elements: ElementDefinition[] = [...nodes, ...edges].map((data) => ({
+    data,
+  }));
+
+  return { elements, focusedNodeIds };
+}
+
+function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
   const { mediaExcerptsById, propositionsById, visibleEntityIds } =
     entities.reduce(
       (acc, e) => {
@@ -559,7 +585,6 @@ function makeElements(entities: Entity[], selectedEntityIds: string[]) {
       }
       switch (entity.type) {
         case "Proposition":
-          // Store proposition node IDs so that justifications can use them.
           acc.justificationTargetNodeIds.set(
             entity.id,
             `proposition-${entity.id}`
@@ -783,22 +808,7 @@ function makeElements(entities: Entity[], selectedEntityIds: string[]) {
   const visibleEdges = allEdges.filter(
     (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
   );
-
-  const focusedNodeIds = visibleNodes.reduce((acc, node) => {
-    if (selectedEntityIds.includes(node.entityId)) {
-      acc.push(node.id);
-    }
-    if (node.type === "Proposition" && node.isAnyAppearanceSelected) {
-      acc.push(node.id);
-    }
-    return acc;
-  }, [] as string[]);
-
-  const elements: ElementDefinition[] = [...visibleNodes, ...visibleEdges].map(
-    (data) => ({ data })
-  );
-
-  return { elements, focusedNodeIds };
+  return { nodes: visibleNodes, edges: visibleEdges };
 }
 
 /** After we delete entities we need to remove them from Cytoscape */
