@@ -13,6 +13,8 @@ import cytoscape, {
   Position,
   EventObject,
   EdgeDataDefinition,
+  NodeDataDefinition,
+  ElementDefinition,
 } from "cytoscape";
 import CytoscapeComponent from "react-cytoscapejs";
 import contextMenus from "cytoscape-context-menus";
@@ -21,6 +23,7 @@ import elk from "cytoscape-elk";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { Portal } from "react-native-paper";
 import cn from "classnames";
+import { SetRequired } from "type-fest";
 
 import reactNodes, { ReactNodeOptions } from "../cytoscape/reactNodes";
 import {
@@ -33,6 +36,7 @@ import {
   MediaExcerpt,
   defaultVisibilityProps,
   preferredUrl,
+  Proposition,
 } from "../store/entitiesSlice";
 import {
   carrot,
@@ -81,19 +85,17 @@ export default function GraphView({ id, style }: GraphViewProps) {
   useEffect(() => {
     cyRef.current
       ?.nodes()
-      .filter((n) => !selectedEntityIds.includes(n.id()))
+      .filter((n) => !selectedEntityIds.includes(n.data("entityId")))
       .unselect();
     if (selectedEntityIds.length) {
       cyRef.current
         ?.nodes()
-        .filter((n) => selectedEntityIds.includes(n.id()))
+        .filter((n) => selectedEntityIds.includes(n.data("entityId")))
         .select();
     }
   }, [selectedEntityIds]);
 
   useEffect(() => {
-    const cy = cyRef.current;
-    if (!cy) return;
     if (focusedNodeIds.length) {
       panToNodes(focusedNodeIds);
     }
@@ -136,7 +138,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
       nodesBoundingBox.y2 + padding <= extent.y2;
 
     if (!viewIncludesNodes) {
-      cy.animate({ center: { eles: nodes } });
+      cy.animate({ center: { eles: nodes }, duration: 300 });
     }
   }, []);
 
@@ -331,9 +333,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
             selector: "node, edge",
             onClickFunction: function (event) {
               var target = event.target;
-              const id = target.isNode()
-                ? target.id()
-                : target.data("entityId");
+              const id = target.data("entityId");
               dispatch(deleteEntity(id));
             },
             hasTrailingDivider: true,
@@ -364,7 +364,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
       });
 
       cy.on("tap", "node", (event: EventObjectNode) => {
-        const entityId = event.target.id();
+        const entityId = event.target.data("entityId");
         dispatch(selectEntities([entityId]));
       });
 
@@ -433,8 +433,8 @@ export default function GraphView({ id, style }: GraphViewProps) {
           if (dragTargetNode && isValidDropTarget(dragSource, dragTargetNode)) {
             dispatch(
               completeDrag({
-                sourceId: dragSource.id(),
-                targetId: dragTargetNode.id(),
+                sourceId: dragSource.data("entityId"),
+                targetId: dragTargetNode.data("entityId"),
               })
             );
             if (
@@ -521,144 +521,294 @@ export default function GraphView({ id, style }: GraphViewProps) {
   );
 }
 
+/** Creates the Cytoscape elements for displaying the entities as a graph. Also returns
+ * the focused node ids, which are the nodes that should be centered in the graph.
+ *
+ * @param entities The entities to display
+ * @param selectedEntityIds The ids of the entities that are selected
+ * @returns The Cytoscape elements and the focused node ids
+ */
 function makeElements(entities: Entity[], selectedEntityIds: string[]) {
-  const mediaExcerptsById = entities
-    .filter((e) => e.type === "MediaExcerpt")
-    .reduce((acc, e) => {
-      acc.set(e.id, e);
-      return acc;
-    }, new Map() as Map<string, MediaExcerpt>);
+  const { nodes, edges } = getNodesAndEdges(entities, selectedEntityIds);
+  const focusedNodeIds = nodes.reduce((acc, node) => {
+    if (selectedEntityIds.includes(node.entityId)) {
+      acc.push(node.id);
+    }
+    if (node.type === "Proposition" && node.isAnyAppearanceSelected) {
+      acc.push(node.id);
+    }
+    return acc;
+  }, [] as string[]);
+
+  const elements: ElementDefinition[] = [...nodes, ...edges].map((data) => ({
+    data,
+  }));
+
+  return { elements, focusedNodeIds };
+}
+
+function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
+  const { mediaExcerptsById, propositionsById, visibleEntityIds } =
+    entities.reduce(
+      (acc, e) => {
+        switch (e.type) {
+          case "MediaExcerpt":
+            acc.mediaExcerptsById.set(e.id, e);
+            break;
+          case "Proposition":
+            acc.propositionsById.set(e.id, e);
+            break;
+        }
+        if (
+          (e.explicitVisibility ?? e.autoVisibility ?? "Visible") === "Visible"
+        ) {
+          acc.visibleEntityIds.add(e.id);
+        }
+        return acc;
+      },
+      {
+        mediaExcerptsById: new Map<string, MediaExcerpt>(),
+        propositionsById: new Map<string, Proposition>(),
+        visibleEntityIds: new Set<string>(),
+      }
+    );
 
   const {
-    entityIdToParentId,
+    propositionCompoundAtomNodeIds,
     canonicalJustificationByBasisId,
     propositionIdToAppearanceInfos,
-    edges,
+    justificationTargetNodeIds,
   } = entities.reduce(
     (acc, entity) => {
-      const {
-        entityIdToParentId,
-        canonicalJustificationByBasisId,
-        propositionIdToAppearanceInfos,
-        edges,
-      } = acc;
+      if (!visibleEntityIds.has(entity.id)) {
+        return acc;
+      }
       switch (entity.type) {
+        case "Proposition":
+          acc.justificationTargetNodeIds.set(
+            entity.id,
+            `proposition-${entity.id}`
+          );
+          break;
+        case "PropositionCompound":
+          entity.atomIds.forEach((atomId) => {
+            const atomNodeId = `propositionCompound-${entity.id}-atom-${atomId}`;
+            if (!acc.propositionCompoundAtomNodeIds.has(atomId)) {
+              acc.propositionCompoundAtomNodeIds.set(atomId, new Map());
+            }
+            acc.propositionCompoundAtomNodeIds
+              .get(atomId)
+              ?.set(entity.id, atomNodeId);
+          });
+          break;
         case "Justification":
           // Since the same basis can appear in multiple justifications, but we want
           // to display this as a single justification node with multiple edges
           // targeting each of the justification's targets, we choose the first justification
           // as the canonical one we will display.
-          let source = canonicalJustificationByBasisId.get(entity.basisId);
-          if (!source) {
-            source = entity.id;
-            entityIdToParentId.set(entity.basisId, entity.id);
-            canonicalJustificationByBasisId.set(entity.basisId, entity.id);
+          if (!acc.canonicalJustificationByBasisId.has(entity.basisId)) {
+            const id = entity.id;
+            const nodeId = `justification-node-${id}`;
+            acc.canonicalJustificationByBasisId.set(entity.basisId, {
+              id,
+              nodeId,
+            });
           }
-          edges.push({
-            // Give the edge related to the justification for debugging.
-            id: `justification-edge-${entity.id}`,
-            entityId: entity.id,
-            source,
-            target: entity.targetId,
-            polarity: entity.polarity,
-          });
-          break;
-        case "PropositionCompound":
-          entity.atomIds.forEach((atomId) => {
-            entityIdToParentId.set(atomId, entity.id);
-          });
+          // This points all counter justifications at the canonical justification node.
+          // To represent counter justifications properly, we must introduce intermediate
+          // nodes along the edge path.
+          acc.justificationTargetNodeIds.set(
+            entity.id,
+            acc.canonicalJustificationByBasisId.get(entity.basisId)!.nodeId
+          );
           break;
         case "Appearance":
           const mediaExcerpt = mediaExcerptsById.get(entity.mediaExcerptId);
-          if (!mediaExcerpt) {
-            break;
-          }
-          const appearanceInfo = { id: entity.id, mediaExcerpt };
-          const appearances = propositionIdToAppearanceInfos.get(
-            entity.apparitionId
-          );
-          if (appearances) {
+          if (mediaExcerpt) {
+            const appearanceInfo = { id: entity.id, mediaExcerpt };
+            const appearances =
+              acc.propositionIdToAppearanceInfos.get(entity.apparitionId) || [];
             appearances.push(appearanceInfo);
-          } else {
-            propositionIdToAppearanceInfos.set(entity.apparitionId, [
-              appearanceInfo,
-            ]);
+            acc.propositionIdToAppearanceInfos.set(
+              entity.apparitionId,
+              appearances
+            );
           }
           break;
       }
       return acc;
     },
     {
-      entityIdToParentId: new Map(),
-      canonicalJustificationByBasisId: new Map(),
-      propositionIdToAppearanceInfos: new Map(),
-      edges: [],
-    } as {
-      entityIdToParentId: Map<string, string>;
-      canonicalJustificationByBasisId: Map<string, string>;
-      propositionIdToAppearanceInfos: Map<string, AppearanceInfo[]>;
-      edges: EdgeDataDefinition[];
+      // Proposition ID -> Proposition Compound ID -> Atom Node ID
+      propositionCompoundAtomNodeIds: new Map<string, Map<string, string>>(),
+      canonicalJustificationByBasisId: new Map<
+        string,
+        { id: string; nodeId: string }
+      >(),
+      propositionIdToAppearanceInfos: new Map<string, AppearanceInfo[]>(),
+      justificationTargetNodeIds: new Map<string, string>(),
     }
   );
 
-  const visibleEntities = entities.filter(function (e) {
-    return (
-      (e.explicitVisibility ?? e.autoVisibility ?? "Visible") === "Visible"
-    );
-  });
-  const visibleEntityIds = new Set(visibleEntities.map((e) => e.id));
-  const visibleEdges = edges.filter(
-    (e) => visibleEntityIds.has(e.source) && visibleEntityIds.has(e.target)
-  );
-  const canonicalJustifications = new Set(
-    canonicalJustificationByBasisId.values()
-  );
-
-  const nodes = visibleEntities
-    .filter(
-      (entity) =>
-        entity.type !== "Appearance" &&
-        (entity.type !== "Justification" ||
-          canonicalJustifications.has(entity.id))
-    )
-    .map((entity) => {
-      if (entity.type === "Proposition") {
-        const appearances = propositionIdToAppearanceInfos.get(entity.id);
-        const isAnyAppearanceSelected = appearances?.some((a) =>
-          selectedEntityIds.includes(a.id)
-        );
-        return {
-          data: {
+  const { nodes: visibleNodes, edges: allEdges } = entities.reduce(
+    (acc, entity) => {
+      if (!visibleEntityIds.has(entity.id)) {
+        return acc;
+      }
+      switch (entity.type) {
+        case "PropositionCompound": {
+          const compoundNodeId = `propositionCompound-${entity.id}`;
+          const parent = canonicalJustificationByBasisId.get(entity.id)?.nodeId;
+          acc.nodes.push({
             ...entity,
+            id: compoundNodeId,
+            parent,
+            entityId: entity.id,
+          });
+
+          entity.atomIds.forEach((atomId) => {
+            const proposition = propositionsById.get(atomId);
+            if (!proposition) {
+              console.error(
+                `No Proposition found for PropositionCompound atom ID ${atomId}. This should be impossible.`
+              );
+              return;
+            }
+
+            const appearances =
+              propositionIdToAppearanceInfos.get(atomId) || [];
+            const isAnyAppearanceSelected = appearances.some((a) =>
+              selectedEntityIds.includes(a.id)
+            );
+
+            const atomNodeId = propositionCompoundAtomNodeIds
+              .get(atomId)
+              ?.get(entity.id);
+            if (!atomNodeId) {
+              console.error(
+                `No atom node ID found for PropositionCompound atom ID ${atomId}. This should be impossible.`
+              );
+              return;
+            }
+            acc.nodes.push({
+              ...proposition,
+              id: atomNodeId,
+              parent: compoundNodeId,
+              entityId: proposition.id,
+              atomId,
+              appearances,
+              isAnyAppearanceSelected,
+            });
+          });
+          break;
+        }
+        case "Justification": {
+          const canonicalJustificationInfo =
+            canonicalJustificationByBasisId.get(entity.basisId);
+          if (!canonicalJustificationInfo) {
+            console.error(
+              `No canonical justification found for basis ID ${entity.basisId}. This should be impossible.`
+            );
+            break;
+          }
+          const {
+            id: canonicalJustificationId,
+            nodeId: canonicalJustificationNodeId,
+          } = canonicalJustificationInfo;
+
+          if (canonicalJustificationId === entity.id) {
+            acc.nodes.push({
+              ...entity,
+              id: canonicalJustificationNodeId,
+              entityId: entity.id,
+            });
+          }
+
+          const target = justificationTargetNodeIds.get(entity.targetId);
+          if (!target) {
+            console.error(
+              `No target node ID found for justification target ID ${entity.targetId}. This should be impossible.`
+            );
+            break;
+          }
+          acc.edges.push({
+            id: `justification-edge-${entity.id}`,
+            entityId: entity.id,
+            source: canonicalJustificationNodeId,
+            target,
+            polarity: entity.polarity,
+          });
+
+          // Since we duplicate the proposition compound atoms, we must duplicate the
+          // justification edges to them too.
+          propositionCompoundAtomNodeIds
+            .get(entity.targetId)
+            ?.forEach((nodeId, compoundId) => {
+              acc.edges.push({
+                id: `justification-${entity.id}-compound-${compoundId}`,
+                entityId: entity.id,
+                source: canonicalJustificationNodeId,
+                target: nodeId,
+                polarity: entity.polarity,
+              });
+            });
+          break;
+        }
+        case "Appearance":
+          // Appearances do not get nodes or edges for now.
+          break;
+        case "Proposition": {
+          if (propositionCompoundAtomNodeIds.has(entity.id)) {
+            // Handled above as an atom.
+            break;
+          }
+
+          const appearances =
+            propositionIdToAppearanceInfos.get(entity.id) || [];
+          const isAnyAppearanceSelected = appearances.some((a) =>
+            selectedEntityIds.includes(a.id)
+          );
+
+          const id = justificationTargetNodeIds.get(entity.id);
+          if (!id) {
+            console.error(
+              `No node ID found for proposition ID ${entity.id}. This should be impossible.`
+            );
+            break;
+          }
+          acc.nodes.push({
+            ...entity,
+            id,
+            entityId: entity.id,
             appearances,
             isAnyAppearanceSelected,
-            parent: entityIdToParentId.get(entity.id),
-          },
-        };
+          });
+          break;
+        }
+        case "MediaExcerpt": {
+          const parent = canonicalJustificationByBasisId.get(entity.id)?.nodeId;
+          acc.nodes.push({
+            ...entity,
+            id: `${entity.type}-${entity.id}`,
+            parent,
+            entityId: entity.id,
+          });
+          break;
+        }
       }
-      return {
-        data: {
-          ...entity,
-          parent: entityIdToParentId.get(entity.id),
-        },
-      };
-    });
-  const focusedNodeIds = nodes.reduce((acc, node) => {
-    if (selectedEntityIds.includes(node.data.id)) {
-      acc.push(node.data.id);
+      return acc;
+    },
+    {
+      nodes: [] as SetRequired<NodeDataDefinition, "id">[],
+      edges: [] as EdgeDataDefinition[],
     }
-    if (node.data.type === "Proposition" && node.data.isAnyAppearanceSelected) {
-      acc.push(node.data.id);
-    }
-    return acc;
-  }, [] as string[]);
-  const elements = [
-    ...nodes,
-    ...visibleEdges.map((edge) => ({
-      data: { ...edge },
-    })),
-  ];
-  return { elements, focusedNodeIds };
+  );
+
+  const visibleNodeIds = new Set(visibleNodes.map((n) => n.id));
+  const visibleEdges = allEdges.filter(
+    (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
+  );
+  return { nodes: visibleNodes, edges: visibleEdges };
 }
 
 /** After we delete entities we need to remove them from Cytoscape */
