@@ -52,7 +52,10 @@ function HeaderBar({ id }: { id?: string }) {
     <ConfirmationDialog
       visible={isDeleteDialogOpen}
       onDismiss={() => setDeleteDialogOpen(false)}
-      onConfirm={deleteActiveMap}
+      onConfirm={() => {
+        deleteActiveMap();
+        setDeleteDialogOpen(false);
+      }}
       title="Delete Map"
       message={`Are you sure you want to delete the map "${activeMapName}"? This action cannot be undone.`}
     />
@@ -132,6 +135,7 @@ function HeaderBar({ id }: { id?: string }) {
       <Portal>
         {activeMapName && (
           <RenameMapDialog
+            mapName={activeMapName}
             visible={isRenameMapDialogVisible}
             onDismiss={() => setRenameMapDialogVisible(false)}
           />

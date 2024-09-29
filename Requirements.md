@@ -45,7 +45,6 @@ TODO:
   - Argument appearance is an argument whose conclusion has an appearance.
   - "Critique" is any justification that is not from the conclusion's appearances.
 - Justification appearances
-  - Counter justification intermediate nodes
 - Proposition can't appear in two justifications (e.g. two different compounds).
 - Collapsing
 

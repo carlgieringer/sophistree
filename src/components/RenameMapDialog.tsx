@@ -9,18 +9,16 @@ import { use } from "cytoscape";
 interface RenameMapDialogProps {
   visible: boolean;
   onDismiss: () => void;
+  mapName: string;
 }
 
 const RenameMapDialog: React.FC<RenameMapDialogProps> = ({
   visible,
   onDismiss,
+  mapName,
 }) => {
   const dispatch = useDispatch();
-  const activeMapName = useSelector(selectors.activeMapName);
-  if (activeMapName === undefined) {
-    throw new Error("Active map name is undefined");
-  }
-  const [newName, setNewName] = useState(activeMapName);
+  const [newName, setNewName] = useState(mapName);
 
   const handleRename = () => {
     dispatch(renameActiveMap(newName));
