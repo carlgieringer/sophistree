@@ -95,11 +95,6 @@ export default function GraphView({ id, style }: GraphViewProps) {
       const elementsToSelect = cyRef.current
         ?.elements()
         .filter((n) => selectedEntityIds.includes(n.data("entityId")));
-      console.debug({
-        elementsToSelect,
-        length: elementsToSelect?.length,
-        selectedEntityIds,
-      });
       elementsToSelect?.select();
     }
   }, [selectedEntityIds]);
@@ -409,7 +404,6 @@ export default function GraphView({ id, style }: GraphViewProps) {
             ...defaultVisibilityProps,
           };
           dispatch(addEntity(newNode));
-          console.log({ newNode });
         }
       });
 
@@ -440,7 +434,6 @@ export default function GraphView({ id, style }: GraphViewProps) {
           dragSource &&
           isValidDropTarget(dragSource, hoverTarget)
         ) {
-          // TODO add hover highlight to all of a countered justification.
           hoverTarget.addClass("hover-highlight");
         }
       });
@@ -1132,15 +1125,15 @@ function getClosestValidDropTarget(
   position: Position,
   dragNode: NodeSingular
 ) {
-  const { excludeNodes, excludeEdges } = getExcludedElements(cy, dragNode);
+  const { excludedNodes, excludedEdges } = getExcludedElements(cy, dragNode);
 
-  const nodeTarget = getInnermostNodeContainingNodesPosition(
+  const nodeTarget = getInnermostNodeContainingPosition(
     cy,
     position,
-    excludeNodes
+    excludedNodes
   );
 
-  const closestEdge = getClosestEdge(cy, position, excludeEdges);
+  const closestEdge = getClosestEdge(cy, position, excludedEdges);
 
   if (nodeTarget && closestEdge) {
     const nodeZIndex = nodeTarget.style("z-index") || -Infinity;
@@ -1159,43 +1152,50 @@ function getClosestValidDropTarget(
 function getExcludedElements(cy: cytoscape.Core, dragNode: NodeSingular) {
   const dragNodeAndAncestors = dragNode.ancestors().union(dragNode);
 
-  // Collect entityIds of justifications touching dragNode or its ancestors
   const justificationIds = cy.edges().reduce((ids, edge) => {
     if (
       edge.data("type") === "Justification" &&
       (dragNodeAndAncestors.contains(edge.source()) ||
         dragNodeAndAncestors.contains(edge.target()))
     ) {
+      // This justification is already connected to the dragNode, so exclude all it's elements too.
       ids.add(edge.data("entityId"));
+      if (edge.target().data("type") === "Justification") {
+        // The dragNode is already targeting this justification, so exclude all it's elements too.
+        ids.add(edge.target().data("entityId"));
+      }
     }
     return ids;
   }, new Set<string>());
 
-  // Collect excluded nodes and edges based on the justificationIds
-  const { excludeNodes, excludeEdges } = cy.elements().reduce(
-    (acc, element) => {
-      const entityId = element.data("entityId");
-      if (justificationIds.has(entityId)) {
-        if (element.isNode()) {
-          acc.excludeNodes.add(element);
-        } else if (element.isEdge()) {
-          acc.excludeEdges.add(element);
+  // Exclude all elements corresponding to justificationIds and their targets
+  const { excludeNodes: excludedNodes, excludeEdges: excludedEdges } = cy
+    .elements()
+    .reduce(
+      (acc, element) => {
+        const entityId = element.data("entityId");
+        if (justificationIds.has(entityId)) {
+          if (element.isNode()) {
+            acc.excludeNodes.add(element);
+          } else if (element.isEdge()) {
+            acc.excludeEdges.add(element);
+            acc.excludeNodes.add(element.target());
+          }
         }
+        return acc;
+      },
+      {
+        excludeNodes: new Set<NodeSingular>(),
+        excludeEdges: new Set<EdgeSingular>(),
       }
-      return acc;
-    },
-    {
-      excludeNodes: new Set<NodeSingular>(),
-      excludeEdges: new Set<EdgeSingular>(),
-    }
-  );
+    );
 
   // Add dragNode and its ancestors to excluded nodes
   dragNodeAndAncestors.forEach((node) => {
-    excludeNodes.add(node);
+    excludedNodes.add(node);
   });
 
-  return { excludeNodes, excludeEdges };
+  return { excludedNodes, excludedEdges };
 }
 
 function getClosestEdge(
@@ -1204,7 +1204,21 @@ function getClosestEdge(
   excludedEdges: Set<EdgeSingular>
 ) {
   const distanceThreshold = 10;
-  const angleThreshold = Math.PI / 8; // 45 degrees in radians
+  const angleThreshold = Math.PI / 2;
+
+  const nodeTarget = getInnermostNodeContainingPosition(
+    cy,
+    position,
+    new Set()
+  );
+  // If the drag is over a node, exclude its edges too.
+  nodeTarget
+    ?.ancestors()
+    .add(nodeTarget)
+    .connectedEdges()
+    .forEach((edge) => {
+      excludedEdges.add(edge);
+    });
 
   const closestEdge = cy.edges().reduce(
     (closest, edge) => {
@@ -1265,16 +1279,16 @@ function distanceToLineSegment(
   return numerator / denominator;
 }
 
-function getInnermostNodeContainingNodesPosition(
+function getInnermostNodeContainingPosition(
   cy: cytoscape.Core,
   position: Position,
-  excludeNodes: Set<NodeSingular>
+  excludedNodes: Set<NodeSingular>
 ) {
   const node = cy
     .nodes()
     .reduce(
       (innermost, curr) =>
-        !excludeNodes.has(curr) &&
+        !excludedNodes.has(curr) &&
         nodeContainsPosition(curr, position) &&
         (!innermost || nodeIncludesNode(innermost, curr))
           ? curr

@@ -1,7 +1,7 @@
 import { produce, current } from "immer";
-import { updateConclusions } from "./entitiesSlice";
+import { Entity, updateConclusions } from "./entitiesSlice";
 
-export const persistedStateVersion = 3;
+export const persistedStateVersion = 4;
 
 export const reduxPersistMigrations = {
   0: (state: any) => state,
@@ -14,6 +14,11 @@ export const reduxPersistMigrations = {
   3: produce((state: any) => {
     state.maps.forEach((map: any) => {
       mapMigrations[3](map);
+    });
+  }),
+  4: produce((state: any) => {
+    state.maps.forEach((map: any) => {
+      mapMigrations[4](map);
     });
   }),
 };
@@ -42,4 +47,20 @@ const mapMigrations = {
   3: (map: any) => {
     updateConclusions(map);
   },
+  4: (map: any) => {
+    removeDuplicateJustifications(map);
+  },
+};
+
+const removeDuplicateJustifications = (map: any) => {
+  const uniqueJustifications = new Set();
+  map.entities = map.entities.filter((entity: Entity) => {
+    if (entity.type !== "Justification") return true;
+
+    const key = `${entity.basisId}-${entity.targetId}`;
+    if (uniqueJustifications.has(key)) return false;
+
+    uniqueJustifications.add(key);
+    return true;
+  });
 };
