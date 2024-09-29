@@ -1,3 +1,17 @@
+import cn from "classnames";
+import cytoscape, {
+  EdgeDataDefinition,
+  EdgeSingular,
+  ElementDefinition,
+  EventObject,
+  EventObjectNode,
+  NodeDataDefinition,
+  NodeSingular,
+  Position,
+  SingularElementArgument,
+} from "cytoscape";
+import contextMenus from "cytoscape-context-menus";
+import elk from "cytoscape-elk";
 import {
   CSSProperties,
   useCallback,
@@ -6,40 +20,14 @@ import {
   useRef,
   useState,
 } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import cytoscape, {
-  NodeSingular,
-  EventObjectNode,
-  Position,
-  EventObject,
-  EdgeDataDefinition,
-  NodeDataDefinition,
-  ElementDefinition,
-  SingularElementArgument,
-  EdgeSingular,
-} from "cytoscape";
 import CytoscapeComponent from "react-cytoscapejs";
-import contextMenus from "cytoscape-context-menus";
-import { v4 as uuidv4 } from "uuid";
-import elk from "cytoscape-elk";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { Portal } from "react-native-paper";
-import cn from "classnames";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { useDispatch, useSelector } from "react-redux";
 import { SetRequired } from "type-fest";
+import { v4 as uuidv4 } from "uuid";
 
-import reactNodes, { ReactNodeOptions } from "../cytoscape/reactNodes";
-import {
-  addEntity,
-  completeDrag,
-  selectEntities,
-  deleteEntity,
-  resetSelection,
-  Entity,
-  MediaExcerpt,
-  defaultVisibilityProps,
-  preferredUrl,
-  Proposition,
-} from "../store/entitiesSlice";
+import "cytoscape-context-menus/cytoscape-context-menus.css";
 import {
   carrot,
   nephritis,
@@ -47,17 +35,28 @@ import {
   pomegranate,
   sunflower,
 } from "../colors";
-import "cytoscape-context-menus/cytoscape-context-menus.css";
-import "./GraphView.scss";
-import { activeMapEntities } from "../store/selectors";
+import reactNodes, { ReactNodeOptions } from "../cytoscape/reactNodes";
+import {
+  addEntity,
+  completeDrag,
+  defaultVisibilityProps,
+  deleteEntity,
+  Entity,
+  MediaExcerpt,
+  preferredUrl,
+  Proposition,
+  resetSelection,
+  selectEntities,
+} from "../store/entitiesSlice";
 import * as selectors from "../store/selectors";
+import { activeMapEntities } from "../store/selectors";
+import DebugElementDialog from "./DebugElementDialog";
+import "./GraphView.scss";
 import VisitPropositionAppearanceDialog, {
-  AppearanceInfo,
   activateMediaExcerpt,
+  AppearanceInfo,
   PropositionNodeData,
 } from "./VisitPropositionAppearanceDialog";
-import { Edge } from "react-native-safe-area-context";
-import DebugElementDialog from "./DebugElementDialog";
 
 cytoscape.use(elk);
 cytoscape.use(contextMenus);
@@ -92,10 +91,10 @@ export default function GraphView({ id, style }: GraphViewProps) {
       .filter((n) => !selectedEntityIds.includes(n.data("entityId")))
       .unselect();
     if (selectedEntityIds.length) {
-      const elementsToSelect = cyRef.current
+      cyRef.current
         ?.elements()
-        .filter((n) => selectedEntityIds.includes(n.data("entityId")));
-      elementsToSelect?.select();
+        .filter((n) => selectedEntityIds.includes(n.data("entityId")))
+        .select();
     }
   }, [selectedEntityIds]);
 
@@ -369,10 +368,10 @@ export default function GraphView({ id, style }: GraphViewProps) {
             coreAsWell: true,
           },
           {
-            id: "debug",
-            content: "Show debug info",
+            id: "show-element-data",
+            content: "Show element data",
             selector: "node, edge",
-            tooltipText: "Show element data",
+            tooltipText: "Show element data for debugging",
             onClickFunction: (event) =>
               setDebugElementData(event.target.data()),
           },
@@ -423,18 +422,24 @@ export default function GraphView({ id, style }: GraphViewProps) {
       });
 
       cy.on("drag", "node", (event: EventObjectNode) => {
+        cy.elements(".hover-highlight").removeClass("hover-highlight");
+
         const hoverTarget = getClosestValidDropTarget(
           cy,
           mousePosition,
           event.target
         );
-        cy.elements(".hover-highlight").removeClass("hover-highlight");
         if (
           hoverTarget &&
           dragSource &&
           isValidDropTarget(dragSource, hoverTarget)
         ) {
-          hoverTarget.addClass("hover-highlight");
+          // Highlight the entity everywhere. In particular, highlight the justification node and
+          // two edges when any one of them is hovered.
+          const hoverEntityId = hoverTarget.data("entityId");
+          cy.elements()
+            .filter((e) => e.data("entityId") === hoverEntityId)
+            .addClass("hover-highlight");
         }
       });
 
@@ -917,18 +922,6 @@ const stylesheet = [
     },
   },
   {
-    selector: 'node[type="Justification"]',
-    style: {
-      shape: "round-rectangle",
-      "background-color": "#34495e",
-      "compound-sizing-wrt-labels": "include",
-      "padding-left": "10px",
-      "padding-right": "10px",
-      "padding-top": "10px",
-      "padding-bottom": "10px",
-    },
-  },
-  {
     selector: `node[type="MediaExcerpt"]`,
     style: {
       shape: "round-rectangle",
@@ -1171,26 +1164,24 @@ function getExcludedElements(cy: cytoscape.Core, dragNode: NodeSingular) {
   }, new Set<string>());
 
   // Exclude all elements corresponding to justificationIds and their targets
-  const { excludeNodes: excludedNodes, excludeEdges: excludedEdges } = cy
-    .elements()
-    .reduce(
-      (acc, element) => {
-        const entityId = element.data("entityId");
-        if (justificationIds.has(entityId)) {
-          if (element.isNode()) {
-            acc.excludeNodes.add(element);
-          } else if (element.isEdge()) {
-            acc.excludeEdges.add(element);
-            acc.excludeNodes.add(element.target());
-          }
+  const { excludedNodes, excludedEdges } = cy.elements().reduce(
+    (acc, element) => {
+      const entityId = element.data("entityId");
+      if (justificationIds.has(entityId)) {
+        if (element.isNode()) {
+          acc.excludedNodes.add(element);
+        } else if (element.isEdge()) {
+          acc.excludedEdges.add(element);
+          acc.excludedNodes.add(element.target());
         }
-        return acc;
-      },
-      {
-        excludeNodes: new Set<NodeSingular>(),
-        excludeEdges: new Set<EdgeSingular>(),
       }
-    );
+      return acc;
+    },
+    {
+      excludedNodes: new Set<NodeSingular>(),
+      excludedEdges: new Set<EdgeSingular>(),
+    }
+  );
 
   // Add dragNode and its ancestors to excluded nodes
   dragNodeAndAncestors.forEach((node) => {
@@ -1232,9 +1223,8 @@ function getClosestEdge(
       const p2 = edge.target().position();
       const distance = distanceToLineSegment(p1, p2, position);
 
-      // The distance is with the line segment, not the endpoints. We want to
-      // exlude positions that are along the line segment but not between the
-      // endpoints.
+      // The distance is to the infinite line, not the finite line segment. We want to
+      // exlude positions that are along the line but not close to the line segment.
       const angleBetweenPositionAndEndpoints = angleBetween(p1, position, p2);
 
       if (
