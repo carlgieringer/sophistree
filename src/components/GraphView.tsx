@@ -972,7 +972,9 @@ const stylesheet = [
   {
     selector: `node[type="Justification"]`,
     style: {
-      shape: "round-rectangle",
+      shape: "ellipse",
+      width: "10px",
+      height: "10px",
     },
   },
   {
