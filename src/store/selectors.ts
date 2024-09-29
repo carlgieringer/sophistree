@@ -32,3 +32,8 @@ export const selectedEntities = (state: RootState) => {
     selectedEntityIds(state).includes(entity.id)
   );
 };
+
+export const allPropositions = (state: RootState) =>
+  state.entities.maps.flatMap((m) =>
+    m.entities.filter((entity) => entity.type === "Proposition")
+  );

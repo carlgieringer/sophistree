@@ -496,7 +496,13 @@ function applyDragOperation(
     case "Proposition": {
       switch (target.type) {
         case "PropositionCompound": {
-          target.atomIds.push(source.id);
+          if (!target.atomIds.includes(source.id)) {
+            target.atomIds.push(source.id);
+          } else {
+            console.log(
+              `Proposition ID ${source.id} is already an atom of proposition compound ID ${target.id}. Skipping add it.`
+            );
+          }
           return;
         }
         case "Justification":
@@ -537,6 +543,10 @@ function applyDragOperation(
               ...defaultVisibilityProps,
             });
             updateMediaExcerptAutoVisibility(state, mediaExcerptId);
+          } else {
+            console.log(
+              `Appearance between apparition ID ${apparitionId} and media excerpt ID ${mediaExcerptId} already exists. Skipping creation.`
+            );
           }
           return;
         }
@@ -564,6 +574,17 @@ function applyDragOperation(
     default:
       console.error(`Invalid drag source type type: ${source.type}`);
       return;
+  }
+
+  const extantJustification = activeMap.entities.find(
+    (e) =>
+      e.type === "Justification" &&
+      e.targetId === target.id &&
+      e.basisId === basisId
+  );
+  if (extantJustification) {
+    console.info("Extant justification found, not creating a new one.");
+    return;
   }
 
   const newJustificationId = uuidv4();

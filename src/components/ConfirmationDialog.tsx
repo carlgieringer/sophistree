@@ -1,5 +1,5 @@
 import React from "react";
-import { Dialog, Button } from "react-native-paper";
+import { Dialog, Button, Text } from "react-native-paper";
 
 const ConfirmationDialog = ({
   visible,
@@ -17,7 +17,9 @@ const ConfirmationDialog = ({
   return (
     <Dialog visible={visible} onDismiss={onDismiss}>
       <Dialog.Title>{title}</Dialog.Title>
-      <Dialog.Content>{message}</Dialog.Content>
+      <Dialog.Content>
+        <Text>{message}</Text>
+      </Dialog.Content>
       <Dialog.Actions>
         <Button onPress={onDismiss}>Cancel</Button>
         <Button onPress={onConfirm}>Delete</Button>

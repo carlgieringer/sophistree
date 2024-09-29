@@ -15,6 +15,8 @@ import cytoscape, {
   EdgeDataDefinition,
   NodeDataDefinition,
   ElementDefinition,
+  SingularElementArgument,
+  EdgeSingular,
 } from "cytoscape";
 import CytoscapeComponent from "react-cytoscapejs";
 import contextMenus from "cytoscape-context-menus";
@@ -54,6 +56,8 @@ import VisitPropositionAppearanceDialog, {
   activateMediaExcerpt,
   PropositionNodeData,
 } from "./VisitPropositionAppearanceDialog";
+import { Edge } from "react-native-safe-area-context";
+import DebugElementDialog from "./DebugElementDialog";
 
 cytoscape.use(elk);
 cytoscape.use(contextMenus);
@@ -84,14 +88,19 @@ export default function GraphView({ id, style }: GraphViewProps) {
 
   useEffect(() => {
     cyRef.current
-      ?.nodes()
+      ?.elements()
       .filter((n) => !selectedEntityIds.includes(n.data("entityId")))
       .unselect();
     if (selectedEntityIds.length) {
-      cyRef.current
-        ?.nodes()
-        .filter((n) => selectedEntityIds.includes(n.data("entityId")))
-        .select();
+      const elementsToSelect = cyRef.current
+        ?.elements()
+        .filter((n) => selectedEntityIds.includes(n.data("entityId")));
+      console.debug({
+        elementsToSelect,
+        length: elementsToSelect?.length,
+        selectedEntityIds,
+      });
+      elementsToSelect?.select();
     }
   }, [selectedEntityIds]);
 
@@ -146,6 +155,10 @@ export default function GraphView({ id, style }: GraphViewProps) {
     visitAppearancesDialogProposition,
     setVisitAppearancesDialogProposition,
   ] = useState(undefined as PropositionNodeData | undefined);
+
+  const [debugElementData, setDebugElementData] = useState(
+    undefined as NodeDataDefinition | EdgeDataDefinition | undefined
+  );
 
   const reactNodesConfig: ReactNodeOptions[] = [
     {
@@ -360,6 +373,14 @@ export default function GraphView({ id, style }: GraphViewProps) {
             onClickFunction: () => layoutGraph(true),
             coreAsWell: true,
           },
+          {
+            id: "debug",
+            content: "Show debug info",
+            selector: "node, edge",
+            tooltipText: "Show element data",
+            onClickFunction: (event) =>
+              setDebugElementData(event.target.data()),
+          },
         ],
       });
 
@@ -388,6 +409,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
             ...defaultVisibilityProps,
           };
           dispatch(addEntity(newNode));
+          console.log({ newNode });
         }
       });
 
@@ -407,40 +429,52 @@ export default function GraphView({ id, style }: GraphViewProps) {
       });
 
       cy.on("drag", "node", (event: EventObjectNode) => {
-        const hoverNode = getInnermostNodeContainingNodesPosition(
+        const hoverTarget = getClosestValidDropTarget(
           cy,
           mousePosition,
           event.target
         );
-        cy.nodes(".hover-highlight").removeClass("hover-highlight");
+        cy.elements(".hover-highlight").removeClass("hover-highlight");
         if (
-          hoverNode &&
+          hoverTarget &&
           dragSource &&
-          isValidDropTarget(dragSource, hoverNode)
+          isValidDropTarget(dragSource, hoverTarget)
         ) {
-          hoverNode.addClass("hover-highlight");
+          // TODO add hover highlight to all of a countered justification.
+          hoverTarget.addClass("hover-highlight");
         }
       });
 
-      cy.on("mouseup", "node", (event: any) => {
+      cy.on("mouseup", (event: any) => {
+        if (event.target === cy) {
+          if (dragSource && dragSourceOriginalPosition) {
+            // Return the node to its original position
+            dragSource.position(dragSourceOriginalPosition);
+          }
+          dragSource = undefined;
+          dragSourceOriginalPosition = undefined;
+          cy.nodes().removeClass("hover-highlight");
+          return;
+        }
+
         if (dragSource) {
           dragSource.ancestors().add(dragSource).removeClass("dragging");
-          const dragTargetNode = getInnermostNodeContainingNodesPosition(
+          const dragTarget = getClosestValidDropTarget(
             cy,
             mousePosition,
             dragSource
           );
-          if (dragTargetNode && isValidDropTarget(dragSource, dragTargetNode)) {
+          if (dragTarget && isValidDropTarget(dragSource, dragTarget)) {
             dispatch(
               completeDrag({
                 sourceId: dragSource.data("entityId"),
-                targetId: dragTargetNode.data("entityId"),
+                targetId: dragTarget.data("entityId"),
               })
             );
             if (
               dragSourceOriginalPosition &&
               dragSource.data().type === "Proposition" &&
-              dragTargetNode.data().type === "MediaExcerpt"
+              dragTarget.data().type === "MediaExcerpt"
             ) {
               dragSource.position(dragSourceOriginalPosition);
             }
@@ -451,19 +485,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
         }
         dragSource = undefined;
         dragSourceOriginalPosition = undefined;
-        cy.nodes().removeClass("hover-highlight");
-      });
-
-      cy.on("mouseup", (event: EventObject) => {
-        if (event.target === cy) {
-          if (dragSource && dragSourceOriginalPosition) {
-            // Return the node to its original position
-            dragSource.position(dragSourceOriginalPosition);
-          }
-          dragSource = undefined;
-          dragSourceOriginalPosition = undefined;
-          cy.nodes().removeClass("hover-highlight");
-        }
+        cy.elements().removeClass("hover-highlight");
       });
     }
   }, [dispatch]);
@@ -508,15 +530,22 @@ export default function GraphView({ id, style }: GraphViewProps) {
         minZoom={0.1}
         maxZoom={10}
       />
-      {visitAppearancesDialogProposition && (
-        <Portal>
+      <Portal>
+        {visitAppearancesDialogProposition && (
           <VisitPropositionAppearanceDialog
             data={visitAppearancesDialogProposition}
             visible={!!visitAppearancesDialogProposition}
             onDismiss={() => setVisitAppearancesDialogProposition(undefined)}
           />
-        </Portal>
-      )}
+        )}
+        {debugElementData && (
+          <DebugElementDialog
+            visible={true}
+            data={debugElementData}
+            onDismiss={() => setDebugElementData(undefined)}
+          />
+        )}
+      </Portal>
     </>
   );
 }
@@ -548,36 +577,45 @@ function makeElements(entities: Entity[], selectedEntityIds: string[]) {
 }
 
 function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
-  const { mediaExcerptsById, propositionsById, visibleEntityIds } =
-    entities.reduce(
-      (acc, e) => {
-        switch (e.type) {
-          case "MediaExcerpt":
-            acc.mediaExcerptsById.set(e.id, e);
-            break;
-          case "Proposition":
-            acc.propositionsById.set(e.id, e);
-            break;
-        }
-        if (
-          (e.explicitVisibility ?? e.autoVisibility ?? "Visible") === "Visible"
-        ) {
-          acc.visibleEntityIds.add(e.id);
-        }
-        return acc;
-      },
-      {
-        mediaExcerptsById: new Map<string, MediaExcerpt>(),
-        propositionsById: new Map<string, Proposition>(),
-        visibleEntityIds: new Set<string>(),
+  const {
+    visibleEntityIds,
+    mediaExcerptsById,
+    propositionsById,
+    justificationTargetIds,
+  } = entities.reduce(
+    (acc, e) => {
+      switch (e.type) {
+        case "MediaExcerpt":
+          acc.mediaExcerptsById.set(e.id, e);
+          break;
+        case "Proposition":
+          acc.propositionsById.set(e.id, e);
+          break;
+        case "Justification":
+          acc.justificationTargetIds.add(e.targetId);
+          break;
       }
-    );
+      if (
+        (e.explicitVisibility ?? e.autoVisibility ?? "Visible") === "Visible"
+      ) {
+        acc.visibleEntityIds.add(e.id);
+      }
+      return acc;
+    },
+    {
+      mediaExcerptsById: new Map<string, MediaExcerpt>(),
+      propositionsById: new Map<string, Proposition>(),
+      visibleEntityIds: new Set<string>(),
+      justificationTargetIds: new Set<string>(),
+    }
+  );
 
   const {
     propositionCompoundAtomNodeIds,
-    canonicalJustificationByBasisId,
     propositionIdToAppearanceInfos,
     justificationTargetNodeIds,
+    justificationBasisNodeIds,
+    counteredJustificationIds,
   } = entities.reduce(
     (acc, entity) => {
       if (!visibleEntityIds.has(entity.id)) {
@@ -585,12 +623,18 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
       }
       switch (entity.type) {
         case "Proposition":
-          acc.justificationTargetNodeIds.set(
-            entity.id,
-            `proposition-${entity.id}`
-          );
+          if (justificationTargetIds.has(entity.id)) {
+            acc.justificationTargetNodeIds.set(
+              entity.id,
+              makeEntityNodeId(entity)
+            );
+          }
           break;
         case "PropositionCompound":
+          acc.justificationBasisNodeIds.set(
+            entity.id,
+            makeEntityNodeId(entity)
+          );
           entity.atomIds.forEach((atomId) => {
             const atomNodeId = `propositionCompound-${entity.id}-atom-${atomId}`;
             if (!acc.propositionCompoundAtomNodeIds.has(atomId)) {
@@ -601,26 +645,18 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
               ?.set(entity.id, atomNodeId);
           });
           break;
-        case "Justification":
-          // Since the same basis can appear in multiple justifications, but we want
-          // to display this as a single justification node with multiple edges
-          // targeting each of the justification's targets, we choose the first justification
-          // as the canonical one we will display.
-          if (!acc.canonicalJustificationByBasisId.has(entity.basisId)) {
-            const id = entity.id;
-            const nodeId = `justification-node-${id}`;
-            acc.canonicalJustificationByBasisId.set(entity.basisId, {
-              id,
-              nodeId,
-            });
-          }
-          // This points all counter justifications at the canonical justification node.
-          // To represent counter justifications properly, we must introduce intermediate
-          // nodes along the edge path.
-          acc.justificationTargetNodeIds.set(
+        case "MediaExcerpt":
+          acc.justificationBasisNodeIds.set(
             entity.id,
-            acc.canonicalJustificationByBasisId.get(entity.basisId)!.nodeId
+            makeEntityNodeId(entity)
           );
+          break;
+        case "Justification":
+          if (justificationTargetIds.has(entity.id)) {
+            acc.counteredJustificationIds.add(entity.id);
+            const intermediateNodeId = `justification-intermediate-node-${entity.id}`;
+            acc.justificationTargetNodeIds.set(entity.id, intermediateNodeId);
+          }
           break;
         case "Appearance":
           const mediaExcerpt = mediaExcerptsById.get(entity.mediaExcerptId);
@@ -639,14 +675,11 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
       return acc;
     },
     {
-      // Proposition ID -> Proposition Compound ID -> Atom Node ID
       propositionCompoundAtomNodeIds: new Map<string, Map<string, string>>(),
-      canonicalJustificationByBasisId: new Map<
-        string,
-        { id: string; nodeId: string }
-      >(),
       propositionIdToAppearanceInfos: new Map<string, AppearanceInfo[]>(),
       justificationTargetNodeIds: new Map<string, string>(),
+      justificationBasisNodeIds: new Map<string, string>(),
+      counteredJustificationIds: new Set<string>(),
     }
   );
 
@@ -657,12 +690,16 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
       }
       switch (entity.type) {
         case "PropositionCompound": {
-          const compoundNodeId = `propositionCompound-${entity.id}`;
-          const parent = canonicalJustificationByBasisId.get(entity.id)?.nodeId;
+          const compoundNodeId = justificationBasisNodeIds.get(entity.id);
+          if (!compoundNodeId) {
+            console.error(
+              `Missing node ID for PropositionCompound ID ${entity.id}`
+            );
+            break;
+          }
           acc.nodes.push({
             ...entity,
             id: compoundNodeId,
-            parent,
             entityId: entity.id,
           });
 
@@ -703,41 +740,64 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
           break;
         }
         case "Justification": {
-          const canonicalJustificationInfo =
-            canonicalJustificationByBasisId.get(entity.basisId);
-          if (!canonicalJustificationInfo) {
+          const basisNodeId = justificationBasisNodeIds.get(entity.basisId);
+          const targetNodeId = justificationTargetNodeIds.get(entity.targetId);
+          if (!basisNodeId || !targetNodeId) {
             console.error(
-              `No canonical justification found for basis ID ${entity.basisId}. This should be impossible.`
+              `Missing node ID for justification ${entity.id}. Basis: ${entity.basisId}, Target: ${entity.targetId}`
             );
             break;
           }
-          const {
-            id: canonicalJustificationId,
-            nodeId: canonicalJustificationNodeId,
-          } = canonicalJustificationInfo;
 
-          if (canonicalJustificationId === entity.id) {
+          let duplicatedPropositionCompoundAtomEdgeSource = basisNodeId;
+
+          if (counteredJustificationIds.has(entity.id)) {
+            const intermediateNodeId = justificationTargetNodeIds.get(
+              entity.id
+            );
+            if (!intermediateNodeId) {
+              console.error(
+                `Missing intermediate node ID for justification ID ${entity.id}`
+              );
+              break;
+            }
+            duplicatedPropositionCompoundAtomEdgeSource = intermediateNodeId;
+
             acc.nodes.push({
-              ...entity,
-              id: canonicalJustificationNodeId,
+              id: intermediateNodeId,
               entityId: entity.id,
+              type: entity.type,
+              polarity: entity.polarity,
+            });
+
+            acc.edges.push({
+              id: `justification-${entity.id}-countered-edge-1`,
+              entityId: entity.id,
+              source: basisNodeId,
+              target: intermediateNodeId,
+              type: entity.type,
+              polarity: entity.polarity,
+              arrow: "none",
+            });
+
+            acc.edges.push({
+              id: `justification-${entity.id}-countered-edge-2`,
+              entityId: entity.id,
+              source: intermediateNodeId,
+              target: targetNodeId,
+              type: entity.type,
+              polarity: entity.polarity,
+            });
+          } else {
+            acc.edges.push({
+              id: `justification-${entity.id}-edge`,
+              entityId: entity.id,
+              source: basisNodeId,
+              target: targetNodeId,
+              type: entity.type,
+              polarity: entity.polarity,
             });
           }
-
-          const target = justificationTargetNodeIds.get(entity.targetId);
-          if (!target) {
-            console.error(
-              `No target node ID found for justification target ID ${entity.targetId}. This should be impossible.`
-            );
-            break;
-          }
-          acc.edges.push({
-            id: `justification-edge-${entity.id}`,
-            entityId: entity.id,
-            source: canonicalJustificationNodeId,
-            target,
-            polarity: entity.polarity,
-          });
 
           // Since we duplicate the proposition compound atoms, we must duplicate the
           // justification edges to them too.
@@ -747,8 +807,9 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
               acc.edges.push({
                 id: `justification-${entity.id}-compound-${compoundId}`,
                 entityId: entity.id,
-                source: canonicalJustificationNodeId,
+                source: duplicatedPropositionCompoundAtomEdgeSource,
                 target: nodeId,
+                type: entity.type,
                 polarity: entity.polarity,
               });
             });
@@ -769,13 +830,9 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
             selectedEntityIds.includes(a.id)
           );
 
-          const id = justificationTargetNodeIds.get(entity.id);
-          if (!id) {
-            console.error(
-              `No node ID found for proposition ID ${entity.id}. This should be impossible.`
-            );
-            break;
-          }
+          const id =
+            justificationTargetNodeIds.get(entity.id) ||
+            makeEntityNodeId(entity);
           acc.nodes.push({
             ...entity,
             id,
@@ -786,11 +843,16 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
           break;
         }
         case "MediaExcerpt": {
-          const parent = canonicalJustificationByBasisId.get(entity.id)?.nodeId;
+          const id = justificationBasisNodeIds.get(entity.id);
+          if (!id) {
+            console.error(
+              `No node ID found for media excerpt ID ${entity.id}. This should be impossible.`
+            );
+            break;
+          }
           acc.nodes.push({
             ...entity,
-            id: `${entity.type}-${entity.id}`,
-            parent,
+            id,
             entityId: entity.id,
           });
           break;
@@ -809,6 +871,10 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
     (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
   );
   return { nodes: visibleNodes, edges: visibleEdges };
+}
+
+function makeEntityNodeId({ type, id }: Entity) {
+  return `${type}-${id}`;
 }
 
 /** After we delete entities we need to remove them from Cytoscape */
@@ -905,6 +971,30 @@ const stylesheet = [
     },
   },
   {
+    selector: `edge[arrow="none"]`,
+    style: {
+      "target-arrow-shape": "none",
+    },
+  },
+  {
+    selector: `node[type="Justification"]`,
+    style: {
+      shape: "round-rectangle",
+    },
+  },
+  {
+    selector: `node[type="Justification"][polarity="Positive"]`,
+    style: {
+      "background-color": nephritis,
+    },
+  },
+  {
+    selector: `node[type="Justification"][polarity="Negative"]`,
+    style: {
+      "background-color": pomegranate,
+    },
+  },
+  {
     selector: `edge[polarity="Positive"]`,
     style: {
       width: 2,
@@ -918,6 +1008,15 @@ const stylesheet = [
       width: 2,
       "line-color": pomegranate,
       "target-arrow-color": pomegranate,
+    },
+  },
+  {
+    // Include the polarity to have greater precedence.
+    selector: `edge[polarity="Positive"]:selected, edge[polarity="Negative"]:selected`,
+    style: {
+      "line-color": sunflower,
+      "target-arrow-color": sunflower,
+      width: 4,
     },
   },
   {
@@ -940,10 +1039,18 @@ const stylesheet = [
     },
   },
   {
-    selector: ".hover-highlight",
+    selector: "node.hover-highlight",
     style: {
       "border-width": 3,
       "border-color": carrot,
+    },
+  },
+  {
+    selector: "edge.hover-highlight",
+    style: {
+      "line-color": carrot,
+      "target-arrow-color": carrot,
+      width: 4,
     },
   },
 ];
@@ -1020,18 +1127,154 @@ function nodeIncludesNode(node1: NodeSingular, node2: NodeSingular) {
   );
 }
 
+function getClosestValidDropTarget(
+  cy: cytoscape.Core,
+  position: Position,
+  dragNode: NodeSingular
+) {
+  const { excludeNodes, excludeEdges } = getExcludedElements(cy, dragNode);
+
+  const nodeTarget = getInnermostNodeContainingNodesPosition(
+    cy,
+    position,
+    excludeNodes
+  );
+
+  const closestEdge = getClosestEdge(cy, position, excludeEdges);
+
+  if (nodeTarget && closestEdge) {
+    const nodeZIndex = nodeTarget.style("z-index") || -Infinity;
+    const edgeZIndex = closestEdge.style("z-index") || -Infinity;
+
+    if (edgeZIndex > nodeZIndex) {
+      return closestEdge;
+    } else {
+      return nodeTarget;
+    }
+  }
+
+  return nodeTarget || closestEdge;
+}
+
+function getExcludedElements(cy: cytoscape.Core, dragNode: NodeSingular) {
+  const dragNodeAndAncestors = dragNode.ancestors().union(dragNode);
+
+  // Collect entityIds of justifications touching dragNode or its ancestors
+  const justificationIds = cy.edges().reduce((ids, edge) => {
+    if (
+      edge.data("type") === "Justification" &&
+      (dragNodeAndAncestors.contains(edge.source()) ||
+        dragNodeAndAncestors.contains(edge.target()))
+    ) {
+      ids.add(edge.data("entityId"));
+    }
+    return ids;
+  }, new Set<string>());
+
+  // Collect excluded nodes and edges based on the justificationIds
+  const { excludeNodes, excludeEdges } = cy.elements().reduce(
+    (acc, element) => {
+      const entityId = element.data("entityId");
+      if (justificationIds.has(entityId)) {
+        if (element.isNode()) {
+          acc.excludeNodes.add(element);
+        } else if (element.isEdge()) {
+          acc.excludeEdges.add(element);
+        }
+      }
+      return acc;
+    },
+    {
+      excludeNodes: new Set<NodeSingular>(),
+      excludeEdges: new Set<EdgeSingular>(),
+    }
+  );
+
+  // Add dragNode and its ancestors to excluded nodes
+  dragNodeAndAncestors.forEach((node) => {
+    excludeNodes.add(node);
+  });
+
+  return { excludeNodes, excludeEdges };
+}
+
+function getClosestEdge(
+  cy: cytoscape.Core,
+  position: Position,
+  excludedEdges: Set<EdgeSingular>
+) {
+  const distanceThreshold = 10;
+  const angleThreshold = Math.PI / 8; // 45 degrees in radians
+
+  const closestEdge = cy.edges().reduce(
+    (closest, edge) => {
+      if (excludedEdges.has(edge)) {
+        return closest;
+      }
+
+      const p1 = edge.source().position();
+      const p2 = edge.target().position();
+      const distance = distanceToLineSegment(p1, p2, position);
+
+      // The distance is with the line segment, not the endpoints. We want to
+      // exlude positions that are along the line segment but not between the
+      // endpoints.
+      const angleBetweenPositionAndEndpoints = angleBetween(p1, position, p2);
+
+      if (
+        distance < distanceThreshold &&
+        angleBetweenPositionAndEndpoints > angleThreshold &&
+        (!closest.edge || distance < closest.distance)
+      ) {
+        return { edge, distance };
+      }
+      return closest;
+    },
+    { edge: undefined, distance: Infinity } as {
+      edge: EdgeSingular | undefined;
+      distance: number;
+    }
+  );
+  return closestEdge.edge;
+}
+
+/** Returns the angle between the line segments p1p2 and p2p3. */
+function angleBetween(p1: Position, p2: Position, p3: Position) {
+  const v1 = { x: p1.x - p2.x, y: p1.y - p2.y };
+  const v2 = { x: p3.x - p2.x, y: p3.y - p2.y };
+  const dotProduct = v1.x * v2.x + v1.y * v2.y;
+  const magnitudeProduct =
+    Math.sqrt(v1.x * v1.x + v1.y * v1.y) * Math.sqrt(v2.x * v2.x + v2.y * v2.y);
+  return Math.acos(dotProduct / magnitudeProduct);
+}
+
+/**
+ * Returns the minimum distance from a line segment defined by two points to a third point.
+ *
+ * See https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line#Line_defined_by_two_points
+ */
+function distanceToLineSegment(
+  p1: Position,
+  p2: Position,
+  p: Position
+): number {
+  const dy = p2.y - p1.y;
+  const dx = p2.x - p1.x;
+  const numerator = Math.abs(dy * p.x - dx * p.y + p2.x * p1.y - p2.y * p1.x);
+  const denominator = Math.sqrt(dy * dy + dx * dx);
+  return numerator / denominator;
+}
+
 function getInnermostNodeContainingNodesPosition(
   cy: cytoscape.Core,
   position: Position,
-  excludeNode: NodeSingular
+  excludeNodes: Set<NodeSingular>
 ) {
   const node = cy
     .nodes()
     .reduce(
       (innermost, curr) =>
-        curr !== excludeNode &&
-        !curr.edgesWith(excludeNode).length &&
-        !excludeNode.ancestors().contains(curr) &&
+        !excludeNodes.has(curr) &&
         nodeContainsPosition(curr, position) &&
         (!innermost || nodeIncludesNode(innermost, curr))
           ? curr
@@ -1050,8 +1293,8 @@ const validPropositionDropTargets = new Set([
 const validMediaExcerptDropTarges = new Set(["Justification", "Proposition"]);
 
 function isValidDropTarget(
-  source: NodeSingular,
-  target: NodeSingular
+  source: SingularElementArgument,
+  target: SingularElementArgument
 ): boolean {
   const sourceType = source.data("type");
   const targetType = target.data("type");
