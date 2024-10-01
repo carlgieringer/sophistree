@@ -8,9 +8,7 @@
     "clean": "rm -rf dist/*",
     "build": "npm run clean && npm run type-check && NODE_ENV=production node esbuild.config.mjs",
     "type-check": "tsc --noEmit",
-    "copy-manifest": "cp public/manifest.json dist/",
-    "build:dev": "npm run clean && npm run type-check && NODE_ENV=development node esbuild.config.mjs --watch",
-    "copy-dev-manifest": "cp public/manifest.dev.json dist/manifest.json"
+    "build:dev": "npm run clean && npm run type-check && NODE_ENV=development node esbuild.config.mjs --watch"
   },
   "keywords": [],
   "author": "",

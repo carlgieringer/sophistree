@@ -4,6 +4,7 @@ import storage from "redux-persist/lib/storage";
 
 import entitiesReducer from "./entitiesSlice";
 import { persistedStateVersion, reduxPersistMigrations } from "./migrations";
+import uiReducer from "./uiSlice";
 
 const persistConfig = {
   key: "root",
@@ -19,6 +20,7 @@ const persistedReducer = persistReducer(persistConfig, entitiesReducer);
 export const store = configureStore({
   reducer: {
     entities: persistedReducer,
+    ui: uiReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { StyleSheet, View, ScrollView } from "react-native";
-import { Text } from "react-native-paper";
+import { Button, Text } from "react-native-paper";
 import { useDispatch, useSelector } from "react-redux";
 
 import "./App.scss";
@@ -11,6 +11,7 @@ import { ChromeRuntimeMessage } from "./content";
 import { addMediaExcerpt, selectEntities } from "./store/entitiesSlice";
 import EntityList from "./components/EntityList";
 import * as selectors from "./store/selectors";
+import { showNewMapDialog } from "./store/uiSlice";
 
 const App: React.FC = () => {
   const dispatch = useDispatch();
@@ -58,6 +59,9 @@ const App: React.FC = () => {
   ) : (
     <View style={styles.graphViewPlaceholder}>
       <Text>No active map.</Text>
+      <Button mode="contained" onPress={() => dispatch(showNewMapDialog())}>
+        Create new map
+      </Button>
     </View>
   );
 

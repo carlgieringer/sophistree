@@ -38,14 +38,11 @@ this extension and use that in place of Sophistree?
 
 TODO:
 
+- Add linting, formatting, and CI checks
 - Color highlights according to critique.
-  - "Conclusion" is a root proposition (must have at least one justification)
-  - "Argument" is a conclusion and all justification based on any of the conclusion's appearances.
-    If the conclusion has no appearances, then the argument is all justifications.
-  - Argument appearance is an argument whose conclusion has an appearance.
-  - "Critique" is any justification that is not from the conclusion's appearances.
+  - Generally: requires voting? Hover over justification and use SegmentedButtons or ToggleButton.Row?
+    - Proves True/False, Supports True/False, Remove vote, Does not support.
 - Justification appearances
-- Proposition can't appear in two justifications (e.g. two different compounds).
 - Collapsing
 
 - Appearance justifications

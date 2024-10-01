@@ -20,6 +20,7 @@ describe("entitiesSlice", () => {
             id: "map1",
             name: "Test Map",
             entities: [],
+            conclusions: [],
           },
         ],
         selectedEntityIds: [],

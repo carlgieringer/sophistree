@@ -11,6 +11,11 @@ import UploadMapsDialog from "./UploadMapsDialog";
 import * as selectors from "../store/selectors";
 import RenameMapDialog from "./RenameMapDialog";
 import ConfirmationDialog from "./ConfirmationDialog";
+import {
+  hideNewMapDialog,
+  selectIsNewMapDialogVisible,
+  showNewMapDialog,
+} from "../store/uiSlice";
 
 function HeaderBar({ id }: { id?: string }) {
   const dispatch = useDispatch();
@@ -21,7 +26,7 @@ function HeaderBar({ id }: { id?: string }) {
 
   const [isRenameMapDialogVisible, setRenameMapDialogVisible] = useState(false);
 
-  const [isNewMapDialogVisible, setNewMapDialogVisible] = useState(false);
+  const isNewMapDialogVisible = useSelector(selectIsNewMapDialogVisible);
   const [isActivateMapDialogVisible, setActivateMapDialogVisible] =
     React.useState(false);
 
@@ -105,7 +110,7 @@ function HeaderBar({ id }: { id?: string }) {
             leadingIcon="plus"
             key="create-new-map"
             onPress={() => {
-              setNewMapDialogVisible(true);
+              dispatch(showNewMapDialog());
               hideMenu();
             }}
           />
@@ -142,7 +147,7 @@ function HeaderBar({ id }: { id?: string }) {
         )}
         <NewMapDialog
           visible={isNewMapDialogVisible}
-          onDismiss={() => setNewMapDialogVisible(false)}
+          onDismiss={() => dispatch(hideNewMapDialog())}
         />
         <ActivateMapDialog
           visible={isActivateMapDialogVisible}
