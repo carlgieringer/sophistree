@@ -57,7 +57,7 @@ function reactNodes(this: cytoscape.Core, options: ReactNodesOptions) {
   // debounce layout function to avoid layout thrashing
   const debouncedLayout = debounce(
     layout,
-    options.layoutDelay ?? defaultOptions.layoutDelay
+    options.layoutDelay ?? defaultOptions.layoutDelay,
   );
 
   options.nodes.forEach((o) => makeReactNode(this, o, debouncedLayout));
@@ -77,7 +77,7 @@ function reactNodes(this: cytoscape.Core, options: ReactNodesOptions) {
 function makeReactNode(
   cy: cytoscape.Core,
   options: ReactNodeOptions,
-  layout: () => void
+  layout: () => void,
 ) {
   options = Object.assign({}, defaultReactNodeOptions, options);
 

@@ -22,7 +22,7 @@ const App: React.FC = () => {
     function handleChromeRuntimeMessage(
       message: ChromeRuntimeMessage,
       sender: chrome.runtime.MessageSender,
-      sendResponse: (response: unknown) => void
+      sendResponse: (response: unknown) => void,
     ) {
       switch (message.action) {
         case "addMediaExcerpt": {
@@ -40,7 +40,7 @@ const App: React.FC = () => {
               entity.type === "MediaExcerpt" &&
               (entity.urlInfo.canonicalUrl
                 ? entity.urlInfo.canonicalUrl === canonicalUrl
-                : entity.urlInfo.url === url)
+                : entity.urlInfo.url === url),
           );
           sendResponse({ mediaExcerpts });
           break;

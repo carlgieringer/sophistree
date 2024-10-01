@@ -90,7 +90,7 @@ export async function activateMediaExcerpt(mediaExcerpt: MediaExcerpt) {
 
 async function getOrOpenTab(
   activeTab: chrome.tabs.Tab,
-  url: string
+  url: string,
 ): Promise<number | undefined> {
   if (!activeTab.id) {
     console.error("Active tab ID was missing. This should never happen.");
@@ -118,16 +118,15 @@ function waitForTabId(url: string): Promise<number> {
   return new Promise((resolve) => {
     const tabCreatedListener = (tab: chrome.tabs.Tab) => {
       if (tab.pendingUrl === url) {
-        chrome.tabs.onUpdated.addListener(function onUpdatedListener(
-          tabId,
-          info
-        ) {
-          if (info.status === "complete" && tabId === tab.id) {
-            chrome.tabs.onUpdated.removeListener(onUpdatedListener);
-            chrome.tabs.onCreated.removeListener(tabCreatedListener);
-            resolve(tabId);
-          }
-        });
+        chrome.tabs.onUpdated.addListener(
+          function onUpdatedListener(tabId, info) {
+            if (info.status === "complete" && tabId === tab.id) {
+              chrome.tabs.onUpdated.removeListener(onUpdatedListener);
+              chrome.tabs.onCreated.removeListener(tabCreatedListener);
+              resolve(tabId);
+            }
+          },
+        );
       }
     };
 

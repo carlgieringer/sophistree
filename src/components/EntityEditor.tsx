@@ -64,7 +64,7 @@ function JustificationEditor({ entity }: { entity: Justification }) {
       updateJustification({
         id: entity.id,
         updates: { polarity: e.target.value as Polarity },
-      })
+      }),
     );
   };
   return (

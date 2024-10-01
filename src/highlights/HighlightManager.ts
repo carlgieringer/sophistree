@@ -45,7 +45,7 @@ const defaultColors = [
 
 type GetRangesFromAnchorFunction<Anchor> = (
   container: HTMLElement,
-  anchor: Anchor
+  anchor: Anchor,
 ) => Range[];
 
 class HighlightManager<Anchor, Data> {
@@ -59,7 +59,7 @@ class HighlightManager<Anchor, Data> {
 
   constructor(
     private readonly container: HTMLElement,
-    private readonly getRangesFromAnchor: GetRangesFromAnchorFunction<Anchor>
+    private readonly getRangesFromAnchor: GetRangesFromAnchorFunction<Anchor>,
   ) {
     this.container = container;
     this.getRangesFromAnchor = getRangesFromAnchor;
@@ -70,7 +70,7 @@ class HighlightManager<Anchor, Data> {
     const highlight = this.highlights.find(selector);
     if (!highlight) {
       console.error(
-        `Could not activate highlight for selector ${selector} because the highlight wasn't found.`
+        `Could not activate highlight for selector ${selector} because the highlight wasn't found.`,
       );
       return;
     }
@@ -98,7 +98,7 @@ class HighlightManager<Anchor, Data> {
     data: Data,
     handlers?: {
       onClick: (highlight: Highlight<Anchor, Data>) => void;
-    }
+    },
   ): Highlight<Anchor, Data> {
     const ranges = this.getRangesFromAnchor(this.container, anchor);
     const coextensiveHighlight = this.getCoextensiveHighlight(ranges);
@@ -131,7 +131,7 @@ class HighlightManager<Anchor, Data> {
   }
 
   private getCoextensiveHighlight(
-    ranges: Range[]
+    ranges: Range[],
   ): Highlight<Anchor, Data> | undefined {
     // Check if the new highlight is coextensive with an existing highlight
     // If it is, return the existing highlight
@@ -190,12 +190,12 @@ class HighlightManager<Anchor, Data> {
   private addEventListeners() {
     this.container.addEventListener(
       "mousemove",
-      this.handleMouseMove.bind(this)
+      this.handleMouseMove.bind(this),
     );
     this.container.addEventListener("click", this.handleClick.bind(this));
     window.addEventListener(
       "resize",
-      debounce(this.handleResize.bind(this), 300)
+      debounce(this.handleResize.bind(this), 300),
     );
   }
 
@@ -225,7 +225,7 @@ class HighlightManager<Anchor, Data> {
         return comparison > 0;
       }
       console.error(
-        "Encountered coextensive highlights. This should not happen."
+        "Encountered coextensive highlights. This should not happen.",
       );
       return false;
     });
@@ -239,7 +239,7 @@ class HighlightManager<Anchor, Data> {
 
   private removeSortedElement(element: HTMLElement) {
     const index = this.sortedHighlightElements.findIndex(
-      (item) => item.element === element
+      (item) => item.element === element,
     );
     if (index > -1) {
       this.sortedHighlightElements.splice(index, 1);
@@ -249,7 +249,7 @@ class HighlightManager<Anchor, Data> {
   private handleMouseMove(event: MouseEvent) {
     const highlightElement = this.getHighestHighlightElementAtPoint(
       event.clientX,
-      event.clientY
+      event.clientY,
     );
 
     // Reset all highlights to their default state
@@ -265,7 +265,7 @@ class HighlightManager<Anchor, Data> {
     // Find the highlight element at the click coordinates
     const highlightElement = this.getHighestHighlightElementAtPoint(
       event.clientX,
-      event.clientY
+      event.clientY,
     );
 
     if (!highlightElement) {
@@ -292,11 +292,11 @@ class HighlightManager<Anchor, Data> {
 
   private getHighestHighlightElementAtPoint(
     x: number,
-    y: number
+    y: number,
   ): HTMLElement | undefined {
     // elementsFromPoint ignores pointer-events: none, so temporarily enable them
     const highlightElements = document.querySelectorAll(
-      ".sophistree-highlight"
+      ".sophistree-highlight",
     );
     highlightElements.forEach((el) => {
       (el as HTMLElement).style.pointerEvents = "auto";
@@ -320,7 +320,7 @@ class HighlightManager<Anchor, Data> {
 
   private updateAllHighlightElements() {
     const newElements = this.highlights.flatMap((highlight) =>
-      this.updateHighlightElements(highlight)
+      this.updateHighlightElements(highlight),
     );
     this.container.append(...newElements);
   }
@@ -343,7 +343,7 @@ class HighlightManager<Anchor, Data> {
       highlight.elements = [];
       highlight.ranges = this.getRangesFromAnchor(
         this.container,
-        highlight.anchor
+        highlight.anchor,
       );
     }
 
@@ -392,7 +392,7 @@ class HighlightManager<Anchor, Data> {
   }
 
   private createElementForHighlight(
-    highlight: Highlight<Anchor, Data>
+    highlight: Highlight<Anchor, Data>,
   ): HTMLElement {
     const element = document.createElement("div");
     element.classList.add("sophistree-highlight");
@@ -415,7 +415,7 @@ class HighlightManager<Anchor, Data> {
 
     // Sort rects by top, then left
     const sortedRects = rects.sort((a, b) =>
-      a.top !== b.top ? a.top - b.top : a.left - b.left
+      a.top !== b.top ? a.top - b.top : a.left - b.left,
     );
 
     const combinedRects: DOMRect[] = [];
@@ -435,7 +435,7 @@ class HighlightManager<Anchor, Data> {
           currentRect.left,
           currentRect.top,
           Math.max(nextRect.right - currentRect.left, currentRect.width),
-          currentRect.height
+          currentRect.height,
         );
       } else {
         // If they're not combinable, add the current rect to the result and move to the next

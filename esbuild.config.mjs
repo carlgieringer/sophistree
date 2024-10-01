@@ -76,8 +76,8 @@ const options = {
     sassPlugin(),
     flow(
       new RegExp(
-        "/node_modules/react-native/|/node_modules/react-native-vector-icons/.*.js$"
-      )
+        "/node_modules/react-native/|/node_modules/react-native-vector-icons/.*.js$",
+      ),
     ),
   ],
 };

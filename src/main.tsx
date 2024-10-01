@@ -16,5 +16,5 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
         <App />
       </PaperProvider>
     </Provider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );

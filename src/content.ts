@@ -67,12 +67,12 @@ chrome.runtime.onMessage.addListener(
         console.error(`Unknown message action: ${message}`);
         break;
     }
-  }
+  },
 );
 
 function activateMediaExcerpt(mediaExcerpt: MediaExcerpt) {
   highlightManager.activateHighlight(
-    (anchor) => anchor.data.mediaExcerptId === mediaExcerpt.id
+    (anchor) => anchor.data.mediaExcerptId === mediaExcerpt.id,
   );
 }
 
@@ -152,7 +152,7 @@ function getMediaExcerpts() {
       },
     },
     function getMediaExcerptsCallback(
-      response?: GetMediaExcerptsMessageResponse
+      response?: GetMediaExcerptsMessageResponse,
     ) {
       if (!response) {
         console.error("Unable to get media excerpts");
@@ -160,7 +160,7 @@ function getMediaExcerpts() {
       }
       const { mediaExcerpts } = response;
       highlightMediaExcerpts(mediaExcerpts);
-    }
+    },
   );
 }
 getMediaExcerpts();
@@ -190,7 +190,7 @@ interface HighlightData {
 
 const highlightManager = new HighlightManager<DomAnchor, HighlightData>(
   document.body,
-  getRangesFromDomAnchor
+  getRangesFromDomAnchor,
 );
 
 function highlightRanges(mediaExcerptId: string, domAnchor: DomAnchor) {
@@ -201,7 +201,7 @@ function highlightRanges(mediaExcerptId: string, domAnchor: DomAnchor) {
       onClick: function highlightOnClick() {
         selectMediaExcerpt(mediaExcerptId);
       },
-    }
+    },
   );
 }
 

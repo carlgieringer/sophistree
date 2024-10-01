@@ -15,7 +15,7 @@ export interface DomAnchor {
 
 export function getRangesFromDomAnchor(
   root: HTMLElement,
-  domAnchor: DomAnchor
+  domAnchor: DomAnchor,
 ): Range[] {
   if (domAnchor.fragment) {
     return processTextFragmentDirective(domAnchor.fragment);

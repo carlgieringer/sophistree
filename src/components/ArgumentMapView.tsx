@@ -31,7 +31,7 @@ const ArgumentMapView = ({
     return Object.fromEntries(
       allPropositions
         .filter((prop) => neededIds.has(prop.id))
-        .map((prop) => [prop.id, prop.text])
+        .map((prop) => [prop.id, prop.text]),
     );
   }, [map.conclusions, allPropositions]);
   return (
@@ -46,7 +46,7 @@ const ArgumentMapView = ({
         </Text>
         {map.conclusions.map((conclusion, index) => {
           const propositionTexts = conclusion.propositionIds.map(
-            (id) => propositionTextById[id]
+            (id) => propositionTextById[id],
           );
           return (
             <View key={index}>

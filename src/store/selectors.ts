@@ -31,7 +31,7 @@ export const selectedEntityIds = (state: RootState) => {
 
 export const selectedEntities = (state: RootState) => {
   return activeMapEntities(state)?.find((entity) =>
-    selectedEntityIds(state).includes(entity.id)
+    selectedEntityIds(state).includes(entity.id),
   );
 };
 
@@ -39,6 +39,6 @@ const selectAllMaps = (state: RootState) => state.entities.maps;
 
 export const allPropositions = createSelector([selectAllMaps], (allMaps) =>
   allMaps.flatMap((m) =>
-    m.entities.filter((entity) => entity.type === "Proposition")
-  )
+    m.entities.filter((entity) => entity.type === "Proposition"),
+  ),
 );

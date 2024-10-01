@@ -30,7 +30,7 @@ export const reduxPersistMigrations = {
 
 export const migrateMap = (
   map: ArgumentMap,
-  version: keyof typeof mapMigrations
+  version: keyof typeof mapMigrations,
 ) => {
   return produce(map, (draft: ArgumentMap) => {
     mapMigrations[version](draft);

@@ -23,17 +23,17 @@ declare module "dom-anchor-text-quote" {
   function toRange(
     root: HTMLElement,
     selector: Selector,
-    options: Options = {}
+    options: Options = {},
   ): Range | null;
 
   function fromTextPosition(
     root: HTMLElement,
-    selector: TextPositionAnchor
+    selector: TextPositionAnchor,
   ): TextQuoteAnchor;
 
   function toTextPosition(
     root: HTMLElement,
     selector: Selector,
-    options: Options = {}
+    options: Options = {},
   ): TextPositionAnchor | null;
 }

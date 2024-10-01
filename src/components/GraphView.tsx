@@ -77,7 +77,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
   const selectedEntityIds = useSelector(selectors.selectedEntityIds);
   const { elements, focusedNodeIds } = useMemo(
     () => makeElements(entities, selectedEntityIds),
-    [entities, selectedEntityIds]
+    [entities, selectedEntityIds],
   );
 
   const cyRef = useRef<cytoscape.Core | undefined>(undefined);
@@ -152,7 +152,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
   ] = useState(undefined as PropositionNodeData | undefined);
 
   const [debugElementData, setDebugElementData] = useState(
-    undefined as NodeDataDefinition | EdgeDataDefinition | undefined
+    undefined as NodeDataDefinition | EdgeDataDefinition | undefined,
   );
 
   const [reactNodesConfig] = useState([
@@ -252,7 +252,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
       }
       cy.zoom({ level, renderedPosition });
     },
-    []
+    [],
   );
 
   const zoomByFactor = useCallback(
@@ -265,7 +265,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
       const level = cy.zoom() * factor;
       zoom({ level, renderedPosition });
     },
-    [zoom]
+    [zoom],
   );
 
   const zoomIn = useCallback(
@@ -275,7 +275,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
         y: event.position?.y,
       });
     },
-    [zoomByFactor]
+    [zoomByFactor],
   );
 
   const zoomOut = useCallback(
@@ -285,7 +285,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
         y: event.position?.y,
       });
     },
-    [zoomByFactor]
+    [zoomByFactor],
   );
 
   const handleWheel = useCallback(
@@ -306,7 +306,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
         cy.panBy({ x: -deltaX, y: -delta });
       }
     },
-    [zoomByFactor]
+    [zoomByFactor],
   );
 
   const handleGesture = useCallback(
@@ -319,7 +319,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
 
       zoomByFactor(scale, { x: event.offsetX, y: event.offsetY });
     },
-    [zoomByFactor]
+    [zoomByFactor],
   );
 
   useEffect(() => {
@@ -442,7 +442,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
         const hoverTarget = getClosestValidDropTarget(
           cy,
           mousePosition,
-          event.target
+          event.target,
         );
         if (
           hoverTarget &&
@@ -475,14 +475,14 @@ export default function GraphView({ id, style }: GraphViewProps) {
           const dragTarget = getClosestValidDropTarget(
             cy,
             mousePosition,
-            dragSource
+            dragSource,
           );
           if (dragTarget && isValidDropTarget(dragSource, dragTarget)) {
             dispatch(
               completeDrag({
                 sourceId: dragSource.data("entityId"),
                 targetId: dragTarget.data("entityId"),
-              })
+              }),
             );
             if (
               dragSourceOriginalPosition &&
@@ -620,7 +620,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
       propositionsById: new Map<string, Proposition>(),
       visibleEntityIds: new Set<string>(),
       justificationTargetIds: new Set<string>(),
-    }
+    },
   );
 
   const {
@@ -639,14 +639,14 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
           if (justificationTargetIds.has(entity.id)) {
             acc.justificationTargetNodeIds.set(
               entity.id,
-              makeEntityNodeId(entity)
+              makeEntityNodeId(entity),
             );
           }
           break;
         case "PropositionCompound":
           acc.justificationBasisNodeIds.set(
             entity.id,
-            makeEntityNodeId(entity)
+            makeEntityNodeId(entity),
           );
           entity.atomIds.forEach((atomId) => {
             const atomNodeId = `propositionCompound-${entity.id}-atom-${atomId}`;
@@ -661,7 +661,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
         case "MediaExcerpt":
           acc.justificationBasisNodeIds.set(
             entity.id,
-            makeEntityNodeId(entity)
+            makeEntityNodeId(entity),
           );
           break;
         case "Justification":
@@ -680,7 +680,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
             appearances.push(appearanceInfo);
             acc.propositionIdToAppearanceInfos.set(
               entity.apparitionId,
-              appearances
+              appearances,
             );
           }
           break;
@@ -694,7 +694,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
       justificationTargetNodeIds: new Map<string, string>(),
       justificationBasisNodeIds: new Map<string, string>(),
       counteredJustificationIds: new Set<string>(),
-    }
+    },
   );
 
   const { nodes: visibleNodes, edges: allEdges } = entities.reduce(
@@ -707,7 +707,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
           const compoundNodeId = justificationBasisNodeIds.get(entity.id);
           if (!compoundNodeId) {
             console.error(
-              `Missing node ID for PropositionCompound ID ${entity.id}`
+              `Missing node ID for PropositionCompound ID ${entity.id}`,
             );
             break;
           }
@@ -721,7 +721,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
             const proposition = propositionsById.get(atomId);
             if (!proposition) {
               console.error(
-                `No Proposition found for PropositionCompound atom ID ${atomId}. This should be impossible.`
+                `No Proposition found for PropositionCompound atom ID ${atomId}. This should be impossible.`,
               );
               return;
             }
@@ -729,7 +729,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
             const appearances =
               propositionIdToAppearanceInfos.get(atomId) || [];
             const isAnyAppearanceSelected = appearances.some((a) =>
-              selectedEntityIds.includes(a.id)
+              selectedEntityIds.includes(a.id),
             );
 
             const atomNodeId = propositionCompoundAtomNodeIds
@@ -737,7 +737,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
               ?.get(entity.id);
             if (!atomNodeId) {
               console.error(
-                `No atom node ID found for PropositionCompound atom ID ${atomId}. This should be impossible.`
+                `No atom node ID found for PropositionCompound atom ID ${atomId}. This should be impossible.`,
               );
               return;
             }
@@ -758,7 +758,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
           const targetNodeId = justificationTargetNodeIds.get(entity.targetId);
           if (!basisNodeId || !targetNodeId) {
             console.error(
-              `Missing node ID for justification ${entity.id}. Basis: ${entity.basisId}, Target: ${entity.targetId}`
+              `Missing node ID for justification ${entity.id}. Basis: ${entity.basisId}, Target: ${entity.targetId}`,
             );
             break;
           }
@@ -767,11 +767,11 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
 
           if (counteredJustificationIds.has(entity.id)) {
             const intermediateNodeId = justificationTargetNodeIds.get(
-              entity.id
+              entity.id,
             );
             if (!intermediateNodeId) {
               console.error(
-                `Missing intermediate node ID for justification ID ${entity.id}`
+                `Missing intermediate node ID for justification ID ${entity.id}`,
               );
               break;
             }
@@ -841,7 +841,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
           const appearances =
             propositionIdToAppearanceInfos.get(entity.id) || [];
           const isAnyAppearanceSelected = appearances.some((a) =>
-            selectedEntityIds.includes(a.id)
+            selectedEntityIds.includes(a.id),
           );
 
           const id =
@@ -860,7 +860,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
           const id = justificationBasisNodeIds.get(entity.id);
           if (!id) {
             console.error(
-              `No node ID found for media excerpt ID ${entity.id}. This should be impossible.`
+              `No node ID found for media excerpt ID ${entity.id}. This should be impossible.`,
             );
             break;
           }
@@ -877,12 +877,12 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
     {
       nodes: [] as SetRequired<NodeDataDefinition, "id">[],
       edges: [] as EdgeDataDefinition[],
-    }
+    },
   );
 
   const visibleNodeIds = new Set(visibleNodes.map((n) => n.id));
   const visibleEdges = allEdges.filter(
-    (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
+    (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target),
   );
   return { nodes: visibleNodes, edges: visibleEdges };
 }
@@ -894,7 +894,7 @@ function makeEntityNodeId({ type, id }: Entity) {
 /** After we delete entities we need to remove them from Cytoscape */
 function correctInvalidNodes(
   cy: cytoscape.Core,
-  elements: cytoscape.ElementDefinition[]
+  elements: cytoscape.ElementDefinition[],
 ) {
   const extantIds = elements.map((el) => el.data.id).filter((id) => id);
 
@@ -1075,14 +1075,14 @@ function nodeIncludesNode(node1: NodeSingular, node2: NodeSingular) {
 function getClosestValidDropTarget(
   cy: cytoscape.Core,
   position: Position,
-  dragNode: NodeSingular
+  dragNode: NodeSingular,
 ) {
   const { excludedNodes, excludedEdges } = getExcludedElements(cy, dragNode);
 
   const nodeTarget = getInnermostNodeContainingPosition(
     cy,
     position,
-    excludedNodes
+    excludedNodes,
   );
 
   const closestEdge = getClosestEdge(cy, position, excludedEdges);
@@ -1137,7 +1137,7 @@ function getExcludedElements(cy: cytoscape.Core, dragNode: NodeSingular) {
     {
       excludedNodes: new Set<NodeSingular>(),
       excludedEdges: new Set<EdgeSingular>(),
-    }
+    },
   );
 
   // Add dragNode and its ancestors to excluded nodes
@@ -1151,7 +1151,7 @@ function getExcludedElements(cy: cytoscape.Core, dragNode: NodeSingular) {
 function getClosestEdge(
   cy: cytoscape.Core,
   position: Position,
-  excludedEdges: Set<EdgeSingular>
+  excludedEdges: Set<EdgeSingular>,
 ) {
   const distanceThreshold = 10;
   const angleThreshold = Math.PI / 2;
@@ -1159,7 +1159,7 @@ function getClosestEdge(
   const nodeTarget = getInnermostNodeContainingPosition(
     cy,
     position,
-    new Set()
+    new Set(),
   );
   // If the drag is over a node, exclude its edges too.
   nodeTarget
@@ -1196,7 +1196,7 @@ function getClosestEdge(
     { edge: undefined, distance: Infinity } as {
       edge: EdgeSingular | undefined;
       distance: number;
-    }
+    },
   );
   return closestEdge.edge;
 }
@@ -1219,7 +1219,7 @@ function angleBetween(p1: Position, p2: Position, p3: Position) {
 function distanceToLineSegment(
   p1: Position,
   p2: Position,
-  p: Position
+  p: Position,
 ): number {
   const dy = p2.y - p1.y;
   const dx = p2.x - p1.x;
@@ -1231,7 +1231,7 @@ function distanceToLineSegment(
 function getInnermostNodeContainingPosition(
   cy: cytoscape.Core,
   position: Position,
-  excludedNodes: Set<NodeSingular>
+  excludedNodes: Set<NodeSingular>,
 ) {
   const node = cy
     .nodes()
@@ -1242,7 +1242,7 @@ function getInnermostNodeContainingPosition(
         (!innermost || nodeIncludesNode(innermost, curr))
           ? curr
           : innermost,
-      undefined as NodeSingular | undefined
+      undefined as NodeSingular | undefined,
     );
   return node;
 }
@@ -1257,7 +1257,7 @@ const validMediaExcerptDropTarges = new Set(["Justification", "Proposition"]);
 
 function isValidDropTarget(
   source: SingularElementArgument,
-  target: SingularElementArgument
+  target: SingularElementArgument,
 ): boolean {
   const sourceType = source.data("type");
   const targetType = target.data("type");

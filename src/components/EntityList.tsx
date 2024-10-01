@@ -20,11 +20,11 @@ function EntityList({ style }: { style?: StyleProp<ViewStyle> }) {
 
   const filteredEntities = useMemo(() => {
     const tableEntities = allEntities.filter((e) =>
-      tableEntityTypes.has(e.type)
+      tableEntityTypes.has(e.type),
     );
     if (!searchQuery) return tableEntities;
     return tableEntities.filter((entity) =>
-      makeDescription(entity).toLowerCase().includes(searchQuery.toLowerCase())
+      makeDescription(entity).toLowerCase().includes(searchQuery.toLowerCase()),
     );
   }, [allEntities, searchQuery]);
 
