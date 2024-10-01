@@ -5,24 +5,34 @@ import {
   MediaExcerpt,
   updateConclusions,
 } from "./entitiesSlice";
+import { PersistedState } from "redux-persist";
 
 export const persistedStateVersion = 4;
 
+type MapsState =
+  | {
+      maps: ArgumentMap[];
+    }
+  | undefined;
+
 export const reduxPersistMigrations = {
-  0: (state: unknown) => state,
-  1: (state: unknown) => state,
-  2: produce((state: { maps: ArgumentMap[] }) => {
-    state.maps.forEach((map: ArgumentMap) => {
+  0: (state: PersistedState) => state,
+  1: (state: PersistedState) => state,
+  2: produce((s: PersistedState) => {
+    const state = s as MapsState;
+    state?.maps.forEach((map: ArgumentMap) => {
       mapMigrations[2](map);
     });
   }),
-  3: produce((state: { maps: ArgumentMap[] }) => {
-    state.maps.forEach((map: ArgumentMap) => {
+  3: produce((s: PersistedState) => {
+    const state = s as MapsState;
+    state?.maps.forEach((map: ArgumentMap) => {
       mapMigrations[3](map);
     });
   }),
-  4: produce((state: { maps: ArgumentMap[] }) => {
-    state.maps.forEach((map: ArgumentMap) => {
+  4: produce((s: PersistedState) => {
+    const state = s as MapsState;
+    state?.maps.forEach((map: ArgumentMap) => {
       mapMigrations[4](map);
     });
   }),
