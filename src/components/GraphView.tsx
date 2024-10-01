@@ -1,3 +1,4 @@
+import React from "react";
 import cn from "classnames";
 import cytoscape, {
   EdgeDataDefinition,
@@ -35,7 +36,7 @@ import {
   pomegranate,
   sunflower,
 } from "../colors";
-import reactNodes, { ReactNodeOptions } from "../cytoscape/reactNodes";
+import reactNodes from "../cytoscape/reactNodes";
 import {
   addEntity,
   completeDrag,
@@ -98,12 +99,6 @@ export default function GraphView({ id, style }: GraphViewProps) {
     }
   }, [selectedEntityIds]);
 
-  useEffect(() => {
-    if (focusedNodeIds.length) {
-      panToNodes(focusedNodeIds);
-    }
-  }, [focusedNodeIds]);
-
   /**
    * Pan the graph to include the given nodes. Currently just centers
    * on the nodes. I'd prefer to pan the minimum amount to include the
@@ -145,6 +140,12 @@ export default function GraphView({ id, style }: GraphViewProps) {
     }
   }, []);
 
+  useEffect(() => {
+    if (focusedNodeIds.length) {
+      panToNodes(focusedNodeIds);
+    }
+  }, [focusedNodeIds, panToNodes]);
+
   const [
     visitAppearancesDialogProposition,
     setVisitAppearancesDialogProposition,
@@ -154,11 +155,12 @@ export default function GraphView({ id, style }: GraphViewProps) {
     undefined as NodeDataDefinition | EdgeDataDefinition | undefined
   );
 
-  const reactNodesConfig: ReactNodeOptions[] = [
+  const [reactNodesConfig] = useState([
     {
       query: `node[type="Proposition"]`,
-      template: function (data: PropositionNodeData) {
-        const appearanceCount = data.appearances?.length;
+      template: function (data: NodeDataDefinition) {
+        const proposition = data as PropositionNodeData;
+        const appearanceCount = proposition.appearances?.length;
         const appearanceNoun =
           "appearance" + (appearanceCount === 1 ? "" : "s");
         return (
@@ -172,7 +174,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
                 onClick={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
-                  setVisitAppearancesDialogProposition(data);
+                  setVisitAppearancesDialogProposition(proposition);
                 }}
               >
                 <Icon name="crosshairs-gps" />
@@ -183,7 +185,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
           </>
         );
       },
-      mode: "replace",
+      mode: "replace" as const,
       syncClasses: ["hover-highlight", "dragging"],
       containerCSS: {
         padding: "1em",
@@ -193,7 +195,8 @@ export default function GraphView({ id, style }: GraphViewProps) {
     },
     {
       query: `node[type="MediaExcerpt"]`,
-      template: function (data: MediaExcerpt) {
+      template: function (data: NodeDataDefinition) {
+        const mediaExcerpt = data as MediaExcerpt;
         const url = preferredUrl(data.urlInfo);
         return (
           <>
@@ -204,7 +207,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
               onClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                activateMediaExcerpt(data);
+                activateMediaExcerpt(mediaExcerpt);
                 return false;
               }}
             >
@@ -213,7 +216,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
           </>
         );
       },
-      mode: "replace",
+      mode: "replace" as const,
       syncClasses: ["hover-highlight", "dragging"],
       containerCSS: {
         padding: "1em",
@@ -221,7 +224,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
         borderRadius: "8px",
       },
     },
-  ];
+  ]);
 
   useEffect(() => {
     if (cyRef.current) {
@@ -232,34 +235,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
         nodes: reactNodesConfig,
       });
     }
-  }, [cyRef.current]);
-
-  const zoomIn = useCallback((event: EventObject) => {
-    zoomByFactor(zoomInFactor ** 5, {
-      x: event.position?.x,
-      y: event.position?.y,
-    });
-  }, []);
-
-  const zoomOut = useCallback((event: EventObject) => {
-    zoomByFactor(zoomOutFactor ** 5, {
-      x: event.position?.x,
-      y: event.position?.y,
-    });
-  }, []);
-
-  const zoomByFactor = useCallback(
-    (factor: number, renderedPosition: { x: number; y: number }) => {
-      const cy = cyRef.current;
-      if (!cy) {
-        console.warn("Cannot zoom because there is no cy ref.");
-        return;
-      }
-      const level = cy.zoom() * factor;
-      zoom({ level, renderedPosition });
-    },
-    []
-  );
+  }, [reactNodesConfig]);
 
   const zoom = useCallback(
     ({
@@ -279,33 +255,72 @@ export default function GraphView({ id, style }: GraphViewProps) {
     []
   );
 
-  const handleWheel = useCallback((event: WheelEvent) => {
-    event.preventDefault();
-    if (!cyRef.current) return;
+  const zoomByFactor = useCallback(
+    (factor: number, renderedPosition: { x: number; y: number }) => {
+      const cy = cyRef.current;
+      if (!cy) {
+        console.warn("Cannot zoom because there is no cy ref.");
+        return;
+      }
+      const level = cy.zoom() * factor;
+      zoom({ level, renderedPosition });
+    },
+    [zoom]
+  );
 
-    const cy = cyRef.current;
-    const delta = event.deltaY;
-    const deltaX = event.deltaX;
+  const zoomIn = useCallback(
+    (event: EventObject) => {
+      zoomByFactor(zoomInFactor ** 5, {
+        x: event.position?.x,
+        y: event.position?.y,
+      });
+    },
+    [zoomByFactor]
+  );
 
-    if (event.ctrlKey || event.metaKey) {
-      // Pinch zoom
-      const zoomFactor = delta > 0 ? zoomOutFactor : zoomInFactor;
-      zoomByFactor(zoomFactor, { x: event.offsetX, y: event.offsetY });
-    } else {
-      // Pan
-      cy.panBy({ x: -deltaX, y: -delta });
-    }
-  }, []);
+  const zoomOut = useCallback(
+    (event: EventObject) => {
+      zoomByFactor(zoomOutFactor ** 5, {
+        x: event.position?.x,
+        y: event.position?.y,
+      });
+    },
+    [zoomByFactor]
+  );
 
-  const handleGesture = useCallback((event: any) => {
-    event.preventDefault();
-    if (!cyRef.current) return;
+  const handleWheel = useCallback(
+    (event: WheelEvent) => {
+      event.preventDefault();
+      if (!cyRef.current) return;
 
-    const cy = cyRef.current;
-    const scale = event.scale;
+      const cy = cyRef.current;
+      const delta = event.deltaY;
+      const deltaX = event.deltaX;
 
-    zoomByFactor(scale, { x: event.offsetX, y: event.offsetY });
-  }, []);
+      if (event.ctrlKey || event.metaKey) {
+        // Pinch zoom
+        const zoomFactor = delta > 0 ? zoomOutFactor : zoomInFactor;
+        zoomByFactor(zoomFactor, { x: event.offsetX, y: event.offsetY });
+      } else {
+        // Pan
+        cy.panBy({ x: -deltaX, y: -delta });
+      }
+    },
+    [zoomByFactor]
+  );
+
+  const handleGesture = useCallback(
+    (e: Event) => {
+      const event = e as GestureEvent;
+      event.preventDefault();
+      if (!cyRef.current) return;
+
+      const scale = event.scale;
+
+      zoomByFactor(scale, { x: event.offsetX, y: event.offsetY });
+    },
+    [zoomByFactor]
+  );
 
   useEffect(() => {
     const container = cyRef.current?.container();
@@ -339,7 +354,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
             tooltipText: "Delete node",
             selector: "node, edge",
             onClickFunction: function (event) {
-              var target = event.target;
+              const target = event.target;
               const id = target.data("entityId");
               dispatch(deleteEntity(id));
             },
@@ -443,7 +458,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
         }
       });
 
-      cy.on("mouseup", (event: any) => {
+      cy.on("mouseup", (event: EventObject) => {
         if (event.target === cy) {
           if (dragSource && dragSourceOriginalPosition) {
             // Return the node to its original position
@@ -486,7 +501,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
         cy.elements().removeClass("hover-highlight");
       });
     }
-  }, [dispatch]);
+  }, [dispatch, zoomIn, zoomOut]);
 
   // Fit the graph once on load
   const initialFit = useCallback(() => {
@@ -500,7 +515,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
       return;
     }
     cy.on("layoutstop", initialFit);
-  }, []);
+  }, [initialFit]);
 
   useEffect(() => layoutGraph, [elements]);
 
@@ -656,7 +671,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
             acc.justificationTargetNodeIds.set(entity.id, intermediateNodeId);
           }
           break;
-        case "Appearance":
+        case "Appearance": {
           const mediaExcerpt = mediaExcerptsById.get(entity.mediaExcerptId);
           if (mediaExcerpt) {
             const appearanceInfo = { id: entity.id, mediaExcerpt };
@@ -669,6 +684,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
             );
           }
           break;
+        }
       }
       return acc;
     },
@@ -1043,65 +1059,6 @@ const stylesheet = [
   },
 ];
 
-function layoutPropositionCompoundAtomsVertically(cy: cytoscape.Core) {
-  const compoundNodes = cy
-    .nodes()
-    .filter(
-      (entity) =>
-        entity.isParent() && entity.data("type") === "PropositionCompound"
-    );
-
-  compoundNodes.forEach((compound) => {
-    const children = compound.children();
-
-    if (children.length <= 1) {
-      return;
-    }
-    const compoundBbox = compound.boundingBox();
-
-    let totalChildHeight = 0;
-    let previousChildBottomMargin = 0;
-
-    children.forEach((child, index) => {
-      const childWidth = child.width();
-      const childHeight = child.height();
-      const leftPadding = getNumericStyle(child, "padding-left");
-      const leftMargin = getNumericStyle(child, "margin-left");
-      const topPadding = getNumericStyle(child, "padding-top");
-      const topMargin = getNumericStyle(child, "margin-top");
-      const bottomPadding = getNumericStyle(child, "padding-bottom");
-      const bottomMargin = getNumericStyle(child, "margin-bottom");
-
-      const xPosition =
-        compoundBbox.x1 + leftMargin + leftPadding + childWidth / 2;
-
-      let topOffset;
-      if (index === 0) {
-        topOffset = topMargin + topPadding;
-      } else {
-        const collapsedMargin = Math.max(previousChildBottomMargin, topMargin);
-        topOffset = collapsedMargin + topPadding;
-      }
-
-      const yPosition =
-        compoundBbox.y1 + totalChildHeight + topOffset + childHeight / 2;
-      totalChildHeight += childHeight + topOffset + bottomPadding;
-      child.position({
-        x: xPosition,
-        y: yPosition,
-      });
-
-      previousChildBottomMargin = bottomMargin;
-    });
-
-    const lastBottomMargin = getNumericStyle(children.last(), "margin-bottom");
-    compound.style({
-      width: compoundBbox.w,
-      height: Math.max(compoundBbox.h, totalChildHeight + lastBottomMargin),
-    });
-  });
-}
-
 function nodeContainsPosition(node: NodeSingular, pos: Position) {
   const bb = node.boundingBox();
   return bb.x1 <= pos.x && pos.x <= bb.x2 && bb.y1 <= pos.y && pos.y <= bb.y2;
@@ -1315,38 +1272,6 @@ function isValidDropTarget(
   }
 }
 
-/**
- * Returns a numeric value for the given style property of the node.
- *
- * Cytoscape's node defines a getNumericStyle, but it throws for style names
- * that aren't defined directly. I.e. if you define `padding: 1em` and ask
- * for `padding-top`, it throws. node.style works for style names that are
- * not defined directly, but returns a string. This function works for both.
- */
-function getNumericStyle(node: cytoscape.NodeSingular, name: string) {
-  try {
-    return styleLengthToPx(node.style(name));
-  } catch {
-    return 0;
-  }
-}
-
-function styleLengthToPx(length: string | number): number {
-  if (typeof length === "number") {
-    return length;
-  }
-  if (length.endsWith("px")) {
-    return parseFloat(length);
-  }
-  if (length.endsWith("em")) {
-    const fontSize = parseFloat(
-      getComputedStyle(document.documentElement).fontSize
-    );
-    return parseFloat(length) * fontSize;
-  }
-  throw new Error(`Unsupported length unit: ${length}`);
-}
-
 function getLayout(fit = false) {
   return {
     name: "elk",
@@ -1375,3 +1300,9 @@ function getLayout(fit = false) {
     },
   };
 }
+
+type GestureEvent = Event & {
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+};

@@ -43,7 +43,7 @@ chrome.runtime.onInstalled.addListener(
 );
 
 chrome.runtime.onInstalled.addListener(function installContextMenus() {
-  const id = chrome.contextMenus.create({
+  chrome.contextMenus.create({
     id: addToSophistreeContextMenuId,
     title: addToSophistreeContextMenuTitle,
     contexts: ["selection"],

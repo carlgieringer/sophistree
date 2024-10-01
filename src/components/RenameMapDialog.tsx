@@ -1,10 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Dialog, TextInput, Button } from "react-native-paper";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 
-import * as selectors from "../store/selectors";
 import { renameActiveMap } from "../store/entitiesSlice";
-import { use } from "cytoscape";
 
 interface RenameMapDialogProps {
   visible: boolean;

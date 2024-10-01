@@ -347,7 +347,7 @@ class HighlightManager<Anchor, Data> {
       );
     }
 
-    highlight.ranges.forEach((range, index) => {
+    highlight.ranges.forEach((range) => {
       const rangeRects = Array.from(range.getClientRects());
       const combinedRects = this.combineAdjacentRects(rangeRects);
 

@@ -84,9 +84,10 @@ function makeDescription(entity: Entity): string {
   switch (entity.type) {
     case "Proposition":
       return entity.text;
-    case "MediaExcerpt":
+    case "MediaExcerpt": {
       const url = preferredUrl(entity.urlInfo);
       return `"${entity.quotation}" ${entity.sourceInfo.name} <${url}>`;
+    }
     default:
       return `${entity.type}`;
   }

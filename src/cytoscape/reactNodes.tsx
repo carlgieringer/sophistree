@@ -1,3 +1,4 @@
+import React from "react";
 import cytoscape from "cytoscape";
 import ReactDOM from "react-dom/client";
 import debounce from "lodash.debounce";
@@ -35,7 +36,7 @@ const defaultReactNodeOptions: ReactNodeOptions = {
 
 export interface ReactNodeOptions {
   query: string;
-  template: (data: any) => JSX.Element;
+  template: (data: cytoscape.NodeDataDefinition) => JSX.Element;
   mode?: "replace";
   /** CSS classes to copy from the node to the HTML container */
   syncClasses?: string[];
@@ -49,14 +50,17 @@ interface ReactNodesOptions {
 }
 
 function reactNodes(this: cytoscape.Core, options: ReactNodesOptions) {
-  const cy = this;
+  const layout = () => {
+    this.layout(options.layout).run();
+  };
 
   // debounce layout function to avoid layout thrashing
-  const layout = debounce(function layout() {
-    cy.layout(options.layout).run();
-  }, options.layoutDelay ?? defaultOptions.layoutDelay);
+  const debouncedLayout = debounce(
+    layout,
+    options.layoutDelay ?? defaultOptions.layoutDelay
+  );
 
-  options.nodes.forEach((o) => makeReactNode(cy, o, layout));
+  options.nodes.forEach((o) => makeReactNode(this, o, debouncedLayout));
 
   return this; // for chaining
 }
@@ -86,8 +90,8 @@ function makeReactNode(
         console.error(`reactNodes doesnt' support mode ${options.mode}`);
     }
 
-    var htmlElement = document.createElement("div");
-    var jsxElement = options.template(node.data());
+    const htmlElement = document.createElement("div");
+    const jsxElement = options.template(node.data());
     const root = ReactDOM.createRoot(htmlElement);
     root.render(jsxElement);
     Object.assign(htmlElement.style, options.containerCSS);
@@ -167,7 +171,7 @@ function makeReactNode(
       }
     });
     node.on("data", function () {
-      var jsxElement = options.template(node.data());
+      const jsxElement = options.template(node.data());
       root.render(jsxElement);
     });
     if (options.syncClasses) {

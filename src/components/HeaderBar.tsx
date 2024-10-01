@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Appbar, Divider, Menu, Portal } from "react-native-paper";
 import { useDispatch, useSelector } from "react-redux";
 
-import { RootState } from "../store";
 import { deleteMap } from "../store/entitiesSlice";
 import NewMapDialog from "./NewMapDialog";
 import ActivateMapDialog from "./ActivateMapDialog";

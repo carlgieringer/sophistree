@@ -1,58 +1,73 @@
-import { produce, current } from "immer";
-import { Entity, updateConclusions } from "./entitiesSlice";
+import { produce } from "immer";
+import {
+  ArgumentMap,
+  Entity,
+  MediaExcerpt,
+  updateConclusions,
+} from "./entitiesSlice";
 
 export const persistedStateVersion = 4;
 
 export const reduxPersistMigrations = {
-  0: (state: any) => state,
-  1: (state: any) => state,
-  2: produce((state: any) => {
-    state.maps.forEach((map: any) => {
+  0: (state: unknown) => state,
+  1: (state: unknown) => state,
+  2: produce((state: { maps: ArgumentMap[] }) => {
+    state.maps.forEach((map: ArgumentMap) => {
       mapMigrations[2](map);
     });
   }),
-  3: produce((state: any) => {
-    state.maps.forEach((map: any) => {
+  3: produce((state: { maps: ArgumentMap[] }) => {
+    state.maps.forEach((map: ArgumentMap) => {
       mapMigrations[3](map);
     });
   }),
-  4: produce((state: any) => {
-    state.maps.forEach((map: any) => {
+  4: produce((state: { maps: ArgumentMap[] }) => {
+    state.maps.forEach((map: ArgumentMap) => {
       mapMigrations[4](map);
     });
   }),
 };
 
-export const migrateMap = (map: any, version: keyof typeof mapMigrations) => {
-  return produce(map, (draft: any) => {
+export const migrateMap = (
+  map: ArgumentMap,
+  version: keyof typeof mapMigrations
+) => {
+  return produce(map, (draft: ArgumentMap) => {
     mapMigrations[version](draft);
   });
 };
 
+interface MediaExcerptv2 extends MediaExcerpt {
+  url?: string;
+  canonicalUrl?: string;
+  sourceName?: string;
+}
+
 const mapMigrations = {
-  0: (map: any) => map,
-  1: (map: any) => map,
-  2: (map: any) => {
-    map.entities.forEach((entity: any) => {
+  0: (map: unknown) => map,
+  1: (map: unknown) => map,
+  2: (map: { entities: unknown[] }) => {
+    map.entities.forEach((e: unknown) => {
+      const entity = e as MediaExcerptv2;
       if (entity.type === "MediaExcerpt") {
         const { url, canonicalUrl, sourceName } = entity;
-        entity.urlInfo = { url, canonicalUrl };
-        entity.sourceInfo = { name: sourceName };
+        entity.urlInfo = { url: url!, canonicalUrl };
+        entity.sourceInfo = { name: sourceName! };
         delete entity.url;
         delete entity.canonicalUrl;
         delete entity.sourceName;
       }
     });
   },
-  3: (map: any) => {
+  3: (map: ArgumentMap) => {
     updateConclusions(map);
   },
-  4: (map: any) => {
+  4: (map: ArgumentMap) => {
     removeDuplicateJustifications(map);
   },
 };
 
-const removeDuplicateJustifications = (map: any) => {
+const removeDuplicateJustifications = (map: ArgumentMap) => {
   const uniqueJustifications = new Set();
   map.entities = map.entities.filter((entity: Entity) => {
     if (entity.type !== "Justification") return true;

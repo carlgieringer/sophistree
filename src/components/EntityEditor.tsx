@@ -3,7 +3,6 @@ import { useSelector, useDispatch } from "react-redux";
 import { TextInput, Text } from "react-native-paper";
 import { View } from "react-native";
 
-import { RootState } from "../store";
 import {
   updateJustification,
   Polarity,
@@ -79,7 +78,7 @@ function JustificationEditor({ entity }: { entity: Justification }) {
 }
 
 function MediaExcerptEditor({ entity }: { entity: MediaExcerpt }) {
-  return <Text>MediaExcerptEditor</Text>;
+  return <Text>MediaExcerpt {entity.id}</Text>;
 }
 
 export default EntityEditor;

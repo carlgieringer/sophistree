@@ -76,7 +76,7 @@ function activateMediaExcerpt(mediaExcerpt: MediaExcerpt) {
   );
 }
 
-function createMediaExcerpt(message: any) {
+function createMediaExcerpt(message: CreateMediaExcerptMessage) {
   const id = uuidv4();
   const quotation = message.selectedText;
   const url = getUrl();

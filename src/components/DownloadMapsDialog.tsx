@@ -1,4 +1,5 @@
-import { Button, Dialog, Portal } from "react-native-paper";
+import React from "react";
+import { Button, Dialog } from "react-native-paper";
 import { useSelector } from "react-redux";
 
 import * as selectors from "../store/selectors";
@@ -50,7 +51,7 @@ export default function DownloadMapsDialog({
   );
 }
 
-function downloadJSON(filename: string, data: any) {
+function downloadJSON(filename: string, data: unknown) {
   const blob = new Blob([JSON.stringify(data, null, 2)], {
     type: "application/json",
   });

@@ -1,3 +1,4 @@
+import React from "react";
 import { StyleSheet, View } from "react-native";
 import { Dialog, Button, Text, Tooltip } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
@@ -102,7 +103,9 @@ async function getOrOpenTab(
   let tabUrl;
   try {
     tabUrl = await chrome.tabs.sendMessage(activeTab.id, message);
-  } catch (error) {}
+  } catch (error) {
+    console.error(`Failed to send message to tab`, error);
+  }
   if (tabUrl === url) {
     return activeTab.id;
   }

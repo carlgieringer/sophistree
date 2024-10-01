@@ -22,7 +22,7 @@ const App: React.FC = () => {
     function handleChromeRuntimeMessage(
       message: ChromeRuntimeMessage,
       sender: chrome.runtime.MessageSender,
-      sendResponse: (response: any) => void
+      sendResponse: (response: unknown) => void
     ) {
       switch (message.action) {
         case "addMediaExcerpt": {
