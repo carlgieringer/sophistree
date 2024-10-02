@@ -1,3 +1,4 @@
+import React from "react";
 import { StyleSheet, View } from "react-native";
 import { Dialog, Button, Text, Tooltip } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
@@ -89,7 +90,7 @@ export async function activateMediaExcerpt(mediaExcerpt: MediaExcerpt) {
 
 async function getOrOpenTab(
   activeTab: chrome.tabs.Tab,
-  url: string
+  url: string,
 ): Promise<number | undefined> {
   if (!activeTab.id) {
     console.error("Active tab ID was missing. This should never happen.");
@@ -102,7 +103,9 @@ async function getOrOpenTab(
   let tabUrl;
   try {
     tabUrl = await chrome.tabs.sendMessage(activeTab.id, message);
-  } catch (error) {}
+  } catch (error) {
+    console.error(`Failed to send message to tab`, error);
+  }
   if (tabUrl === url) {
     return activeTab.id;
   }
@@ -115,16 +118,15 @@ function waitForTabId(url: string): Promise<number> {
   return new Promise((resolve) => {
     const tabCreatedListener = (tab: chrome.tabs.Tab) => {
       if (tab.pendingUrl === url) {
-        chrome.tabs.onUpdated.addListener(function onUpdatedListener(
-          tabId,
-          info
-        ) {
-          if (info.status === "complete" && tabId === tab.id) {
-            chrome.tabs.onUpdated.removeListener(onUpdatedListener);
-            chrome.tabs.onCreated.removeListener(tabCreatedListener);
-            resolve(tabId);
-          }
-        });
+        chrome.tabs.onUpdated.addListener(
+          function onUpdatedListener(tabId, info) {
+            if (info.status === "complete" && tabId === tab.id) {
+              chrome.tabs.onUpdated.removeListener(onUpdatedListener);
+              chrome.tabs.onCreated.removeListener(tabCreatedListener);
+              resolve(tabId);
+            }
+          },
+        );
       }
     };
 

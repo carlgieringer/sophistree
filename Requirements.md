@@ -38,7 +38,6 @@ this extension and use that in place of Sophistree?
 
 TODO:
 
-- Add linting, formatting, and CI checks
 - Color highlights according to critique.
   - Generally: requires voting? Hover over justification and use SegmentedButtons or ToggleButton.Row?
     - Proves True/False, Supports True/False, Remove vote, Does not support.

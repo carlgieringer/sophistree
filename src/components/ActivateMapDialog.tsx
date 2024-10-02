@@ -1,4 +1,5 @@
-import { Button, Dialog, Portal } from "react-native-paper";
+import React from "react";
+import { Button, Dialog } from "react-native-paper";
 import { useDispatch, useSelector } from "react-redux";
 import { ScrollView, StyleSheet } from "react-native";
 

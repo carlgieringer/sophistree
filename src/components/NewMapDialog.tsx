@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Dialog, Portal, TextInput } from "react-native-paper";
+import { Button, Dialog, TextInput } from "react-native-paper";
 import { useDispatch } from "react-redux";
 
 import { createMap } from "../store/entitiesSlice";

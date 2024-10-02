@@ -176,7 +176,7 @@ export const entitiesSlice = createSlice({
       action: PayloadAction<{
         id: string;
         updates: Partial<Omit<Entity, "type">>;
-      }>
+      }>,
     ) {
       const activeMap = state.maps.find((map) => map.id === state.activeMapId);
       if (!activeMap) {
@@ -184,11 +184,11 @@ export const entitiesSlice = createSlice({
         return;
       }
       const index = activeMap.entities.findIndex(
-        (entity) => entity.id === action.payload.id
+        (entity) => entity.id === action.payload.id,
       );
       if (index < 1) {
         console.error(
-          `Cannot updateEntity because there is no entity with id ${action.payload.id}`
+          `Cannot updateEntity because there is no entity with id ${action.payload.id}`,
         );
         return;
       }
@@ -203,12 +203,12 @@ export const entitiesSlice = createSlice({
       action: PayloadAction<{
         id: string;
         updates: Partial<Omit<Proposition, "type">>;
-      }>
+      }>,
     ) {
       const activeMap = state.maps.find((map) => map.id === state.activeMapId);
       if (!activeMap) return;
       const index = activeMap.entities.findIndex(
-        (entity) => entity.id === action.payload.id
+        (entity) => entity.id === action.payload.id,
       );
       if (index !== -1) {
         activeMap.entities[index] = {
@@ -222,17 +222,17 @@ export const entitiesSlice = createSlice({
       action: PayloadAction<{
         id: string;
         updates: Partial<Omit<Justification, "type">>;
-      }>
+      }>,
     ) {
       const activeMap = state.maps.find((map) => map.id === state.activeMapId);
       if (!activeMap) return;
 
       const index = activeMap.entities.findIndex(
-        (entity) => entity.id === action.payload.id
+        (entity) => entity.id === action.payload.id,
       );
       if (index === -1) {
         console.error(
-          `Cannot update Justification node because no node has ID ${action.payload.id}`
+          `Cannot update Justification node because no node has ID ${action.payload.id}`,
         );
         return;
       }
@@ -273,7 +273,7 @@ export const entitiesSlice = createSlice({
       const appearances = activeMap.entities.filter(
         (e) =>
           e.type === "Appearance" &&
-          selectedEntityIds.includes(e.mediaExcerptId)
+          selectedEntityIds.includes(e.mediaExcerptId),
       );
       state.selectedEntityIds = [
         ...selectedEntityIds,
@@ -333,7 +333,7 @@ export function updateConclusions(map: ArgumentMap) {
       justificationTargetIds: new Set<string>(),
       mediaExcerptsById: new Map<string, MediaExcerpt>(),
       propositionCompoundAtomIds: new Set<string>(),
-    }
+    },
   );
 
   const { sourceNamesByPropositionId, urlsByPropositionId } =
@@ -345,7 +345,7 @@ export function updateConclusions(map: ArgumentMap) {
             if (!acc.sourceNamesByPropositionId.has(entity.apparitionId)) {
               acc.sourceNamesByPropositionId.set(
                 entity.apparitionId,
-                new Set()
+                new Set(),
               );
             }
             acc.sourceNamesByPropositionId
@@ -367,7 +367,7 @@ export function updateConclusions(map: ArgumentMap) {
       {
         sourceNamesByPropositionId: new Map<string, Set<string>>(),
         urlsByPropositionId: new Map<string, Set<string>>(),
-      }
+      },
     );
 
   // Conclusions must be propositions that are not the basis of any justification.
@@ -377,7 +377,7 @@ export function updateConclusions(map: ArgumentMap) {
     (id) =>
       propositionIds.has(id) &&
       !justificationBasisIds.has(id) &&
-      !propositionCompoundAtomIds.has(id)
+      !propositionCompoundAtomIds.has(id),
   );
 
   // Group conclusions by their source names and URLs
@@ -397,7 +397,7 @@ export function updateConclusions(map: ArgumentMap) {
       acc.conclusionGroups.get(key)!.propositionIds.push(id);
       return acc;
     },
-    { conclusionGroups: new Map<string, ConclusionInfo>() }
+    { conclusionGroups: new Map<string, ConclusionInfo>() },
   );
 
   map.conclusions = Array.from(conclusionGroups.values());
@@ -410,10 +410,10 @@ export function preferredUrl(urlInfo: UrlInfo): string {
 function applyDeleteOperation(
   state: State,
   activeMap: ArgumentMap,
-  entityIdToDelete: string
+  entityIdToDelete: string,
 ) {
   const entitiesById = new Map(
-    activeMap.entities.map((entity) => [entity.id, entity])
+    activeMap.entities.map((entity) => [entity.id, entity]),
   );
   const allEntityIdsToDelete = new Set([entityIdToDelete]);
   activeMap.entities.forEach((entity) => {
@@ -437,7 +437,7 @@ function applyDeleteOperation(
           (e) =>
             e.type === "Justification" &&
             e.basisId === basis.id &&
-            !allEntityIdsToDelete.has(e.id)
+            !allEntityIdsToDelete.has(e.id),
         );
         if (!otherJustificationsUsingCompound) {
           allEntityIdsToDelete.add(basis.id);
@@ -448,11 +448,11 @@ function applyDeleteOperation(
 
   // Remove all the collected entities
   activeMap.entities = activeMap.entities.filter(
-    (entity) => !allEntityIdsToDelete.has(entity.id)
+    (entity) => !allEntityIdsToDelete.has(entity.id),
   );
 
   state.selectedEntityIds = state.selectedEntityIds.filter(
-    (id) => !allEntityIdsToDelete.has(id)
+    (id) => !allEntityIdsToDelete.has(id),
   );
 
   activeMap.entities = activeMap.entities.filter((entity) => {
@@ -460,7 +460,7 @@ function applyDeleteOperation(
       case "PropositionCompound": {
         // delete proposition compounds if their last justification was deleted.
         const hasJustification = activeMap.entities.some(
-          (e) => e.type === "Justification" && e.basisId === entity.id
+          (e) => e.type === "Justification" && e.basisId === entity.id,
         );
         return hasJustification;
       }
@@ -480,7 +480,7 @@ function applyDeleteOperation(
   updateMediaExcerptAutoVisibilityForDeletedJustifications(
     state,
     entitiesById,
-    allEntityIdsToDelete
+    allEntityIdsToDelete,
   );
 }
 
@@ -489,7 +489,7 @@ function applyDragOperation(
   activeMap: ArgumentMap,
   source: Entity,
   target: Entity,
-  actionPolarity: Polarity | undefined
+  actionPolarity: Polarity | undefined,
 ) {
   let basisId: string;
   switch (source.type) {
@@ -500,7 +500,7 @@ function applyDragOperation(
             target.atomIds.push(source.id);
           } else {
             console.log(
-              `Proposition ID ${source.id} is already an atom of proposition compound ID ${target.id}. Skipping add it.`
+              `Proposition ID ${source.id} is already an atom of proposition compound ID ${target.id}. Skipping add it.`,
             );
           }
           return;
@@ -511,7 +511,7 @@ function applyDragOperation(
             (e) =>
               e.type === "PropositionCompound" &&
               e.atomIds.length === 1 &&
-              e.atomIds[0] === source.id
+              e.atomIds[0] === source.id,
           );
           if (!propositionCompound) {
             propositionCompound = {
@@ -532,7 +532,7 @@ function applyDragOperation(
             (e) =>
               e.type === "Appearance" &&
               e.apparitionId === apparitionId &&
-              e.mediaExcerptId === mediaExcerptId
+              e.mediaExcerptId === mediaExcerptId,
           );
           if (!extantAppearance) {
             activeMap.entities.push({
@@ -545,14 +545,14 @@ function applyDragOperation(
             updateMediaExcerptAutoVisibility(state, mediaExcerptId);
           } else {
             console.log(
-              `Appearance between apparition ID ${apparitionId} and media excerpt ID ${mediaExcerptId} already exists. Skipping creation.`
+              `Appearance between apparition ID ${apparitionId} and media excerpt ID ${mediaExcerptId} already exists. Skipping creation.`,
             );
           }
           return;
         }
         default: {
           console.error(
-            `Invalid target type ${target.type} for source type ${source.type}`
+            `Invalid target type ${target.type} for source type ${source.type}`,
           );
           return;
         }
@@ -564,7 +564,7 @@ function applyDragOperation(
         case "MediaExcerpt":
         case "PropositionCompound":
           console.error(
-            `Invalid target type ${target.type} for source type ${source.type}`
+            `Invalid target type ${target.type} for source type ${source.type}`,
           );
           return;
       }
@@ -580,7 +580,7 @@ function applyDragOperation(
     (e) =>
       e.type === "Justification" &&
       e.targetId === target.id &&
-      e.basisId === basisId
+      e.basisId === basisId,
   );
   if (extantJustification) {
     console.info("Extant justification found, not creating a new one.");
@@ -590,7 +590,9 @@ function applyDragOperation(
   const newJustificationId = uuidv4();
   const polarity =
     // Counter justifications must be negative
-    target.type === "Justification" ? "Negative" : actionPolarity ?? "Positive";
+    target.type === "Justification"
+      ? "Negative"
+      : (actionPolarity ?? "Positive");
   const newJustification: Justification = {
     id: newJustificationId,
     type: "Justification",
@@ -605,7 +607,7 @@ function applyDragOperation(
 function updateMediaExcerptAutoVisibilityForDeletedJustifications(
   state: State,
   entitiesById: Map<string, Entity>,
-  allEntityIdsToDelete: Set<string>
+  allEntityIdsToDelete: Set<string>,
 ) {
   const deletedJustificationMediaExcerptBasisIds: string[] = [];
   allEntityIdsToDelete.forEach((id) => {
@@ -618,26 +620,26 @@ function updateMediaExcerptAutoVisibilityForDeletedJustifications(
     }
   });
   deletedJustificationMediaExcerptBasisIds.forEach((id) =>
-    updateMediaExcerptAutoVisibility(state, id)
+    updateMediaExcerptAutoVisibility(state, id),
   );
 }
 
 function updateEntityVisibility(
   state: State,
   entityId: string,
-  visibility: Visibility | undefined
+  visibility: Visibility | undefined,
 ) {
   const activeMap = state.maps.find((map) => map.id === state.activeMapId);
   if (!activeMap) {
     console.error(
-      `Unable to update entity visibility because the active map ${state.activeMapId} was not found.`
+      `Unable to update entity visibility because the active map ${state.activeMapId} was not found.`,
     );
     return;
   }
   const entity = activeMap.entities.find((entity) => entity.id === entityId);
   if (!entity) {
     console.error(
-      `Unable to update entity visibility because the entity with ID ${state.activeMapId} was not found.`
+      `Unable to update entity visibility because the entity with ID ${state.activeMapId} was not found.`,
     );
     return;
   }
@@ -647,7 +649,7 @@ function updateEntityVisibility(
 function updatePropositionCompound(
   entity: PropositionCompound,
   entityIdToDelete: string,
-  allEntityIdsToDelete: Set<string>
+  allEntityIdsToDelete: Set<string>,
 ) {
   entity.atomIds = entity.atomIds.filter((id) => id !== entityIdToDelete);
   if (entity.atomIds.length === 0) {
@@ -657,7 +659,7 @@ function updatePropositionCompound(
 
 function updateMediaExcerptAutoVisibility(
   state: State,
-  mediaExcerptId: string
+  mediaExcerptId: string,
 ) {
   const activeMap = state.maps.find((map) => map.id === state.activeMapId);
   if (!activeMap) return;
@@ -678,11 +680,11 @@ function updateMediaExcerptAutoVisibility(
     }
   }
   const mediaExcerpt = activeMap.entities.find(
-    (entity) => entity.id === mediaExcerptId
+    (entity) => entity.id === mediaExcerptId,
   );
   if (!mediaExcerpt) {
     console.error(
-      `Unable to update MediaExcerpt visibility because MediaExcerpt with ID ${mediaExcerptId} was missing`
+      `Unable to update MediaExcerpt visibility because MediaExcerpt with ID ${mediaExcerptId} was missing`,
     );
     return;
   }

@@ -39,43 +39,42 @@ chrome.runtime.onInstalled.addListener(
           });
       }
     }
-  }
+  },
 );
 
 chrome.runtime.onInstalled.addListener(function installContextMenus() {
-  const id = chrome.contextMenus.create({
+  chrome.contextMenus.create({
     id: addToSophistreeContextMenuId,
     title: addToSophistreeContextMenuTitle,
     contexts: ["selection"],
   });
 });
 
-chrome.contextMenus.onClicked.addListener(function onClickContxtMenu(
-  info,
-  tab
-) {
-  if (info.menuItemId !== addToSophistreeContextMenuId) {
-    return;
-  }
-  if (!info.selectionText) {
-    console.log(`info.selectionText was missing`);
-    return;
-  }
-  if (!tab?.id) {
-    console.log(`tab.id was missing`);
-    return;
-  }
-  chrome.tabs
-    .sendMessage(tab.id, {
-      action: "createMediaExcerpt",
-      selectedText: info.selectionText,
-    })
-    .catch((reason) => {
-      console.error(
-        `Failed to sendMessage createMediaExcerpt to ${tab.url}`,
-        reason
-      );
-    });
-});
+chrome.contextMenus.onClicked.addListener(
+  function onClickContxtMenu(info, tab) {
+    if (info.menuItemId !== addToSophistreeContextMenuId) {
+      return;
+    }
+    if (!info.selectionText) {
+      console.log(`info.selectionText was missing`);
+      return;
+    }
+    if (!tab?.id) {
+      console.log(`tab.id was missing`);
+      return;
+    }
+    chrome.tabs
+      .sendMessage(tab.id, {
+        action: "createMediaExcerpt",
+        selectedText: info.selectionText,
+      })
+      .catch((reason) => {
+        console.error(
+          `Failed to sendMessage createMediaExcerpt to ${tab.url}`,
+          reason,
+        );
+      });
+  },
+);
 
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });

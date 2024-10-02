@@ -1,7 +1,8 @@
-import { context } from "esbuild";
+import { build, context } from "esbuild";
 import { copy } from "esbuild-plugin-copy";
 import { sassPlugin } from "esbuild-sass-plugin";
 import flow from "esbuild-plugin-flow";
+import { clean } from "esbuild-plugin-clean";
 
 const watch = process.argv.includes("--watch");
 const prod = process.env.NODE_ENV === "production";
@@ -53,6 +54,9 @@ const options = {
         });
       },
     },
+    clean({
+      patterns: ["./dist/*", "./dist/*/"],
+    }),
     copy({
       assets: [
         {
@@ -76,13 +80,16 @@ const options = {
     sassPlugin(),
     flow(
       new RegExp(
-        "/node_modules/react-native/|/node_modules/react-native-vector-icons/.*.js$"
-      )
+        "/node_modules/react-native/|/node_modules/react-native-vector-icons/.*.js$",
+      ),
     ),
   ],
 };
 
-const ctx = await context(options);
 if (watch) {
+  const ctx = await context(options);
   await ctx.watch();
+} else {
+  let result = await build(options);
+  console.log(result);
 }

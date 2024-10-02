@@ -92,26 +92,26 @@ describe("entitiesSlice", () => {
       // Perform first drag action
       state = reducer(
         state,
-        completeDrag({ sourceId: proposition.id, targetId: target1.id })
+        completeDrag({ sourceId: proposition.id, targetId: target1.id }),
       );
 
       // Perform second drag action
       state = reducer(
         state,
-        completeDrag({ sourceId: proposition.id, targetId: target2.id })
+        completeDrag({ sourceId: proposition.id, targetId: target2.id }),
       );
       // Check the state after the actions
       const activeMap = state.maps.find((map) => map.id === state.activeMapId);
       // The existing compound should not be duplicated
       const compounds = activeMap!.entities.filter(
-        (e) => e.type === "PropositionCompound"
+        (e) => e.type === "PropositionCompound",
       ) as PropositionCompound[];
       expect(compounds).toHaveLength(1);
       expect(compounds[0].atomIds).toEqual([proposition.id]);
 
       // There should be two justifications
       const justifications = activeMap!.entities.filter(
-        (e) => e.type === "Justification"
+        (e) => e.type === "Justification",
       ) as Justification[];
       expect(justifications).toHaveLength(2);
     });
