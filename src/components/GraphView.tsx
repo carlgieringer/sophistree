@@ -1331,7 +1331,7 @@ function getEntityId(element: SingularElementArgument): string {
 }
 
 function getEntityType(element: SingularElementArgument): EntityType {
-  const entityType = element.data("entityType") as EntityType | undefined;
+  const entityType = element.data("type") as EntityType | undefined;
   if (!entityType) {
     throw new Error(`entityType not found for element ID ${element.id()}`);
   }
