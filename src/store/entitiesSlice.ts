@@ -21,6 +21,8 @@ export type Entity =
   | MediaExcerpt
   | Appearance;
 
+export type EntityType = Entity["type"];
+
 export interface Proposition extends BaseEntity {
   type: "Proposition";
   text: string;

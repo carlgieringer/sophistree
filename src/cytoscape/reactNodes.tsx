@@ -1,5 +1,5 @@
 import React from "react";
-import cytoscape from "cytoscape";
+import cytoscape, { EventObjectNode, NodeDataDefinition } from "cytoscape";
 import ReactDOM from "react-dom/client";
 import debounce from "lodash.debounce";
 
@@ -91,7 +91,7 @@ function makeReactNode(
     }
 
     const htmlElement = document.createElement("div");
-    const jsxElement = options.template(node.data());
+    const jsxElement = options.template(node.data() as NodeDataDefinition);
     const root = ReactDOM.createRoot(htmlElement);
     root.render(jsxElement);
     Object.assign(htmlElement.style, options.containerCSS);
@@ -130,7 +130,7 @@ function makeReactNode(
 
     function updateNodeHeightToSurroundHtml() {
       const height = htmlElement.offsetHeight;
-      const oldHeight = node.data("height");
+      const oldHeight = (node.data("height") as number) ?? 0;
       node.data("height", height);
       return oldHeight !== height;
     }
@@ -171,7 +171,7 @@ function makeReactNode(
       }
     });
     node.on("data", function () {
-      const jsxElement = options.template(node.data());
+      const jsxElement = options.template(node.data() as NodeDataDefinition);
       root.render(jsxElement);
     });
     if (options.syncClasses) {
@@ -192,7 +192,7 @@ function makeReactNode(
   cy.nodes(options.query).forEach(createHtmlNode);
 
   // Apply HTML to new nodes that match the query
-  cy.on("add", options.query, function (event) {
+  cy.on("add", options.query, function (event: EventObjectNode) {
     createHtmlNode(event.target);
   });
 }

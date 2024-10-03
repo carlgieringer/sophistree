@@ -3,7 +3,18 @@ import { Dialog, Button } from "react-native-paper";
 import { useDispatch } from "react-redux";
 import { ArgumentMap, createMap } from "../store/entitiesSlice";
 import { sophistreeMapFileVersion } from "./DownloadMapsDialog";
-import { migrateMap } from "../store/migrations";
+import { MapMigrationIndex, migrateMap } from "../store/migrations";
+
+type SophistreeMapFileContents = {
+  sophistreeMapFileVersion: number;
+} & (
+  | {
+      map: ArgumentMap;
+    }
+  | {
+      maps: ArgumentMap[];
+    }
+);
 
 const UploadMapsDialog = ({
   onDismiss,
@@ -31,13 +42,13 @@ const UploadMapsDialog = ({
   const handleUpload = async () => {
     if (file) {
       const fileContent = await file.text();
-      const jsonContent = JSON.parse(fileContent);
-      if (!jsonContent.sophistreeMapFileVersion) {
+      const jsonContent = JSON.parse(fileContent) as SophistreeMapFileContents;
+      if (!("sophistreeMapFileVersion" in jsonContent)) {
         alert("Invalid file format");
         return;
       }
 
-      const maps = jsonContent.maps || [jsonContent.map];
+      const maps = "maps" in jsonContent ? jsonContent.maps : [jsonContent.map];
       const updatedMaps = maps.map((map: ArgumentMap) => {
         let updatedMap = map;
         for (
@@ -45,7 +56,10 @@ const UploadMapsDialog = ({
           i < sophistreeMapFileVersion;
           i++
         ) {
-          updatedMap = migrateMap(updatedMap, i) as unknown as ArgumentMap;
+          updatedMap = migrateMap(
+            updatedMap,
+            i as MapMigrationIndex,
+          ) as unknown as ArgumentMap;
         }
         return updatedMap;
       });
@@ -64,7 +78,7 @@ const UploadMapsDialog = ({
       </Dialog.Content>
       <Dialog.Actions>
         <Button onPress={handleClose}>Cancel</Button>
-        <Button onPress={handleUpload} disabled={!file}>
+        <Button onPress={() => void handleUpload()} disabled={!file}>
           Upload
         </Button>
       </Dialog.Actions>

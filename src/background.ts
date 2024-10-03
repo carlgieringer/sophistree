@@ -6,41 +6,43 @@ const addToSophistreeContextMenuTitle =
   process.env.NODE_ENV === "production" ? "+ Sophistree" : "+ Sophistree (Dev)";
 
 chrome.runtime.onInstalled.addListener(
-  async function installContentScriptsInOpenTabs() {
-    const contentScripts = chrome.runtime.getManifest().content_scripts;
-    if (!contentScripts) {
-      return;
-    }
-    for (const cs of contentScripts) {
-      for (const tab of await chrome.tabs.query({ url: cs.matches })) {
-        if (tab.url?.match(/(chrome|chrome-extension):\/\//gi)) {
-          continue;
-        }
-        const tabId = tab.id;
-        if (!tabId) {
-          continue;
-        }
-        const target = { tabId: tabId, allFrames: cs.all_frames };
-        if (cs.js?.[0])
-          chrome.scripting.executeScript({
-            files: cs.js,
-            injectImmediately: cs.run_at === "document_start",
-            world: "world" in cs ? cs.world : undefined,
-            target,
-          });
-        if (cs.css?.[0])
-          chrome.scripting.insertCSS({
-            files: cs.css,
-            origin:
-              "origin" in cs
-                ? (cs.origin as chrome.scripting.StyleOrigin)
-                : undefined,
-            target,
-          });
-      }
-    }
-  },
+  () => void installContentScriptsInOpenTabs(),
 );
+
+async function installContentScriptsInOpenTabs() {
+  const contentScripts = chrome.runtime.getManifest().content_scripts;
+  if (!contentScripts) {
+    return;
+  }
+  for (const cs of contentScripts) {
+    for (const tab of await chrome.tabs.query({ url: cs.matches })) {
+      if (tab.url?.match(/(chrome|chrome-extension):\/\//gi)) {
+        continue;
+      }
+      const tabId = tab.id;
+      if (!tabId) {
+        continue;
+      }
+      const target = { tabId: tabId, allFrames: cs.all_frames };
+      if (cs.js?.[0])
+        await chrome.scripting.executeScript({
+          files: cs.js,
+          injectImmediately: cs.run_at === "document_start",
+          world: "world" in cs ? cs.world : undefined,
+          target,
+        });
+      if (cs.css?.[0])
+        await chrome.scripting.insertCSS({
+          files: cs.css,
+          origin:
+            "origin" in cs
+              ? (cs.origin as chrome.scripting.StyleOrigin)
+              : undefined,
+          target,
+        });
+    }
+  }
+}
 
 chrome.runtime.onInstalled.addListener(function installContextMenus() {
   chrome.contextMenus.create({
@@ -77,4 +79,4 @@ chrome.contextMenus.onClicked.addListener(
   },
 );
 
-chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+void chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });

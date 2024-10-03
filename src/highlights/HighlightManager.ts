@@ -70,7 +70,7 @@ class HighlightManager<Anchor, Data> {
     const highlight = this.highlights.find(selector);
     if (!highlight) {
       console.error(
-        `Could not activate highlight for selector ${selector} because the highlight wasn't found.`,
+        `Could not activate highlight for selector ${selector.name} because the highlight wasn't found.`,
       );
       return;
     }

@@ -7,6 +7,10 @@ import {
   getRangesFromDomAnchor,
 } from "./anchors";
 import { HighlightManager } from "./highlights";
+import {
+  ContentMessage,
+  CreateMediaExcerptMessage,
+} from "./extension/messages";
 
 interface AddMediaExcerptMessage {
   action: "addMediaExcerpt";
@@ -28,47 +32,25 @@ interface GetMediaExcerptsMessage {
   };
 }
 
-interface CreateMediaExcerptMessage {
-  action: "createMediaExcerpt";
-  selectedText: string;
-}
-export interface ActivateMediaExcerptMessage {
-  action: "activateMediaExcerpt";
-  mediaExcerpt: MediaExcerpt;
-}
-
-export interface RequestUrlMessage {
-  action: "requestUrl";
-}
-
-type ContentMessage =
-  | CreateMediaExcerptMessage
-  | ActivateMediaExcerptMessage
-  | RequestUrlMessage;
-
 export type ChromeRuntimeMessage =
   | AddMediaExcerptMessage
   | SelectMediaExcerptMessage
   | GetMediaExcerptsMessage;
 
 chrome.runtime.onMessage.addListener(
-  (message: ContentMessage, sender, sendResponse) => {
-    switch (message.action) {
-      case "createMediaExcerpt":
-        createMediaExcerpt(message);
-        break;
-      case "activateMediaExcerpt":
-        activateMediaExcerpt(message.mediaExcerpt);
-        break;
-      case "requestUrl":
-        sendResponse(getCanonicalOrFullUrl());
-        break;
-      default:
-        console.error(`Unknown message action: ${message}`);
-        break;
-    }
-  },
+  (message: ContentMessage) => void handleMessage(message),
 );
+
+async function handleMessage(message: ContentMessage) {
+  switch (message.action) {
+    case "createMediaExcerpt":
+      return createMediaExcerpt(message);
+    case "activateMediaExcerpt":
+      return activateMediaExcerpt(message.mediaExcerpt);
+    case "requestUrl":
+      return getCanonicalOrFullUrl();
+  }
+}
 
 function activateMediaExcerpt(mediaExcerpt: MediaExcerpt) {
   highlightManager.activateHighlight(
@@ -76,7 +58,7 @@ function activateMediaExcerpt(mediaExcerpt: MediaExcerpt) {
   );
 }
 
-function createMediaExcerpt(message: CreateMediaExcerptMessage) {
+async function createMediaExcerpt(message: CreateMediaExcerptMessage) {
   const id = uuidv4();
   const quotation = message.selectedText;
   const url = getUrl();
@@ -107,9 +89,9 @@ function createMediaExcerpt(message: CreateMediaExcerptMessage) {
       action: "addMediaExcerpt",
       data,
     };
-    chrome.runtime.sendMessage(sidebarMessage);
+    await chrome.runtime.sendMessage(sidebarMessage);
   } else {
-    selectMediaExcerpt(highlight.data.mediaExcerptId);
+    await selectMediaExcerpt(highlight.data.mediaExcerptId);
   }
 }
 
@@ -199,16 +181,16 @@ function highlightRanges(mediaExcerptId: string, domAnchor: DomAnchor) {
     { mediaExcerptId },
     {
       onClick: function highlightOnClick() {
-        selectMediaExcerpt(mediaExcerptId);
+        return void selectMediaExcerpt(mediaExcerptId);
       },
     },
   );
 }
 
-function selectMediaExcerpt(mediaExcerptId: string) {
+async function selectMediaExcerpt(mediaExcerptId: string) {
   const message: SelectMediaExcerptMessage = {
     action: "selectMediaExcerpt",
     data: { mediaExcerptId },
   };
-  chrome.runtime.sendMessage(message);
+  await chrome.runtime.sendMessage(message);
 }
