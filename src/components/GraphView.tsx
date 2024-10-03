@@ -1102,9 +1102,6 @@ function getClosestValidDropTarget(
 
   const closestEdge = getClosestEdge(cy, position, excludedEdges);
 
-  function getZIndex(element: SingularElementArgument) {
-    return element.style("z-index") as number | undefined;
-  }
   if (nodeTarget && closestEdge) {
     const nodeZIndex = getZIndex(nodeTarget) ?? -Infinity;
     const edgeZIndex = getZIndex(closestEdge) ?? -Infinity;
@@ -1344,3 +1341,7 @@ function getEntityType(element: SingularElementArgument): EntityType {
 type GraphNodeDataDefinition = SetRequired<NodeDataDefinition, "id"> & {
   entityId: string;
 };
+
+function getZIndex(element: SingularElementArgument) {
+  return element.style("z-index") as number | undefined;
+}

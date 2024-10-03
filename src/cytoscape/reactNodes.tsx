@@ -130,7 +130,7 @@ function makeReactNode(
 
     function updateNodeHeightToSurroundHtml() {
       const height = htmlElement.offsetHeight;
-      const oldHeight = (node.data("height") as number) ?? 0;
+      const oldHeight = getHeight(node) ?? 0;
       node.data("height", height);
       return oldHeight !== height;
     }
@@ -205,4 +205,8 @@ function getInnerHorizontalSpacing(element: HTMLElement) {
     parseFloat(style.borderLeftWidth || "0") +
     parseFloat(style.borderRightWidth || "0");
   return padding;
+}
+
+function getHeight(node: cytoscape.NodeSingular) {
+  return node.data("height") as number | undefined;
 }

@@ -6,11 +6,17 @@ import {
 } from "../store/entitiesSlice";
 
 type BasisOutcome =
+  // A leaf node added by the user is presumed to be tru
   | "Presumed"
-  | "Unknown"
+  // A node without conclusive justifications is unproven
+  | "Unproven"
+  // A node with only valid positive justifications is proven
   | "Proven"
+  // A node with only valid negative justifications is proven
   | "Disproven"
+  // A node with both valid positive and valid negative justifications is contradictory
   | "Contradictory";
+// A justification is valid if it has a presumed or proven basis and no valid counterjustifications
 type JustificationOutcome = "Valid" | "Invalid" | "Unknown";
 
 /**
@@ -116,7 +122,7 @@ function determineJustificationOutcome(
 
   if (
     hasValidCounter ||
-    basisOutcome === "Unknown" ||
+    basisOutcome === "Unproven" ||
     basisOutcome === "Disproven" ||
     basisOutcome === "Contradictory"
   ) {
@@ -137,7 +143,7 @@ function determinePropositionOutcome(
 
   if (validJustifications.length === 0) {
     return justifications.length || appearanceCount > 0
-      ? "Unknown"
+      ? "Unproven"
       : "Presumed";
   }
 

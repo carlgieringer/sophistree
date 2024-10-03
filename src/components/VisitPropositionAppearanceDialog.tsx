@@ -74,10 +74,6 @@ export async function activateMediaExcerpt(mediaExcerpt: MediaExcerpt) {
   const activeTab = tabs[0];
   const mediaExcerptUrl = preferredUrl(mediaExcerpt.urlInfo);
   const tabId = await getOrOpenTab(activeTab, mediaExcerptUrl);
-  if (!tabId) {
-    console.error("Unable to activate media excerpt.");
-    return;
-  }
 
   const message: ActivateMediaExcerptMessage = {
     action: "activateMediaExcerpt",

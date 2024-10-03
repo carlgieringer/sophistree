@@ -79,14 +79,14 @@ describe("determineBasisOutcomes", () => {
     expect(outcomes.get("p1")).toBe("Presumed");
   });
 
-  test("Proposition with appearances but no justifications is Unknown", () => {
+  test("Proposition with appearances but no justifications is Unproven", () => {
     const entities: Entity[] = [
       createProposition("p1"),
       createMediaExcerpt("m1"),
       createAppearance("a1", "p1", "m1"),
     ];
     const outcomes = determineBasisOutcomes(entities);
-    expect(outcomes.get("p1")).toBe("Unknown");
+    expect(outcomes.get("p1")).toBe("Unproven");
   });
 
   test("Proposition with all Valid Positive justifications is Proven", () => {
@@ -131,7 +131,7 @@ describe("determineBasisOutcomes", () => {
     expect(outcomes.get("p2")).toBe("Proven");
   });
 
-  test("Justification is Invalid if basis is Unknown, Disproven, or Contradictory", () => {
+  test("Justification is Invalid if basis is Unproven, Disproven, or Contradictory", () => {
     const entities: Entity[] = [
       createProposition("p1"),
       createProposition("p2"),
@@ -142,7 +142,7 @@ describe("determineBasisOutcomes", () => {
     const outcomes = determineBasisOutcomes(entities);
     expect(outcomes.get("p1")).toBe("Presumed");
     expect(outcomes.get("p2")).toBe("Disproven");
-    expect(outcomes.get("p3")).toBe("Unknown");
+    expect(outcomes.get("p3")).toBe("Unproven");
   });
 
   test("Justification is Invalid if it has Valid counter-justifications", () => {
@@ -154,7 +154,7 @@ describe("determineBasisOutcomes", () => {
       createJustification("j2", "p2", "j1", "Negative"),
     ];
     const outcomes = determineBasisOutcomes(entities);
-    expect(outcomes.get("p3")).toBe("Unknown");
+    expect(outcomes.get("p3")).toBe("Unproven");
   });
 
   test("PropositionCompound is Proven if all atoms are Proven or Presumed", () => {
@@ -182,7 +182,7 @@ describe("determineBasisOutcomes", () => {
     ];
     const outcomes = determineBasisOutcomes(entities);
     expect(outcomes.get("pc1")).toBe("Disproven");
-    expect(outcomes.get("p4")).toBe("Unknown");
+    expect(outcomes.get("p4")).toBe("Unproven");
   });
 
   test("Handles complex scenario with multiple entity types and relationships", () => {
@@ -200,10 +200,10 @@ describe("determineBasisOutcomes", () => {
     ];
     const outcomes = determineBasisOutcomes(entities);
     expect(outcomes.get("m1")).toBe("Presumed");
-    expect(outcomes.get("p1")).toBe("Unknown");
-    expect(outcomes.get("p2")).toBe("Unknown");
-    expect(outcomes.get("p3")).toBe("Unknown");
+    expect(outcomes.get("p1")).toBe("Unproven");
+    expect(outcomes.get("p2")).toBe("Unproven");
+    expect(outcomes.get("p3")).toBe("Unproven");
     expect(outcomes.get("pc1")).toBe("Disproven");
-    expect(outcomes.get("p4")).toBe("Unknown");
+    expect(outcomes.get("p4")).toBe("Unproven");
   });
 });

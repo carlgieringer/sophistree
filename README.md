@@ -61,11 +61,11 @@ npm run test-debug
 #### Debugging a specific test
 
 ```sh
-node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand --watch <suitePattern> --testNamePattern="'<testPattern>'"
+npm run test-debug -- <suitePattern> --testNamePattern="'<testPattern>'"
 ```
 
 Where `<suitePattern>` matches the test file name and `<testPattern>` matches the `describe` and/or
-`test`.
+`test`. You can use `<suitePattern>` and `<testPattern>` indepenently.
 
 ### Running all CI checks
 

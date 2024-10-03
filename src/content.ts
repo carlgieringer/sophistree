@@ -44,9 +44,11 @@ chrome.runtime.onMessage.addListener(
 async function handleMessage(message: ContentMessage) {
   switch (message.action) {
     case "createMediaExcerpt":
-      return createMediaExcerpt(message);
+      await createMediaExcerpt(message);
+      break;
     case "activateMediaExcerpt":
-      return activateMediaExcerpt(message.mediaExcerpt);
+      activateMediaExcerpt(message.mediaExcerpt);
+      break;
     case "requestUrl":
       return getCanonicalOrFullUrl();
   }
@@ -181,7 +183,7 @@ function highlightRanges(mediaExcerptId: string, domAnchor: DomAnchor) {
     { mediaExcerptId },
     {
       onClick: function highlightOnClick() {
-        return void selectMediaExcerpt(mediaExcerptId);
+        void selectMediaExcerpt(mediaExcerptId);
       },
     },
   );
