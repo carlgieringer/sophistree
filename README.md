@@ -21,9 +21,9 @@ Sophistree is a Chrome extension for mapping arguments.
    npm install
    ```
 
-### Development Workflow
+## Development Workflow
 
-#### Running development build
+### Running development build
 
 This continuously builds the javascript:
 
@@ -34,7 +34,7 @@ npm run build-dev
 This will build the javascript and watch for changes. Changes to static files
 in public don't trigger changes, but are picked up when the JS changes.
 
-#### Loading the Extension in Chrome
+### Loading the Extension in Chrome
 
 1. Open Chrome and navigate to `chrome://extensions`.
 2. Enable "Developer mode" in the top right corner.
@@ -46,7 +46,28 @@ toolbar.
 You'll need to reload the extension any time the manifest changes. You can do this from the in-app
 menu or from Chrome's extension page.
 
-#### Running all CI checks
+### Running Tests
+
+```sh
+npm run test
+```
+
+### Debugging tests
+
+```sh
+npm run test-debug
+```
+
+#### Debugging a specific test
+
+```sh
+npm run test-debug -- <suitePattern> --testNamePattern="'<testPattern>'"
+```
+
+Where `<suitePattern>` matches the test file name and `<testPattern>` matches the `describe` and/or
+`test`. You can use `<suitePattern>` and `<testPattern>` indepenently.
+
+### Running all CI checks
 
 ```sh
 npm run check-all

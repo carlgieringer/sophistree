@@ -5,7 +5,6 @@ import reducer, {
   createMap,
   Justification,
   Proposition,
-  PropositionCompound,
   defaultVisibilityProps,
 } from "./entitiesSlice";
 
@@ -105,14 +104,14 @@ describe("entitiesSlice", () => {
       // The existing compound should not be duplicated
       const compounds = activeMap!.entities.filter(
         (e) => e.type === "PropositionCompound",
-      ) as PropositionCompound[];
+      );
       expect(compounds).toHaveLength(1);
       expect(compounds[0].atomIds).toEqual([proposition.id]);
 
       // There should be two justifications
       const justifications = activeMap!.entities.filter(
         (e) => e.type === "Justification",
-      ) as Justification[];
+      );
       expect(justifications).toHaveLength(2);
     });
   });

@@ -38,10 +38,9 @@ export const reduxPersistMigrations = {
   }),
 };
 
-export const migrateMap = (
-  map: ArgumentMap,
-  version: keyof typeof mapMigrations,
-) => {
+export type MapMigrationIndex = keyof typeof mapMigrations;
+
+export const migrateMap = (map: ArgumentMap, version: MapMigrationIndex) => {
   return produce(map, (draft: ArgumentMap) => {
     mapMigrations[version](draft);
   });

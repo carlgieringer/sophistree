@@ -3,8 +3,10 @@ import cn from "classnames";
 import cytoscape, {
   EdgeDataDefinition,
   EdgeSingular,
+  ElementDataDefinition,
   ElementDefinition,
   EventObject,
+  EventObjectEdge,
   EventObjectNode,
   NodeDataDefinition,
   NodeSingular,
@@ -48,6 +50,7 @@ import {
   Proposition,
   resetSelection,
   selectEntities,
+  EntityType,
 } from "../store/entitiesSlice";
 import * as selectors from "../store/selectors";
 import { activeMapEntities } from "../store/selectors";
@@ -89,12 +92,12 @@ export default function GraphView({ id, style }: GraphViewProps) {
   useEffect(() => {
     cyRef.current
       ?.elements()
-      .filter((n) => !selectedEntityIds.includes(n.data("entityId")))
+      .filter((n) => !selectedEntityIds.includes(getEntityId(n)))
       .unselect();
     if (selectedEntityIds.length) {
       cyRef.current
         ?.elements()
-        .filter((n) => selectedEntityIds.includes(n.data("entityId")))
+        .filter((n) => selectedEntityIds.includes(getEntityId(n)))
         .select();
     }
   }, [selectedEntityIds]);
@@ -152,7 +155,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
   ] = useState(undefined as PropositionNodeData | undefined);
 
   const [debugElementData, setDebugElementData] = useState(
-    undefined as NodeDataDefinition | EdgeDataDefinition | undefined,
+    undefined as ElementDataDefinition | undefined,
   );
 
   const [reactNodesConfig] = useState([
@@ -169,7 +172,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
               <span
                 title={`${appearanceCount} ${appearanceNoun}`}
                 className={cn("appearances-icon", {
-                  selected: data.isAnyAppearanceSelected,
+                  selected: proposition.isAnyAppearanceSelected,
                 })}
                 onClick={(event) => {
                   event.preventDefault();
@@ -197,7 +200,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
       query: `node[type="MediaExcerpt"]`,
       template: function (data: NodeDataDefinition) {
         const mediaExcerpt = data as MediaExcerpt;
-        const url = preferredUrl(data.urlInfo);
+        const url = preferredUrl(mediaExcerpt.urlInfo);
         return (
           <>
             <p>{data.quotation}</p>
@@ -207,11 +210,11 @@ export default function GraphView({ id, style }: GraphViewProps) {
               onClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                activateMediaExcerpt(mediaExcerpt);
+                void activateMediaExcerpt(mediaExcerpt);
                 return false;
               }}
             >
-              {data.sourceInfo.name}
+              {mediaExcerpt.sourceInfo.name}
             </a>
           </>
         );
@@ -353,9 +356,10 @@ export default function GraphView({ id, style }: GraphViewProps) {
             content: "Delete",
             tooltipText: "Delete node",
             selector: "node, edge",
-            onClickFunction: function (event) {
+            onClickFunction: function (e) {
+              const event = e as EventObjectNode | EventObjectEdge;
               const target = event.target;
-              const id = target.data("entityId");
+              const id = getEntityId(target);
               dispatch(deleteEntity(id));
             },
             hasTrailingDivider: true,
@@ -387,19 +391,21 @@ export default function GraphView({ id, style }: GraphViewProps) {
             content: "Show element data",
             selector: "node, edge",
             tooltipText: "Show element data for debugging",
-            onClickFunction: (event) =>
-              setDebugElementData(event.target.data()),
+            onClickFunction: (e) => {
+              const event = e as EventObjectNode | EventObjectEdge;
+              setDebugElementData(event.target.data() as ElementDataDefinition);
+            },
           },
         ],
       });
 
       cy.on("tap", "node", (event: EventObjectNode) => {
-        const entityId = event.target.data("entityId");
+        const entityId = getEntityId(event.target);
         dispatch(selectEntities([entityId]));
       });
 
       cy.on("tap", "edge", (event: EventObjectNode) => {
-        const entityId = event.target.data("entityId");
+        const entityId = getEntityId(event.target);
         dispatch(selectEntities([entityId]));
       });
 
@@ -451,7 +457,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
         ) {
           // Highlight the entity everywhere. In particular, highlight the justification node and
           // two edges when any one of them is hovered.
-          const hoverEntityId = hoverTarget.data("entityId");
+          const hoverEntityId = getEntityId(hoverTarget);
           cy.elements()
             .filter((e) => e.data("entityId") === hoverEntityId)
             .addClass("hover-highlight");
@@ -480,14 +486,14 @@ export default function GraphView({ id, style }: GraphViewProps) {
           if (dragTarget && isValidDropTarget(dragSource, dragTarget)) {
             dispatch(
               completeDrag({
-                sourceId: dragSource.data("entityId"),
-                targetId: dragTarget.data("entityId"),
+                sourceId: getEntityId(dragSource),
+                targetId: getEntityId(dragTarget),
               }),
             );
             if (
               dragSourceOriginalPosition &&
-              dragSource.data().type === "Proposition" &&
-              dragTarget.data().type === "MediaExcerpt"
+              getEntityType(dragSource) === "Proposition" &&
+              getEntityType(dragTarget) === "MediaExcerpt"
             ) {
               dragSource.position(dragSourceOriginalPosition);
             }
@@ -571,20 +577,25 @@ export default function GraphView({ id, style }: GraphViewProps) {
  * @returns The Cytoscape elements and the focused node ids
  */
 function makeElements(entities: Entity[], selectedEntityIds: string[]) {
-  const { nodes, edges } = getNodesAndEdges(entities, selectedEntityIds);
-  const focusedNodeIds = nodes.reduce((acc, node) => {
-    if (selectedEntityIds.includes(node.entityId)) {
-      acc.push(node.id);
+  const { nodes: nodeDatas, edges: edgeDatas } = getNodesAndEdges(
+    entities,
+    selectedEntityIds,
+  );
+  const focusedNodeIds = nodeDatas.reduce((acc, nodeData) => {
+    if (selectedEntityIds.includes(nodeData.entityId)) {
+      acc.push(nodeData.id);
     }
-    if (node.type === "Proposition" && node.isAnyAppearanceSelected) {
-      acc.push(node.id);
+    if (nodeData.type === "Proposition" && nodeData.isAnyAppearanceSelected) {
+      acc.push(nodeData.id);
     }
     return acc;
   }, [] as string[]);
 
-  const elements: ElementDefinition[] = [...nodes, ...edges].map((data) => ({
-    data,
-  }));
+  const elements: ElementDefinition[] = [...nodeDatas, ...edgeDatas].map(
+    (data) => ({
+      data,
+    }),
+  );
 
   return { elements, focusedNodeIds };
 }
@@ -606,6 +617,10 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
           break;
         case "Justification":
           acc.justificationTargetIds.add(e.targetId);
+          break;
+        case "Appearance":
+        case "PropositionCompound":
+          // Nothing to do.
           break;
       }
       if (
@@ -875,7 +890,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
       return acc;
     },
     {
-      nodes: [] as SetRequired<NodeDataDefinition, "id">[],
+      nodes: [] as GraphNodeDataDefinition[],
       edges: [] as EdgeDataDefinition[],
     },
   );
@@ -896,13 +911,13 @@ function correctInvalidNodes(
   cy: cytoscape.Core,
   elements: cytoscape.ElementDefinition[],
 ) {
-  const extantIds = elements.map((el) => el.data.id).filter((id) => id);
+  const extantIds = elements.flatMap((el) => el.data.id ?? []);
 
   // Remove invalid parents first. Otherwise the nodes disappear when we remove the
   // invalid parents below.
   const extantIdsSet = new Set(extantIds);
   cy.nodes().forEach((node) => {
-    if (node.isChild() && !extantIdsSet.has(node.parent().first().data().id)) {
+    if (node.isChild() && !extantIdsSet.has(node.parent().first().id())) {
       node.move({ parent: null });
     }
   });
@@ -1088,8 +1103,8 @@ function getClosestValidDropTarget(
   const closestEdge = getClosestEdge(cy, position, excludedEdges);
 
   if (nodeTarget && closestEdge) {
-    const nodeZIndex = nodeTarget.style("z-index") || -Infinity;
-    const edgeZIndex = closestEdge.style("z-index") || -Infinity;
+    const nodeZIndex = getZIndex(nodeTarget) ?? -Infinity;
+    const edgeZIndex = getZIndex(closestEdge) ?? -Infinity;
 
     if (edgeZIndex > nodeZIndex) {
       return closestEdge;
@@ -1111,10 +1126,10 @@ function getExcludedElements(cy: cytoscape.Core, dragNode: NodeSingular) {
         dragNodeAndAncestors.contains(edge.target()))
     ) {
       // This justification is already connected to the dragNode, so exclude all it's elements too.
-      ids.add(edge.data("entityId"));
-      if (edge.target().data("type") === "Justification") {
+      ids.add(getEntityId(edge));
+      if (getEntityType(edge.target()) === "Justification") {
         // The dragNode is already targeting this justification, so exclude all it's elements too.
-        ids.add(edge.target().data("entityId"));
+        ids.add(getEntityId(edge.target()));
       }
     }
     return ids;
@@ -1123,7 +1138,7 @@ function getExcludedElements(cy: cytoscape.Core, dragNode: NodeSingular) {
   // Exclude all elements corresponding to justificationIds and their targets
   const { excludedNodes, excludedEdges } = cy.elements().reduce(
     (acc, element) => {
-      const entityId = element.data("entityId");
+      const entityId = getEntityId(element);
       if (justificationIds.has(entityId)) {
         if (element.isNode()) {
           acc.excludedNodes.add(element);
@@ -1259,8 +1274,8 @@ function isValidDropTarget(
   source: SingularElementArgument,
   target: SingularElementArgument,
 ): boolean {
-  const sourceType = source.data("type");
-  const targetType = target.data("type");
+  const sourceType = getEntityType(source);
+  const targetType = getEntityType(target);
 
   switch (sourceType) {
     case "Proposition":
@@ -1306,3 +1321,27 @@ type GestureEvent = Event & {
   offsetX: number;
   offsetY: number;
 };
+
+function getEntityId(element: SingularElementArgument): string {
+  const entityId = element.data("entityId") as string | undefined;
+  if (!entityId) {
+    throw new Error(`entityId not found for element ID ${element.id()}`);
+  }
+  return entityId;
+}
+
+function getEntityType(element: SingularElementArgument): EntityType {
+  const entityType = element.data("type") as EntityType | undefined;
+  if (!entityType) {
+    throw new Error(`entityType not found for element ID ${element.id()}`);
+  }
+  return entityType;
+}
+
+type GraphNodeDataDefinition = SetRequired<NodeDataDefinition, "id"> & {
+  entityId: string;
+};
+
+function getZIndex(element: SingularElementArgument) {
+  return element.style("z-index") as number | undefined;
+}

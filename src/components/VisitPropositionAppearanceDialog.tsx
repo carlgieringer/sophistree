@@ -8,7 +8,7 @@ import {
   preferredUrl,
   Proposition,
 } from "../store/entitiesSlice";
-import { ActivateMediaExcerptMessage, RequestUrlMessage } from "../content";
+import { getTabUrl, ActivateMediaExcerptMessage } from "../extension/messages";
 
 export interface AppearanceInfo {
   id: string;
@@ -43,7 +43,9 @@ export default function VisitPropositionAppearanceDialog({
                 {appearance.mediaExcerpt.sourceInfo.name}
               </Text>
               <Button
-                onPress={() => activateMediaExcerpt(appearance.mediaExcerpt)}
+                onPress={() =>
+                  void activateMediaExcerpt(appearance.mediaExcerpt)
+                }
               >
                 Open {hostname}{" "}
                 <Tooltip title={url}>
@@ -72,10 +74,6 @@ export async function activateMediaExcerpt(mediaExcerpt: MediaExcerpt) {
   const activeTab = tabs[0];
   const mediaExcerptUrl = preferredUrl(mediaExcerpt.urlInfo);
   const tabId = await getOrOpenTab(activeTab, mediaExcerptUrl);
-  if (!tabId) {
-    console.error("Unable to activate media excerpt.");
-    return;
-  }
 
   const message: ActivateMediaExcerptMessage = {
     action: "activateMediaExcerpt",
@@ -91,18 +89,14 @@ export async function activateMediaExcerpt(mediaExcerpt: MediaExcerpt) {
 async function getOrOpenTab(
   activeTab: chrome.tabs.Tab,
   url: string,
-): Promise<number | undefined> {
+): Promise<number> {
   if (!activeTab.id) {
-    console.error("Active tab ID was missing. This should never happen.");
-    return undefined;
+    throw new Error("Active tab ID was missing. This should never happen.");
   }
   // activeTab.url is often missing, so we request it from the tab.
-  const message: RequestUrlMessage = {
-    action: "requestUrl",
-  };
   let tabUrl;
   try {
-    tabUrl = await chrome.tabs.sendMessage(activeTab.id, message);
+    tabUrl = await getTabUrl(activeTab.id);
   } catch (error) {
     console.error(`Failed to send message to tab`, error);
   }

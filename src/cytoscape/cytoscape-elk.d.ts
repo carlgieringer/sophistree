@@ -1,1 +1,4 @@
-declare module "cytoscape-elk";
+declare module "cytoscape-elk" {
+  const elk: cytoscape.Ext;
+  export default elk;
+}

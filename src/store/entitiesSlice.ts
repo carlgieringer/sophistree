@@ -21,6 +21,8 @@ export type Entity =
   | MediaExcerpt
   | Appearance;
 
+export type EntityType = Entity["type"];
+
 export interface Proposition extends BaseEntity {
   type: "Proposition";
   text: string;
@@ -567,6 +569,8 @@ function applyDragOperation(
             `Invalid target type ${target.type} for source type ${source.type}`,
           );
           return;
+        default:
+          break;
       }
       basisId = source.id;
       break;
