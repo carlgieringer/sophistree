@@ -7,6 +7,7 @@
     "build": "NODE_ENV=production node esbuild.config.mjs",
     "build-dev": "NODE_ENV=development node esbuild.config.mjs --watch",
     "test": "jest",
+    "test-watch": "jest --watch",
     "test-debug": "node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand --watch",
     "type-check": "tsc --noEmit",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx --ignore-path=.gitignore",

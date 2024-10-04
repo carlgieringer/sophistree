@@ -61,6 +61,11 @@ import VisitPropositionAppearanceDialog, {
   AppearanceInfo,
   PropositionNodeData,
 } from "./VisitPropositionAppearanceDialog";
+import {
+  BasisOutcome,
+  determineOutcomes,
+  JustificationOutcome,
+} from "../outcomes/outcomes";
 
 cytoscape.use(elk);
 cytoscape.use(contextMenus);
@@ -75,6 +80,20 @@ interface GraphViewProps {
   style?: CSSProperties;
 }
 
+const nodeOutcomeClasses = [
+  "node-outcome-positive",
+  "node-outcome-negative",
+  "node-outcome-neutral",
+  "node-outcome-contradictory",
+];
+const edgeOutcomeClasses = [
+  "edge-outcome-positive",
+  "edge-outcome-negative",
+  "edge-outcome-neutral",
+];
+const outcomeClasses = [...nodeOutcomeClasses, ...edgeOutcomeClasses];
+const syncClasses = ["hover-highlight", "dragging", ...nodeOutcomeClasses];
+
 export default function GraphView({ id, style }: GraphViewProps) {
   const entities = useSelector(activeMapEntities);
   const selectedEntityIds = useSelector(selectors.selectedEntityIds);
@@ -88,6 +107,51 @@ export default function GraphView({ id, style }: GraphViewProps) {
   if (cyRef.current) {
     correctInvalidNodes(cyRef.current, elements);
   }
+
+  const { basisOutcomes, justificationOutcomes } = useMemo(
+    () => determineOutcomes(entities),
+    [entities],
+  );
+  useEffect(() => {
+    const cy = cyRef.current;
+    if (!cy) {
+      return;
+    }
+    cy.elements()
+      .removeClass(outcomeClasses)
+      .data({ outcome: undefined, valence: undefined });
+
+    const elementsByEntityId = cy.elements().reduce((acc, element) => {
+      const entityId = getEntityId(element);
+      if (!entityId) {
+        return acc;
+      }
+      const elements = acc.get(entityId) ?? [];
+      elements.push(element);
+      acc.set(entityId, elements);
+      return acc;
+    }, new Map<string, SingularElementArgument[]>());
+
+    [basisOutcomes, justificationOutcomes].forEach((outcomes) => {
+      outcomes.forEach((outcome, entityId) => {
+        const elements = elementsByEntityId.get(entityId);
+        if (!elements) {
+          return;
+        }
+
+        const { nodeClass, edgeClass, valence } = makeOutcomeClasses(outcome);
+        elements.forEach((element) => {
+          element.data("outcome", outcome);
+          element.data("valence", valence);
+          if (element.isNode()) {
+            element.addClass(nodeClass);
+          } else {
+            element.addClass(edgeClass);
+          }
+        });
+      });
+    });
+  }, [basisOutcomes, justificationOutcomes]);
 
   useEffect(() => {
     cyRef.current
@@ -158,76 +222,78 @@ export default function GraphView({ id, style }: GraphViewProps) {
     undefined as ElementDataDefinition | undefined,
   );
 
-  const [reactNodesConfig] = useState([
-    {
-      query: `node[type="Proposition"]`,
-      template: function (data: NodeDataDefinition) {
-        const proposition = data as PropositionNodeData;
-        const appearanceCount = proposition.appearances?.length;
-        const appearanceNoun =
-          "appearance" + (appearanceCount === 1 ? "" : "s");
-        return (
-          <>
-            {appearanceCount ? (
-              <span
-                title={`${appearanceCount} ${appearanceNoun}`}
-                className={cn("appearances-icon", {
-                  selected: proposition.isAnyAppearanceSelected,
-                })}
+  const reactNodesConfig = useMemo(
+    () => [
+      {
+        query: `node[type="Proposition"]`,
+        template: function (data: NodeDataDefinition) {
+          const proposition = data as PropositionNodeData;
+          const appearanceCount = proposition.appearances?.length;
+          const appearanceNoun =
+            "appearance" + (appearanceCount === 1 ? "" : "s");
+          return (
+            <>
+              {appearanceCount ? (
+                <span
+                  title={`${appearanceCount} ${appearanceNoun}`}
+                  className={cn("appearances-icon", {
+                    selected: proposition.isAnyAppearanceSelected,
+                  })}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setVisitAppearancesDialogProposition(proposition);
+                  }}
+                >
+                  <Icon name="crosshairs-gps" />
+                  {appearanceCount}
+                </span>
+              ) : undefined}
+              <p>{data.text}</p>
+            </>
+          );
+        },
+        mode: "replace" as const,
+        syncClasses,
+        containerCSS: {
+          padding: "1em",
+          borderRadius: "8px",
+        },
+      },
+      {
+        query: `node[type="MediaExcerpt"]`,
+        template: function (data: NodeDataDefinition) {
+          const mediaExcerpt = data as MediaExcerpt;
+          const url = preferredUrl(mediaExcerpt.urlInfo);
+          return (
+            <>
+              <p>{data.quotation}</p>
+              <a
+                href={url}
+                title={url}
                 onClick={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
-                  setVisitAppearancesDialogProposition(proposition);
+                  void activateMediaExcerpt(mediaExcerpt);
+                  return false;
                 }}
               >
-                <Icon name="crosshairs-gps" />
-                {appearanceCount}
-              </span>
-            ) : undefined}
-            <p>{data.text}</p>
-          </>
-        );
+                {mediaExcerpt.sourceInfo.name}
+              </a>
+            </>
+          );
+        },
+        mode: "replace" as const,
+        syncClasses,
+        containerCSS: {
+          padding: "1em",
+          backgroundColor: peterRiver,
+          borderRadius: "8px",
+        },
       },
-      mode: "replace" as const,
-      syncClasses: ["hover-highlight", "dragging"],
-      containerCSS: {
-        padding: "1em",
-        backgroundColor: peterRiver,
-        borderRadius: "8px",
-      },
-    },
-    {
-      query: `node[type="MediaExcerpt"]`,
-      template: function (data: NodeDataDefinition) {
-        const mediaExcerpt = data as MediaExcerpt;
-        const url = preferredUrl(mediaExcerpt.urlInfo);
-        return (
-          <>
-            <p>{data.quotation}</p>
-            <a
-              href={url}
-              title={url}
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                void activateMediaExcerpt(mediaExcerpt);
-                return false;
-              }}
-            >
-              {mediaExcerpt.sourceInfo.name}
-            </a>
-          </>
-        );
-      },
-      mode: "replace" as const,
-      syncClasses: ["hover-highlight", "dragging"],
-      containerCSS: {
-        padding: "1em",
-        backgroundColor: peterRiver,
-        borderRadius: "8px",
-      },
-    },
-  ]);
+    ],
+    [setVisitAppearancesDialogProposition],
+  );
 
   useEffect(() => {
     if (cyRef.current) {
@@ -926,7 +992,7 @@ function correctInvalidNodes(
   cy.elements().subtract(extantElementsSelector).remove();
 }
 
-const stylesheet = [
+const stylesheet: cytoscape.Stylesheet[] = [
   {
     selector: "node",
     style: {
@@ -969,19 +1035,17 @@ const stylesheet = [
     },
   },
   {
-    selector: `node[type="PropositionCompound"]`,
-    style: {
-      shape: "round-rectangle",
-      "background-color": "#2980b9",
-    },
-  },
-  {
     selector: `edge`,
     style: {
       width: 2,
       "line-color": "#ccc",
       "target-arrow-color": "#ccc",
-      "target-arrow-shape": "triangle",
+      "target-arrow-shape": (edge) =>
+        edge.data("polarity") === "Positive" ? "triangle-backcurve" : "tee",
+      "line-style": (edge) => {
+        return edge.data("outcome") === "Invalid" ? "dashed" : "solid";
+      },
+      "line-dash-pattern": [20, 10],
       "arrow-scale": 1.5,
       "curve-style": "straight",
       "target-endpoint": "outside-to-node",
@@ -1344,4 +1408,30 @@ type GraphNodeDataDefinition = SetRequired<NodeDataDefinition, "id"> & {
 
 function getZIndex(element: SingularElementArgument) {
   return element.style("z-index") as number | undefined;
+}
+
+type OutcomeValence = "positive" | "negative" | "neutral" | "contradictory";
+function outcomeValence(
+  outcome: BasisOutcome | JustificationOutcome,
+): OutcomeValence {
+  switch (outcome) {
+    case "Presumed":
+    case "Proven":
+    case "Valid":
+      return "positive";
+    case "Disproven":
+    case "Invalid":
+      return "negative";
+    case "Unknown":
+    case "Unproven":
+      return "neutral";
+    case "Contradictory":
+      return "contradictory";
+  }
+}
+function makeOutcomeClasses(outcome: BasisOutcome | JustificationOutcome) {
+  const valence = outcomeValence(outcome);
+  const nodeClass = `node-outcome-${valence}`;
+  const edgeClass = `edge-outcome-${valence}`;
+  return { nodeClass, edgeClass, valence };
 }

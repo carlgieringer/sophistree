@@ -5,7 +5,7 @@ import {
   PropositionCompound,
 } from "../store/entitiesSlice";
 
-type BasisOutcome =
+export type BasisOutcome =
   // A leaf node added by the user is presumed to be tru
   | "Presumed"
   // A node without conclusive justifications is unproven
@@ -17,10 +17,10 @@ type BasisOutcome =
   // A node with both valid positive and valid negative justifications is contradictory
   | "Contradictory";
 // A justification is valid if it has a presumed or proven basis and no valid counterjustifications
-type JustificationOutcome = "Valid" | "Invalid" | "Unknown";
+export type JustificationOutcome = "Valid" | "Invalid" | "Unknown";
 
 /**
- * Returns the argumentative outcomes of the justification bases from entities.
+ * Returns the argumentative outcomes of the bases and justifications keyed by entity ID.
  *
  * Does not handle circular dependencies.
  *
@@ -34,16 +34,18 @@ type JustificationOutcome = "Valid" | "Invalid" | "Unknown";
  *
  * A justification is Valid if none of its counterJustifications are Valid and its
  * basis is Presumed or Proven. It is Invalid if any of its counterJustifications
- * are Valid or if its basis is Unknown, Disproven, or Contradictory.
+ * are Valid or if its basis is Disproven or Contradictory. It is Unknown if its
+ * basis is Unknown or Unproven.
  *
  * MediaExcerpts are always Presumed.
  *
  * A PropositionCompound is Proven if all its proposition atoms are Proven or
  * Presumed. It is Disproven otherwise.
  */
-export function determineBasisOutcomes(
-  entities: Entity[],
-): Map<string, BasisOutcome> {
+export function determineOutcomes(entities: Entity[]): {
+  basisOutcomes: Map<string, BasisOutcome>;
+  justificationOutcomes: Map<string, JustificationOutcome>;
+} {
   const basisOutcomes = new Map<string, BasisOutcome>();
   const justificationOutcomes = new Map<string, JustificationOutcome>();
 
@@ -86,23 +88,30 @@ export function determineBasisOutcomes(
     }
   });
 
-  return basisOutcomes;
+  return { basisOutcomes, justificationOutcomes };
 }
 
 function determinePropositionCompoundOutcome(
   basisOutcomes: Map<string, BasisOutcome>,
   propositionCompound: PropositionCompound,
 ): BasisOutcome {
+  let outcome: BasisOutcome = "Proven";
   for (const atomId of propositionCompound.atomIds) {
     const atomOutcome = basisOutcomes.get(atomId);
     if (atomOutcome === undefined) {
       throw new Error(`Outcome for atom ${atomId} not found`);
     }
-    if (atomOutcome !== "Proven" && atomOutcome !== "Presumed") {
+    if (atomOutcome === "Contradictory" || atomOutcome === "Disproven") {
       return "Disproven";
     }
+    if (outcome === "Proven" && atomOutcome !== "Proven") {
+      outcome = atomOutcome;
+    }
+    if (outcome === "Presumed" && atomOutcome === "Unproven") {
+      outcome = "Unproven";
+    }
   }
-  return "Proven";
+  return outcome;
 }
 
 function determineJustificationOutcome(
@@ -122,11 +131,13 @@ function determineJustificationOutcome(
 
   if (
     hasValidCounter ||
-    basisOutcome === "Unproven" ||
     basisOutcome === "Disproven" ||
     basisOutcome === "Contradictory"
   ) {
     return "Invalid";
+  }
+  if (basisOutcome === "Unproven") {
+    return "Unknown";
   }
 
   return "Valid";
