@@ -7,6 +7,7 @@ import {
   getRangesFromDomAnchor,
 } from "./anchors";
 import { HighlightManager } from "./highlights";
+import "./highlights/colors.scss";
 import {
   ContentMessage,
   CreateMediaExcerptMessage,
@@ -172,10 +173,16 @@ interface HighlightData {
   mediaExcerptId: string;
 }
 
-const highlightManager = new HighlightManager<DomAnchor, HighlightData>(
-  document.body,
-  getRangesFromDomAnchor,
-);
+const highlightManager = new HighlightManager<DomAnchor, HighlightData>({
+  container: document.body,
+  getRangesFromAnchor: (anchor: DomAnchor) =>
+    getRangesFromDomAnchor(document.body, anchor),
+  colors: {
+    mode: "rotate",
+    // Corresponds to the classes in highlights/colors.scss
+    count: 5,
+  },
+});
 
 function highlightRanges(mediaExcerptId: string, domAnchor: DomAnchor) {
   return highlightManager.createHighlight(

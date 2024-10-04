@@ -10,59 +10,65 @@ interface Highlight<Anchor, Data> {
   onClick?: (highlight: Highlight<Anchor, Data>) => void;
 }
 
-const defaultColors = [
-  {
-    // Light yellow
-    bg: "rgba(255, 245, 180, 0.4)",
-    border: "rgba(255, 218, 151, 0.6)",
-    hover: "rgba(255, 215, 0, 0.5)",
-  },
-  {
-    // Light pink
-    bg: "rgba(255, 228, 225, 0.3)",
-    border: "rgba(255, 160, 122, 0.5)",
-    hover: "rgba(250, 128, 114, 0.5)",
-  },
-  {
-    // Light purple
-    bg: "rgba(230, 230, 250, 0.3)",
-    border: "rgba(216, 191, 216, 0.5)",
-    hover: "rgba(221, 160, 221, 0.5)",
-  },
-  {
-    // Light green
-    bg: "rgba(220, 245, 220, 0.4)",
-    border: "rgba(132, 231, 132, 0.6)",
-    hover: "rgba(144, 238, 144, 0.5)",
-  },
-  {
-    // Light blue
-    bg: "rgba(240, 248, 255, 0.3)",
-    border: "rgba(135, 206, 250, 0.5)",
-    hover: "rgba(30, 144, 255, 0.5)",
-  },
-];
+type GetRangesFromAnchorFunction<Anchor> = (anchor: Anchor) => Range[];
 
-type GetRangesFromAnchorFunction<Anchor> = (
-  container: HTMLElement,
-  anchor: Anchor,
-) => Range[];
+export type HighlightManagerOptions<Anchor> = {
+  container: HTMLElement;
+  getRangesFromAnchor: GetRangesFromAnchorFunction<Anchor>;
+  highlightClass?: string;
+  colors: {
+    mode: "rotate";
+    count: number;
+    colorIndexClassFormat?: string;
+  };
+  hoverClass?: string;
+};
+type MergedHighlightManagerOptions<Anchor> = {
+  container: HTMLElement;
+  getRangesFromAnchor: GetRangesFromAnchorFunction<Anchor>;
+  highlightClass: string;
+  colors: {
+    mode: "rotate";
+    count: number;
+    colorIndexClassFormat: string;
+  };
+  hoverClass: string;
+};
+
+export const classNameIndexPlaceholder = "{index}";
+const defaultOptions = {
+  highlightClass: "highlight",
+  colors: {
+    mode: "rotate",
+    colorIndexClassFormat: `highlight-color-${classNameIndexPlaceholder}`,
+  },
+  hoverClass: "highlight-hover",
+};
 
 class HighlightManager<Anchor, Data> {
-  private highlights: Highlight<Anchor, Data>[] = [];
+  private readonly options: MergedHighlightManagerOptions<Anchor>;
+
+  private readonly highlights: Highlight<Anchor, Data>[] = [];
   private sortedHighlightElements: Array<{
     highlight: Highlight<Anchor, Data>;
     element: HTMLElement;
   }> = [];
-  private colors = defaultColors;
-  private colorTransitionDuration = "0.3s";
 
-  constructor(
-    private readonly container: HTMLElement,
-    private readonly getRangesFromAnchor: GetRangesFromAnchorFunction<Anchor>,
-  ) {
-    this.container = container;
-    this.getRangesFromAnchor = getRangesFromAnchor;
+  constructor(options: HighlightManagerOptions<Anchor>) {
+    this.options = {
+      container: options.container,
+      getRangesFromAnchor: options.getRangesFromAnchor,
+      highlightClass: options.highlightClass ?? defaultOptions.highlightClass,
+      colors: {
+        mode: options.colors.mode,
+        colorIndexClassFormat:
+          options.colors.colorIndexClassFormat ??
+          defaultOptions.colors.colorIndexClassFormat,
+        count: options.colors.count,
+      },
+      hoverClass: options.hoverClass ?? defaultOptions.hoverClass,
+    };
+
     this.addEventListeners();
   }
 
@@ -85,11 +91,8 @@ class HighlightManager<Anchor, Data> {
 
   private applyHoverStyle(highlightIndex: number) {
     const highlight = this.highlights[highlightIndex];
-    const color = this.getHighlightColor(highlightIndex);
-
     highlight.elements.forEach((element) => {
-      element.style.backgroundColor = color.hover;
-      element.style.borderColor = color.hover;
+      element.classList.add(this.options.hoverClass);
     });
   }
 
@@ -100,7 +103,7 @@ class HighlightManager<Anchor, Data> {
       onClick: (highlight: Highlight<Anchor, Data>) => void;
     },
   ): Highlight<Anchor, Data> {
-    const ranges = this.getRangesFromAnchor(this.container, anchor);
+    const ranges = this.options.getRangesFromAnchor(anchor);
     const coextensiveHighlight = this.getCoextensiveHighlight(ranges);
     if (coextensiveHighlight) {
       return coextensiveHighlight;
@@ -118,8 +121,7 @@ class HighlightManager<Anchor, Data> {
     this.highlights.push(highlight);
 
     const newElements = this.updateHighlightElements(highlight);
-    console.log(this.sortedHighlightElements.map((e) => e.element));
-    this.container.append(...newElements);
+    this.options.container.append(...newElements);
 
     // Allow the elements to be added to the DOM before updating the styles.
     // Otherwise they don't show up until a mousemove event occurs
@@ -150,20 +152,10 @@ class HighlightManager<Anchor, Data> {
     });
   }
 
-  private getHighlightColor(highlight: Highlight<Anchor, Data> | number) {
-    const highlightIndex =
-      typeof highlight === "number"
-        ? highlight
-        : this.highlights.indexOf(highlight);
-    return this.colors[highlightIndex % this.colors.length];
-  }
-
   private updateStyles() {
     this.sortedHighlightElements.forEach(({ highlight, element }, index) => {
-      const color = this.getHighlightColor(highlight);
+      element.classList.remove(this.options.hoverClass);
 
-      element.style.backgroundColor = color.bg;
-      element.style.borderColor = color.border;
       // Set the z-index so that later highlight elements are on top of earlier highlights.
       element.style.zIndex = (index + 1).toString();
 
@@ -187,12 +179,16 @@ class HighlightManager<Anchor, Data> {
       }
     });
   }
+
   private addEventListeners() {
-    this.container.addEventListener(
+    this.options.container.addEventListener(
       "mousemove",
       this.handleMouseMove.bind(this),
     );
-    this.container.addEventListener("click", this.handleClick.bind(this));
+    this.options.container.addEventListener(
+      "click",
+      this.handleClick.bind(this),
+    );
     window.addEventListener(
       "resize",
       debounce(this.handleResize.bind(this), 300),
@@ -296,7 +292,7 @@ class HighlightManager<Anchor, Data> {
   ): HTMLElement | undefined {
     // elementsFromPoint ignores pointer-events: none, so temporarily enable them
     const highlightElements = document.querySelectorAll(
-      ".sophistree-highlight",
+      `.${this.options.highlightClass}`,
     );
     highlightElements.forEach((el) => {
       (el as HTMLElement).style.pointerEvents = "auto";
@@ -304,7 +300,7 @@ class HighlightManager<Anchor, Data> {
     // elementsFromPoint returns the elements topmost to bottomost, so the first is the highest
     const highestHighlite = document
       .elementsFromPoint(x, y)
-      .find((el) => el.classList.contains("sophistree-highlight")) as
+      .find((el) => el.classList.contains(this.options.highlightClass)) as
       | HTMLElement
       | undefined;
     highlightElements.forEach((el) => {
@@ -322,7 +318,7 @@ class HighlightManager<Anchor, Data> {
     const newElements = this.highlights.flatMap((highlight) =>
       this.updateHighlightElements(highlight),
     );
-    this.container.append(...newElements);
+    this.options.container.append(...newElements);
   }
 
   /**
@@ -341,10 +337,7 @@ class HighlightManager<Anchor, Data> {
         this.removeSortedElement(element);
       });
       highlight.elements = [];
-      highlight.ranges = this.getRangesFromAnchor(
-        this.container,
-        highlight.anchor,
-      );
+      highlight.ranges = this.options.getRangesFromAnchor(highlight.anchor);
     }
 
     highlight.ranges.forEach((range) => {
@@ -395,14 +388,22 @@ class HighlightManager<Anchor, Data> {
     highlight: Highlight<Anchor, Data>,
   ): HTMLElement {
     const element = document.createElement("div");
-    element.classList.add("sophistree-highlight");
     element.style.position = "absolute";
     element.style.pointerEvents = "none";
-    element.style.transition = `background-color ${this.colorTransitionDuration} ease, border-color ${this.colorTransitionDuration} ease`;
     element.style.borderWidth = "1px";
     element.style.borderStyle = "solid";
-    element.style.cursor = highlight.onClick ? "pointer" : "default";
     element.style.mixBlendMode = "multiply"; // This helps with color blending
+
+    element.classList.add(this.options.highlightClass);
+    const highlightColorIndex =
+      this.highlights.indexOf(highlight) % this.options.colors.count;
+    element.classList.add(
+      this.options.colors.colorIndexClassFormat.replace(
+        classNameIndexPlaceholder,
+        highlightColorIndex.toString(),
+      ),
+    );
+
     element.dataset.highlightIndex = this.highlights
       .indexOf(highlight)
       .toString();
@@ -476,7 +477,7 @@ class HighlightManager<Anchor, Data> {
     this.highlights.forEach((highlight) => {
       highlight.elements.forEach((element) => element.remove());
     });
-    this.highlights = [];
+    this.highlights.splice(0, this.highlights.length);
     this.sortedHighlightElements = [];
   }
 }
