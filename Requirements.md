@@ -38,7 +38,7 @@ this extension and use that in place of Sophistree?
 
 TODO:
 
-- Double click creates a bunch of nodes.
+- Clicking on MediaExcerpt link does not focus in content page.
 
 - npm publish HighlightManager
 - Publish to Chrome Web Store. Reduce permissions? Error reporting?
