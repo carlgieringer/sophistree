@@ -316,8 +316,8 @@ function useReactNodes(
       {
         query: `node[type="Proposition"]`,
         template: function (data: NodeDataDefinition) {
-          const proposition = data as PropositionNodeData;
-          const appearanceCount = proposition.appearances?.length;
+          const nodeData = data as PropositionNodeData;
+          const appearanceCount = nodeData.appearances?.length;
           const appearanceNoun =
             "appearance" + (appearanceCount === 1 ? "" : "s");
           return (
@@ -326,12 +326,12 @@ function useReactNodes(
                 <span
                   title={`${appearanceCount} ${appearanceNoun}`}
                   className={cn("appearances-icon", {
-                    selected: proposition.isAnyAppearanceSelected,
+                    selected: nodeData.isAnyAppearanceSelected,
                   })}
                   onClick={(event) => {
                     event.preventDefault();
                     event.stopPropagation();
-                    setVisitAppearancesDialogProposition(proposition);
+                    setVisitAppearancesDialogProposition(nodeData);
                   }}
                 >
                   <Icon name="crosshairs-gps" />
@@ -352,7 +352,7 @@ function useReactNodes(
       {
         query: `node[type="MediaExcerpt"]`,
         template: function (data: NodeDataDefinition) {
-          const mediaExcerpt = data as MediaExcerpt;
+          const mediaExcerpt = data.entity as MediaExcerpt;
           const url = preferredUrl(mediaExcerpt.urlInfo);
           return (
             <>
@@ -921,8 +921,8 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
             break;
           }
           acc.nodes.push({
-            ...entity,
             id: compoundNodeId,
+            entity,
             entityId: entity.id,
           });
 
@@ -954,6 +954,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
               ...proposition,
               id: atomNodeId,
               parent: compoundNodeId,
+              entity,
               entityId: proposition.id,
               atomId,
               appearances,
@@ -988,6 +989,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
 
             acc.nodes.push({
               id: intermediateNodeId,
+              entity,
               entityId: entity.id,
               type: entity.type,
               polarity: entity.polarity,
@@ -995,9 +997,10 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
 
             acc.edges.push({
               id: `justification-${entity.id}-countered-edge-1`,
-              entityId: entity.id,
               source: basisNodeId,
               target: intermediateNodeId,
+              entity,
+              entityId: entity.id,
               type: entity.type,
               polarity: entity.polarity,
               arrow: "none",
@@ -1005,18 +1008,20 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
 
             acc.edges.push({
               id: `justification-${entity.id}-countered-edge-2`,
-              entityId: entity.id,
               source: intermediateNodeId,
               target: targetNodeId,
+              entity,
+              entityId: entity.id,
               type: entity.type,
               polarity: entity.polarity,
             });
           } else {
             acc.edges.push({
               id: `justification-${entity.id}-edge`,
-              entityId: entity.id,
               source: basisNodeId,
               target: targetNodeId,
+              entity,
+              entityId: entity.id,
               type: entity.type,
               polarity: entity.polarity,
             });
@@ -1029,9 +1034,10 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
             ?.forEach((nodeId, compoundId) => {
               acc.edges.push({
                 id: `justification-${entity.id}-compound-${compoundId}`,
-                entityId: entity.id,
                 source: duplicatedPropositionCompoundAtomEdgeSource,
                 target: nodeId,
+                entity,
+                entityId: entity.id,
                 type: entity.type,
                 polarity: entity.polarity,
               });
@@ -1057,8 +1063,8 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
             justificationTargetNodeIds.get(entity.id) ||
             makeEntityNodeId(entity);
           acc.nodes.push({
-            ...entity,
             id,
+            entity,
             entityId: entity.id,
             appearances,
             isAnyAppearanceSelected,
@@ -1074,8 +1080,8 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
             break;
           }
           acc.nodes.push({
-            ...entity,
             id,
+            entity,
             entityId: entity.id,
           });
           break;
@@ -1532,6 +1538,7 @@ function getEntityType(element: SingularElementArgument): EntityType {
 
 type GraphNodeDataDefinition = SetRequired<NodeDataDefinition, "id"> & {
   entityId: string;
+  entity: Entity;
 };
 
 function getZIndex(element: SingularElementArgument) {

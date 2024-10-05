@@ -38,8 +38,6 @@ this extension and use that in place of Sophistree?
 
 TODO:
 
-- Clicking on MediaExcerpt link does not focus in content page.
-
 - npm publish HighlightManager
 - Publish to Chrome Web Store. Reduce permissions? Error reporting?
 
@@ -50,6 +48,7 @@ TODO:
 
 - Justification appearances
 - Collapsing
+- Reload highlights when active map changes
 
 - Mobile experience
 
