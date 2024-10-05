@@ -1,6 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { persistStore, persistReducer, createMigrate } from "redux-persist";
 import storage from "redux-persist/lib/storage";
+import { useDispatch } from "react-redux";
 
 import entitiesReducer from "./entitiesSlice";
 import { persistedStateVersion, reduxPersistMigrations } from "./migrations";
@@ -32,3 +33,5 @@ export const persistor = persistStore(store);
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
+
+export const useAppDispatch: () => AppDispatch = useDispatch;
