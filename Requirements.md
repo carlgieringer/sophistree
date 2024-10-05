@@ -38,7 +38,10 @@ this extension and use that in place of Sophistree?
 
 TODO:
 
+- Double click creates a bunch of nodes.
+
 - npm publish HighlightManager
+- Publish to Chrome Web Store. Reduce permissions? Error reporting?
 
 - Try adding
 
@@ -48,7 +51,13 @@ TODO:
 - Justification appearances
 - Collapsing
 
+- Mobile experience
+
+- Stable graph layout
+- Non-neutral outcome navigation on content page
 - Appearance justifications
+- undo/redo
+
 - Filter entity list for disconnected nodes?
   - (Filter by all nodes and disconnected?)
   - Propositions, MediaExcerpts
