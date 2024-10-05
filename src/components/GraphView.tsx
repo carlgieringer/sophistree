@@ -924,6 +924,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
             id: compoundNodeId,
             entity,
             entityId: entity.id,
+            type: entity.type,
           });
 
           entity.atomIds.forEach((atomId) => {
@@ -951,12 +952,11 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
               return;
             }
             acc.nodes.push({
-              ...proposition,
               id: atomNodeId,
               parent: compoundNodeId,
-              entity,
+              entity: proposition,
               entityId: proposition.id,
-              atomId,
+              type: proposition.type,
               appearances,
               isAnyAppearanceSelected,
             });
@@ -1066,6 +1066,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
             id,
             entity,
             entityId: entity.id,
+            type: entity.type,
             appearances,
             isAnyAppearanceSelected,
           });
@@ -1083,6 +1084,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
             id,
             entity,
             entityId: entity.id,
+            type: entity.type,
           });
           break;
         }
