@@ -1,10 +1,11 @@
-import React from "react";
+import React, { MutableRefObject } from "react";
 import cn from "classnames";
 import cytoscape, {
   EdgeDataDefinition,
   EdgeSingular,
   ElementDataDefinition,
   ElementDefinition,
+  EventHandler,
   EventObject,
   EventObjectEdge,
   EventObjectNode,
@@ -26,7 +27,7 @@ import {
 import CytoscapeComponent from "react-cytoscapejs";
 import { Portal } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import { SetRequired } from "type-fest";
 import { v4 as uuidv4 } from "uuid";
 
@@ -61,6 +62,9 @@ import VisitPropositionAppearanceDialog, {
   AppearanceInfo,
   PropositionNodeData,
 } from "./VisitPropositionAppearanceDialog";
+import { BasisOutcome, JustificationOutcome } from "../outcomes/outcomes";
+import { outcomeValence } from "../outcomes/valences";
+import { AppDispatch, useAppDispatch } from "../store";
 
 cytoscape.use(elk);
 cytoscape.use(contextMenus);
@@ -75,20 +79,163 @@ interface GraphViewProps {
   style?: CSSProperties;
 }
 
+const nodeOutcomeClasses = [
+  "node-outcome-positive",
+  "node-outcome-negative",
+  "node-outcome-neutral",
+  "node-outcome-contradictory",
+];
+const edgeOutcomeClasses = [
+  "edge-outcome-positive",
+  "edge-outcome-negative",
+  "edge-outcome-neutral",
+];
+const outcomeClasses = [...nodeOutcomeClasses, ...edgeOutcomeClasses];
+const syncClasses = ["hover-highlight", "dragging", ...nodeOutcomeClasses];
+
 export default function GraphView({ id, style }: GraphViewProps) {
-  const entities = useSelector(activeMapEntities);
-  const selectedEntityIds = useSelector(selectors.selectedEntityIds);
-  const { elements, focusedNodeIds } = useMemo(
-    () => makeElements(entities, selectedEntityIds),
-    [entities, selectedEntityIds],
-  );
+  const { elements, focusedNodeIds } = useElements();
 
   const cyRef = useRef<cytoscape.Core | undefined>(undefined);
-
   if (cyRef.current) {
     correctInvalidNodes(cyRef.current, elements);
   }
 
+  useOutcomes(cyRef);
+  useSelectedNodes(cyRef);
+  usePanToFocusedNodes(cyRef, focusedNodeIds);
+
+  const [
+    visitAppearancesDialogProposition,
+    setVisitAppearancesDialogProposition,
+  ] = useState(undefined as PropositionNodeData | undefined);
+
+  const [debugElementData, setDebugElementData] = useState(
+    undefined as ElementDataDefinition | undefined,
+  );
+
+  useReactNodes(cyRef, setVisitAppearancesDialogProposition);
+
+  const { zoomIn, zoomOut } = useZoomEventHandlers(cyRef);
+
+  const dispatch = useAppDispatch();
+
+  const layoutGraph = useCallback((fit = false) => {
+    cyRef.current?.layout(getLayout(fit)).run();
+  }, []);
+
+  useContextMenus(
+    cyRef,
+    dispatch,
+    zoomIn,
+    zoomOut,
+    setDebugElementData,
+    layoutGraph,
+  );
+  useSelectionEventHandlers(cyRef, dispatch);
+  useDblTapToCreateNode(cyRef, dispatch);
+  useDragEventHandlers(cyRef, dispatch);
+  useLayoutOnceUponInitialLoad(cyRef, layoutGraph);
+
+  useEffect(() => layoutGraph, [layoutGraph, elements]);
+
+  return (
+    <>
+      <CytoscapeComponent
+        id={id}
+        elements={elements}
+        stylesheet={stylesheet}
+        style={{
+          ...style,
+          overflow: "hidden",
+        }}
+        cy={(cy) => {
+          cyRef.current = cy;
+        }}
+        zoom={1}
+        pan={{ x: 0, y: 0 }}
+        userPanningEnabled={false}
+        userZoomingEnabled={false}
+        minZoom={0.1}
+        maxZoom={10}
+      />
+      <Portal>
+        {visitAppearancesDialogProposition && (
+          <VisitPropositionAppearanceDialog
+            data={visitAppearancesDialogProposition}
+            visible={!!visitAppearancesDialogProposition}
+            onDismiss={() => setVisitAppearancesDialogProposition(undefined)}
+          />
+        )}
+        {debugElementData && (
+          <DebugElementDialog
+            visible={true}
+            data={debugElementData}
+            onDismiss={() => setDebugElementData(undefined)}
+          />
+        )}
+      </Portal>
+    </>
+  );
+}
+
+function useElements() {
+  const entities = useSelector(activeMapEntities);
+  const selectedEntityIds = useSelector(selectors.selectedEntityIds);
+  return useMemo(
+    () => makeElements(entities, selectedEntityIds),
+    [entities, selectedEntityIds],
+  );
+}
+
+function useOutcomes(cyRef: MutableRefObject<cytoscape.Core | undefined>) {
+  const { basisOutcomes, justificationOutcomes } = useSelector(
+    selectors.activeMapEntitiesOutcomes,
+  );
+  useEffect(() => {
+    const cy = cyRef.current;
+    if (!cy) {
+      return;
+    }
+    cy.elements()
+      .removeClass(outcomeClasses)
+      .data({ outcome: undefined, valence: undefined });
+
+    const elementsByEntityId = cy.elements().reduce((acc, element) => {
+      const entityId = getEntityId(element);
+      if (!entityId) {
+        return acc;
+      }
+      const elements = acc.get(entityId) ?? [];
+      elements.push(element);
+      acc.set(entityId, elements);
+      return acc;
+    }, new Map<string, SingularElementArgument[]>());
+
+    [basisOutcomes, justificationOutcomes].forEach((outcomes) => {
+      outcomes.forEach((outcome, entityId) => {
+        const elements = elementsByEntityId.get(entityId);
+        if (!elements) {
+          return;
+        }
+
+        const { nodeClass, edgeClass, valence } = makeOutcomeClasses(outcome);
+        elements.forEach((element) => {
+          element.data("outcome", outcome);
+          element.data("valence", valence);
+          if (element.isNode()) {
+            element.addClass(nodeClass);
+          } else {
+            element.addClass(edgeClass);
+          }
+        });
+      });
+    });
+  }, [cyRef, basisOutcomes, justificationOutcomes]);
+}
+
+function useSelectedNodes(cyRef: MutableRefObject<cytoscape.Core | undefined>) {
+  const selectedEntityIds = useSelector(selectors.selectedEntityIds);
   useEffect(() => {
     cyRef.current
       ?.elements()
@@ -100,8 +247,13 @@ export default function GraphView({ id, style }: GraphViewProps) {
         .filter((n) => selectedEntityIds.includes(getEntityId(n)))
         .select();
     }
-  }, [selectedEntityIds]);
+  }, [cyRef, selectedEntityIds]);
+}
 
+function usePanToFocusedNodes(
+  cyRef: MutableRefObject<cytoscape.Core | undefined>,
+  focusedNodeIds: string[],
+) {
   /**
    * Pan the graph to include the given nodes. Currently just centers
    * on the nodes. I'd prefer to pan the minimum amount to include the
@@ -121,113 +273,116 @@ export default function GraphView({ id, style }: GraphViewProps) {
    * Animating that is tricky because it requires zooming around a point
    * intermediate of the current center and the desired center.
    */
-  const panToNodes = useCallback((nodeIds: string[]) => {
-    const cy = cyRef.current;
-    if (!cy) return;
+  const panToNodes = useCallback(
+    (nodeIds: string[]) => {
+      const cy = cyRef.current;
+      if (!cy) return;
 
-    const nodes = cy.nodes().filter((node) => nodeIds.includes(node.id()));
-    if (nodes.length === 0) return;
+      const nodes = cy.nodes().filter((node) => nodeIds.includes(node.id()));
+      if (nodes.length === 0) return;
 
-    const nodesBoundingBox = nodes.boundingBox();
-    const padding = 50;
+      const nodesBoundingBox = nodes.boundingBox();
+      const padding = 50;
 
-    const extent = cy.extent();
-    const viewIncludesNodes =
-      nodesBoundingBox.x1 - padding >= extent.x1 &&
-      nodesBoundingBox.x2 + padding <= extent.x2 &&
-      nodesBoundingBox.y1 - padding >= extent.y1 &&
-      nodesBoundingBox.y2 + padding <= extent.y2;
+      const extent = cy.extent();
+      const viewIncludesNodes =
+        nodesBoundingBox.x1 - padding >= extent.x1 &&
+        nodesBoundingBox.x2 + padding <= extent.x2 &&
+        nodesBoundingBox.y1 - padding >= extent.y1 &&
+        nodesBoundingBox.y2 + padding <= extent.y2;
 
-    if (!viewIncludesNodes) {
-      cy.animate({ center: { eles: nodes }, duration: 300 });
-    }
-  }, []);
+      if (!viewIncludesNodes) {
+        cy.animate({ center: { eles: nodes }, duration: 300 });
+      }
+    },
+    [cyRef],
+  );
 
   useEffect(() => {
     if (focusedNodeIds.length) {
       panToNodes(focusedNodeIds);
     }
   }, [focusedNodeIds, panToNodes]);
+}
 
-  const [
-    visitAppearancesDialogProposition,
-    setVisitAppearancesDialogProposition,
-  ] = useState(undefined as PropositionNodeData | undefined);
-
-  const [debugElementData, setDebugElementData] = useState(
-    undefined as ElementDataDefinition | undefined,
-  );
-
-  const [reactNodesConfig] = useState([
-    {
-      query: `node[type="Proposition"]`,
-      template: function (data: NodeDataDefinition) {
-        const proposition = data as PropositionNodeData;
-        const appearanceCount = proposition.appearances?.length;
-        const appearanceNoun =
-          "appearance" + (appearanceCount === 1 ? "" : "s");
-        return (
-          <>
-            {appearanceCount ? (
-              <span
-                title={`${appearanceCount} ${appearanceNoun}`}
-                className={cn("appearances-icon", {
-                  selected: proposition.isAnyAppearanceSelected,
-                })}
+function useReactNodes(
+  cyRef: MutableRefObject<cytoscape.Core | undefined>,
+  setVisitAppearancesDialogProposition: (
+    data: PropositionNodeData | undefined,
+  ) => void,
+) {
+  const reactNodesConfig = useMemo(
+    () => [
+      {
+        query: `node[type="Proposition"]`,
+        template: function (data: NodeDataDefinition) {
+          const proposition = data as PropositionNodeData;
+          const appearanceCount = proposition.appearances?.length;
+          const appearanceNoun =
+            "appearance" + (appearanceCount === 1 ? "" : "s");
+          return (
+            <>
+              {appearanceCount ? (
+                <span
+                  title={`${appearanceCount} ${appearanceNoun}`}
+                  className={cn("appearances-icon", {
+                    selected: proposition.isAnyAppearanceSelected,
+                  })}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setVisitAppearancesDialogProposition(proposition);
+                  }}
+                >
+                  <Icon name="crosshairs-gps" />
+                  {appearanceCount}
+                </span>
+              ) : undefined}
+              <p>{data.text}</p>
+            </>
+          );
+        },
+        mode: "replace" as const,
+        syncClasses,
+        containerCSS: {
+          padding: "1em",
+          borderRadius: "8px",
+        },
+      },
+      {
+        query: `node[type="MediaExcerpt"]`,
+        template: function (data: NodeDataDefinition) {
+          const mediaExcerpt = data as MediaExcerpt;
+          const url = preferredUrl(mediaExcerpt.urlInfo);
+          return (
+            <>
+              <p>{data.quotation}</p>
+              <a
+                href={url}
+                title={url}
                 onClick={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
-                  setVisitAppearancesDialogProposition(proposition);
+                  void activateMediaExcerpt(mediaExcerpt);
+                  return false;
                 }}
               >
-                <Icon name="crosshairs-gps" />
-                {appearanceCount}
-              </span>
-            ) : undefined}
-            <p>{data.text}</p>
-          </>
-        );
+                {mediaExcerpt.sourceInfo.name}
+              </a>
+            </>
+          );
+        },
+        mode: "replace" as const,
+        syncClasses,
+        containerCSS: {
+          padding: "1em",
+          backgroundColor: peterRiver,
+          borderRadius: "8px",
+        },
       },
-      mode: "replace" as const,
-      syncClasses: ["hover-highlight", "dragging"],
-      containerCSS: {
-        padding: "1em",
-        backgroundColor: peterRiver,
-        borderRadius: "8px",
-      },
-    },
-    {
-      query: `node[type="MediaExcerpt"]`,
-      template: function (data: NodeDataDefinition) {
-        const mediaExcerpt = data as MediaExcerpt;
-        const url = preferredUrl(mediaExcerpt.urlInfo);
-        return (
-          <>
-            <p>{data.quotation}</p>
-            <a
-              href={url}
-              title={url}
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                void activateMediaExcerpt(mediaExcerpt);
-                return false;
-              }}
-            >
-              {mediaExcerpt.sourceInfo.name}
-            </a>
-          </>
-        );
-      },
-      mode: "replace" as const,
-      syncClasses: ["hover-highlight", "dragging"],
-      containerCSS: {
-        padding: "1em",
-        backgroundColor: peterRiver,
-        borderRadius: "8px",
-      },
-    },
-  ]);
+    ],
+    [setVisitAppearancesDialogProposition],
+  );
 
   useEffect(() => {
     if (cyRef.current) {
@@ -238,8 +393,12 @@ export default function GraphView({ id, style }: GraphViewProps) {
         nodes: reactNodesConfig,
       });
     }
-  }, [reactNodesConfig]);
+  }, [cyRef, reactNodesConfig]);
+}
 
+function useZoomEventHandlers(
+  cyRef: MutableRefObject<cytoscape.Core | undefined>,
+) {
   const zoom = useCallback(
     ({
       level,
@@ -255,7 +414,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
       }
       cy.zoom({ level, renderedPosition });
     },
-    [],
+    [cyRef],
   );
 
   const zoomByFactor = useCallback(
@@ -268,7 +427,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
       const level = cy.zoom() * factor;
       zoom({ level, renderedPosition });
     },
-    [zoom],
+    [cyRef, zoom],
   );
 
   const zoomIn = useCallback(
@@ -309,7 +468,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
         cy.panBy({ x: -deltaX, y: -delta });
       }
     },
-    [zoomByFactor],
+    [cyRef, zoomByFactor],
   );
 
   const handleGesture = useCallback(
@@ -322,7 +481,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
 
       zoomByFactor(scale, { x: event.offsetX, y: event.offsetY });
     },
-    [zoomByFactor],
+    [cyRef, zoomByFactor],
   );
 
   useEffect(() => {
@@ -342,178 +501,230 @@ export default function GraphView({ id, style }: GraphViewProps) {
         container.removeEventListener("gestureend", handleGesture);
       }
     };
-  }, [id, handleWheel, handleGesture]);
+  }, [cyRef, handleWheel, handleGesture]);
 
-  const dispatch = useDispatch();
+  return { zoomIn, zoomOut };
+}
+
+function useContextMenus(
+  cyRef: MutableRefObject<cytoscape.Core | undefined>,
+  dispatch: AppDispatch,
+  zoomIn: EventHandler,
+  zoomOut: EventHandler,
+  setDebugElementData: (data: ElementDataDefinition | undefined) => void,
+  layoutGraph: (fit?: boolean) => void,
+) {
   useEffect(() => {
-    if (cyRef.current) {
-      const cy = cyRef.current;
+    if (!cyRef.current) {
+      return;
+    }
+    const cy = cyRef.current;
 
-      cy.contextMenus({
-        menuItems: [
-          {
-            id: "delete",
-            content: "Delete",
-            tooltipText: "Delete node",
-            selector: "node, edge",
-            onClickFunction: function (e) {
-              const event = e as EventObjectNode | EventObjectEdge;
-              const target = event.target;
-              const id = getEntityId(target);
-              dispatch(deleteEntity(id));
-            },
-            hasTrailingDivider: true,
+    cy.contextMenus({
+      menuItems: [
+        {
+          id: "delete",
+          content: "Delete",
+          tooltipText: "Delete node",
+          selector: "node, edge",
+          onClickFunction: function (e) {
+            const event = e as EventObjectNode | EventObjectEdge;
+            const target = event.target;
+            const id = getEntityId(target);
+            dispatch(deleteEntity(id));
           },
-          {
-            id: "zoom-out",
-            content: "Zoom out",
-            selector: "*",
-            onClickFunction: zoomOut,
-            coreAsWell: true,
+          hasTrailingDivider: true,
+        },
+        {
+          id: "zoom-out",
+          content: "Zoom out",
+          selector: "*",
+          onClickFunction: zoomOut,
+          coreAsWell: true,
+        },
+        {
+          id: "zoom-in",
+          content: "Zoom in",
+          selector: "*",
+          onClickFunction: zoomIn,
+          coreAsWell: true,
+        },
+        {
+          id: "fit-to-contents",
+          content: "Fit to contents",
+          selector: "*",
+          tooltipText: "Layout the graph to fit to all contents",
+          onClickFunction: () => layoutGraph(true),
+          coreAsWell: true,
+        },
+        {
+          id: "show-element-data",
+          content: "Show element data",
+          selector: "node, edge",
+          tooltipText: "Show element data for debugging",
+          onClickFunction: (e) => {
+            const event = e as EventObjectNode | EventObjectEdge;
+            setDebugElementData(event.target.data() as ElementDataDefinition);
           },
-          {
-            id: "zoom-in",
-            content: "Zoom in",
-            selector: "*",
-            onClickFunction: zoomIn,
-            coreAsWell: true,
-          },
-          {
-            id: "fit-to-contents",
-            content: "Fit to contents",
-            selector: "*",
-            tooltipText: "Layout the graph to fit to all contents",
-            onClickFunction: () => layoutGraph(true),
-            coreAsWell: true,
-          },
-          {
-            id: "show-element-data",
-            content: "Show element data",
-            selector: "node, edge",
-            tooltipText: "Show element data for debugging",
-            onClickFunction: (e) => {
-              const event = e as EventObjectNode | EventObjectEdge;
-              setDebugElementData(event.target.data() as ElementDataDefinition);
-            },
-          },
-        ],
-      });
+        },
+      ],
+    });
+  }, [cyRef, dispatch, zoomIn, zoomOut, layoutGraph, setDebugElementData]);
+}
 
-      cy.on("tap", "node", (event: EventObjectNode) => {
-        const entityId = getEntityId(event.target);
-        dispatch(selectEntities([entityId]));
-      });
+function useSelectionEventHandlers(
+  cyRef: MutableRefObject<cytoscape.Core | undefined>,
+  dispatch: AppDispatch,
+) {
+  useEffect(() => {
+    if (!cyRef.current) {
+      return;
+    }
+    const cy = cyRef.current;
 
-      cy.on("tap", "edge", (event: EventObjectNode) => {
-        const entityId = getEntityId(event.target);
-        dispatch(selectEntities([entityId]));
-      });
+    cy.on("tap", "node", (event: EventObjectNode) => {
+      const entityId = getEntityId(event.target);
+      dispatch(selectEntities([entityId]));
+    });
 
-      cy.on("tap", (event: EventObject) => {
-        if (event.target === cy) {
-          dispatch(resetSelection());
-        }
-      });
+    cy.on("tap", "edge", (event: EventObjectNode) => {
+      const entityId = getEntityId(event.target);
+      dispatch(selectEntities([entityId]));
+    });
 
-      cy.on("dbltap", (event: EventObject) => {
-        if (event.target === cy) {
-          const newNode = {
-            id: uuidv4(),
-            type: "Proposition" as const,
-            text: "New Node",
-            ...defaultVisibilityProps,
-          };
-          dispatch(addEntity(newNode));
-        }
-      });
+    cy.on("tap", (event: EventObject) => {
+      if (event.target === cy) {
+        dispatch(resetSelection());
+      }
+    });
+  });
+}
 
-      let dragSource = undefined as NodeSingular | undefined;
-      let dragSourceOriginalPosition: Position | undefined;
-      cy.on("mousedown", "node", (event: cytoscape.EventObjectNode) => {
-        dragSource = event.target;
-        dragSourceOriginalPosition = { ...dragSource.position() };
-        dragSource.ancestors().add(dragSource).addClass("dragging");
-      });
+function useDblTapToCreateNode(
+  cyRef: MutableRefObject<cytoscape.Core | undefined>,
+  dispatch: AppDispatch,
+) {
+  useEffect(() => {
+    if (!cyRef.current) {
+      return;
+    }
+    const cy = cyRef.current;
 
-      // Store mousePosition for drags because using event.position caused weird
-      // behavior when dragging nodes.
-      let mousePosition: Position = { x: 0, y: 0 };
-      cy.on("mousemove", (event: EventObject) => {
-        mousePosition = event.position;
-      });
+    cy.on("dbltap", (event: EventObject) => {
+      if (event.target === cy) {
+        const newNode = {
+          id: uuidv4(),
+          type: "Proposition" as const,
+          text: "New Node",
+          ...defaultVisibilityProps,
+        };
+        dispatch(addEntity(newNode));
+      }
+    });
+  });
+}
 
-      cy.on("drag", "node", (event: EventObjectNode) => {
-        cy.elements(".hover-highlight").removeClass("hover-highlight");
+function useDragEventHandlers(
+  cyRef: MutableRefObject<cytoscape.Core | undefined>,
+  dispatch: AppDispatch,
+) {
+  useEffect(() => {
+    if (!cyRef.current) {
+      return;
+    }
+    const cy = cyRef.current;
 
-        const hoverTarget = getClosestValidDropTarget(
-          cy,
-          mousePosition,
-          event.target,
-        );
-        if (
-          hoverTarget &&
-          dragSource &&
-          isValidDropTarget(dragSource, hoverTarget)
-        ) {
-          // Highlight the entity everywhere. In particular, highlight the justification node and
-          // two edges when any one of them is hovered.
-          const hoverEntityId = getEntityId(hoverTarget);
-          cy.elements()
-            .filter((e) => e.data("entityId") === hoverEntityId)
-            .addClass("hover-highlight");
-        }
-      });
+    let dragSource = undefined as NodeSingular | undefined;
+    let dragSourceOriginalPosition: Position | undefined;
+    cy.on("mousedown", "node", (event: cytoscape.EventObjectNode) => {
+      dragSource = event.target;
+      dragSourceOriginalPosition = { ...dragSource.position() };
+      dragSource.ancestors().add(dragSource).addClass("dragging");
+    });
 
-      cy.on("mouseup", (event: EventObject) => {
-        if (event.target === cy) {
-          if (dragSource && dragSourceOriginalPosition) {
-            // Return the node to its original position
-            dragSource.position(dragSourceOriginalPosition);
-          }
-          dragSource = undefined;
-          dragSourceOriginalPosition = undefined;
-          cy.nodes().removeClass("hover-highlight");
-          return;
-        }
+    // Store mousePosition for drags because using event.position caused weird
+    // behavior when dragging nodes.
+    let mousePosition: Position = { x: 0, y: 0 };
+    cy.on("mousemove", (event: EventObject) => {
+      mousePosition = event.position;
+    });
 
-        if (dragSource) {
-          dragSource.ancestors().add(dragSource).removeClass("dragging");
-          const dragTarget = getClosestValidDropTarget(
-            cy,
-            mousePosition,
-            dragSource,
-          );
-          if (dragTarget && isValidDropTarget(dragSource, dragTarget)) {
-            dispatch(
-              completeDrag({
-                sourceId: getEntityId(dragSource),
-                targetId: getEntityId(dragTarget),
-              }),
-            );
-            if (
-              dragSourceOriginalPosition &&
-              getEntityType(dragSource) === "Proposition" &&
-              getEntityType(dragTarget) === "MediaExcerpt"
-            ) {
-              dragSource.position(dragSourceOriginalPosition);
-            }
-          } else if (dragSourceOriginalPosition) {
-            // Return the node to its original position
-            dragSource.position(dragSourceOriginalPosition);
-          }
+    cy.on("drag", "node", (event: EventObjectNode) => {
+      cy.elements(".hover-highlight").removeClass("hover-highlight");
+
+      const hoverTarget = getClosestValidDropTarget(
+        cy,
+        mousePosition,
+        event.target,
+      );
+      if (
+        hoverTarget &&
+        dragSource &&
+        isValidDropTarget(dragSource, hoverTarget)
+      ) {
+        // Highlight the entity everywhere. In particular, highlight the justification node and
+        // two edges when any one of them is hovered.
+        const hoverEntityId = getEntityId(hoverTarget);
+        cy.elements()
+          .filter((e) => e.data("entityId") === hoverEntityId)
+          .addClass("hover-highlight");
+      }
+    });
+
+    cy.on("mouseup", (event: EventObject) => {
+      if (event.target === cy) {
+        if (dragSource && dragSourceOriginalPosition) {
+          // Return the node to its original position
+          dragSource.position(dragSourceOriginalPosition);
         }
         dragSource = undefined;
         dragSourceOriginalPosition = undefined;
-        cy.elements().removeClass("hover-highlight");
-      });
-    }
-  }, [dispatch, zoomIn, zoomOut]);
+        cy.nodes().removeClass("hover-highlight");
+        return;
+      }
 
+      if (dragSource) {
+        dragSource.ancestors().add(dragSource).removeClass("dragging");
+        const dragTarget = getClosestValidDropTarget(
+          cy,
+          mousePosition,
+          dragSource,
+        );
+        if (dragTarget && isValidDropTarget(dragSource, dragTarget)) {
+          dispatch(
+            completeDrag({
+              sourceId: getEntityId(dragSource),
+              targetId: getEntityId(dragTarget),
+            }),
+          );
+          if (
+            dragSourceOriginalPosition &&
+            getEntityType(dragSource) === "Proposition" &&
+            getEntityType(dragTarget) === "MediaExcerpt"
+          ) {
+            dragSource.position(dragSourceOriginalPosition);
+          }
+        } else if (dragSourceOriginalPosition) {
+          // Return the node to its original position
+          dragSource.position(dragSourceOriginalPosition);
+        }
+      }
+      dragSource = undefined;
+      dragSourceOriginalPosition = undefined;
+      cy.elements().removeClass("hover-highlight");
+    });
+  }, [cyRef, dispatch]);
+}
+
+function useLayoutOnceUponInitialLoad(
+  cyRef: React.MutableRefObject<cytoscape.Core | undefined>,
+  layoutGraph: (fit?: boolean) => void,
+) {
   // Fit the graph once on load
   const initialFit = useCallback(() => {
     layoutGraph(true);
     cyRef.current?.off("layoutstop", initialFit);
-  }, []);
+  }, [cyRef, layoutGraph]);
 
   useEffect(() => {
     const cy = cyRef.current;
@@ -521,52 +732,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
       return;
     }
     cy.on("layoutstop", initialFit);
-  }, [initialFit]);
-
-  useEffect(() => layoutGraph, [elements]);
-
-  function layoutGraph(fit = false) {
-    cyRef.current?.layout(getLayout(fit)).run();
-  }
-
-  return (
-    <>
-      <CytoscapeComponent
-        id={id}
-        elements={elements}
-        stylesheet={stylesheet}
-        style={{
-          ...style,
-          overflow: "hidden",
-        }}
-        cy={(cy) => {
-          cyRef.current = cy;
-        }}
-        zoom={1}
-        pan={{ x: 0, y: 0 }}
-        userPanningEnabled={false}
-        userZoomingEnabled={false}
-        minZoom={0.1}
-        maxZoom={10}
-      />
-      <Portal>
-        {visitAppearancesDialogProposition && (
-          <VisitPropositionAppearanceDialog
-            data={visitAppearancesDialogProposition}
-            visible={!!visitAppearancesDialogProposition}
-            onDismiss={() => setVisitAppearancesDialogProposition(undefined)}
-          />
-        )}
-        {debugElementData && (
-          <DebugElementDialog
-            visible={true}
-            data={debugElementData}
-            onDismiss={() => setDebugElementData(undefined)}
-          />
-        )}
-      </Portal>
-    </>
-  );
+  }, [cyRef, initialFit]);
 }
 
 /** Creates the Cytoscape elements for displaying the entities as a graph. Also returns
@@ -926,7 +1092,7 @@ function correctInvalidNodes(
   cy.elements().subtract(extantElementsSelector).remove();
 }
 
-const stylesheet = [
+const stylesheet: cytoscape.Stylesheet[] = [
   {
     selector: "node",
     style: {
@@ -969,19 +1135,17 @@ const stylesheet = [
     },
   },
   {
-    selector: `node[type="PropositionCompound"]`,
-    style: {
-      shape: "round-rectangle",
-      "background-color": "#2980b9",
-    },
-  },
-  {
     selector: `edge`,
     style: {
       width: 2,
       "line-color": "#ccc",
       "target-arrow-color": "#ccc",
-      "target-arrow-shape": "triangle",
+      "target-arrow-shape": (edge) =>
+        edge.data("polarity") === "Positive" ? "triangle-backcurve" : "tee",
+      "line-style": (edge) => {
+        return edge.data("outcome") === "Invalid" ? "dashed" : "solid";
+      },
+      "line-dash-pattern": [20, 10],
       "arrow-scale": 1.5,
       "curve-style": "straight",
       "target-endpoint": "outside-to-node",
@@ -1344,4 +1508,10 @@ type GraphNodeDataDefinition = SetRequired<NodeDataDefinition, "id"> & {
 
 function getZIndex(element: SingularElementArgument) {
   return element.style("z-index") as number | undefined;
+}
+function makeOutcomeClasses(outcome: BasisOutcome | JustificationOutcome) {
+  const valence = outcomeValence(outcome);
+  const nodeClass = `node-outcome-${valence}`;
+  const edgeClass = `edge-outcome-${valence}`;
+  return { nodeClass, edgeClass, valence };
 }

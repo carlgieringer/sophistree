@@ -7,10 +7,16 @@ import {
   getRangesFromDomAnchor,
 } from "./anchors";
 import { HighlightManager } from "./highlights";
+import "./highlights/rotation-colors.scss";
+import "./highlights/outcome-colors.scss";
 import {
   ContentMessage,
   CreateMediaExcerptMessage,
+  GetMediaExcerptsMessageResponse,
 } from "./extension/messages";
+import { BasisOutcome } from "./outcomes/outcomes";
+import { outcomeValence } from "./outcomes/valences";
+import { deserializeMap } from "./extension/serialization";
 
 interface AddMediaExcerptMessage {
   action: "addMediaExcerpt";
@@ -51,6 +57,11 @@ async function handleMessage(message: ContentMessage) {
       break;
     case "requestUrl":
       return getCanonicalOrFullUrl();
+    case "updateMediaExcerptOutcomes": {
+      const updatedOutcomes = deserializeMap(message.serializedUpdatedOutcomes);
+      updateMediaExcerptOutcomes(updatedOutcomes);
+      break;
+    }
   }
 }
 
@@ -120,10 +131,7 @@ function getTitle() {
   );
 }
 
-type GetMediaExcerptsMessageResponse = {
-  mediaExcerpts: MediaExcerpt[];
-};
-
+let mediaExcerptOutcomes: Map<string, BasisOutcome> = new Map();
 function getMediaExcerpts() {
   const url = getUrl();
   const canonicalUrl = getCanonicalUrl();
@@ -142,7 +150,8 @@ function getMediaExcerpts() {
         console.error("Unable to get media excerpts");
         return;
       }
-      const { mediaExcerpts } = response;
+      const { mediaExcerpts, serializedOutcomes } = response;
+      mediaExcerptOutcomes = deserializeMap(serializedOutcomes);
       highlightMediaExcerpts(mediaExcerpts);
     },
   );
@@ -172,10 +181,40 @@ interface HighlightData {
   mediaExcerptId: string;
 }
 
-const highlightManager = new HighlightManager<DomAnchor, HighlightData>(
-  document.body,
-  getRangesFromDomAnchor,
-);
+const highlightManager = new HighlightManager<DomAnchor, HighlightData>({
+  container: document.body,
+  getRangesFromAnchor: (anchor: DomAnchor) =>
+    getRangesFromDomAnchor(document.body, anchor),
+  colors: {
+    mode: "callback",
+    // Corresponds to the classes in highlights/colors.scss
+    getColorClass: (data) => getHighlightColorClass(data.mediaExcerptId),
+  },
+});
+
+function updateMediaExcerptOutcomes(
+  updatedOutcomes: Map<string, BasisOutcome | undefined>,
+) {
+  updatedOutcomes.forEach((outcome, mediaExcerptId) => {
+    if (outcome) {
+      mediaExcerptOutcomes.set(mediaExcerptId, outcome);
+    } else {
+      mediaExcerptOutcomes.delete(mediaExcerptId);
+    }
+  });
+  highlightManager.updateHighlightsColorClass((highlight) =>
+    updatedOutcomes.has(highlight.data.mediaExcerptId),
+  );
+}
+
+function getHighlightColorClass(mediaExcerptId: string) {
+  const outcome = mediaExcerptOutcomes.get(mediaExcerptId);
+  if (!outcome) {
+    return "highlight-color-default";
+  }
+  const valence = outcomeValence(outcome);
+  return `highlight-color-${valence}`;
+}
 
 function highlightRanges(mediaExcerptId: string, domAnchor: DomAnchor) {
   return highlightManager.createHighlight(

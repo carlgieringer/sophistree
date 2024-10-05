@@ -43,8 +43,8 @@ in public don't trigger changes, but are picked up when the JS changes.
 To reload JS changes, you can just close and re-open the sidebar using the action button in Chrome's
 toolbar.
 
-You'll need to reload the extension any time the manifest changes. You can do this from the in-app
-menu or from Chrome's extension page.
+You'll need to reload the extension any time the manifest or content scripts
+change. You can do this from the in-app menu or from Chrome's extension page.
 
 ### Running Tests
 
