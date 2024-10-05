@@ -1,5 +1,6 @@
 import { BasisOutcome } from "../outcomes/outcomes";
 import { MediaExcerpt } from "../store/entitiesSlice";
+import { serializeMap } from "./serialization";
 
 export interface CreateMediaExcerptMessage {
   action: "createMediaExcerpt";
@@ -16,7 +17,7 @@ export interface RequestUrlMessage {
 
 export interface UpdateMediaExcerptOutcomesMessage {
   action: "updateMediaExcerptOutcomes";
-  updatedOutcomes: Map<string, BasisOutcome | undefined>;
+  serializedUpdatedOutcomes: [string, BasisOutcome | undefined][];
 }
 
 export type GetMediaExcerptsMessageResponse = {
@@ -37,23 +38,39 @@ export function getTabUrl(tabId: number): Promise<string> {
   return chrome.tabs.sendMessage(tabId, message);
 }
 
-export function updateMediaExcerptOutcomes(
+export async function updateMediaExcerptOutcomes(
   updatedOutcomes: Map<string, BasisOutcome | undefined>,
 ) {
+  const serializedUpdatedOutcomes = serializeMap(updatedOutcomes);
   const message: UpdateMediaExcerptOutcomesMessage = {
     action: "updateMediaExcerptOutcomes",
-    updatedOutcomes,
+    serializedUpdatedOutcomes,
   };
 
-  const messagePromises: Promise<void>[] = [];
-  chrome.tabs.query({ status: "complete" }, function (tabs) {
-    tabs.forEach((tab) => {
+  const tabs = await getCompleteTabs();
+  return Promise.all(
+    tabs.map(async (tab) => {
       if (!tab.id) {
         console.error("Tab id is undefined");
         return;
       }
-      messagePromises.push(chrome.tabs.sendMessage(tab.id, message));
-    });
-  });
-  return Promise.all(messagePromises);
+      try {
+        return (await chrome.tabs.sendMessage(
+          tab.id,
+          message,
+        )) as Promise<unknown>;
+      } catch (error) {
+        console.warn("Error sending message to tab:", error);
+      }
+    }),
+  );
+}
+
+async function getCompleteTabs() {
+  try {
+    return await chrome.tabs.query({ status: "complete" });
+  } catch (error) {
+    console.error("Error querying tabs:", error);
+    return [];
+  }
 }

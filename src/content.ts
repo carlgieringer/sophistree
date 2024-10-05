@@ -57,9 +57,11 @@ async function handleMessage(message: ContentMessage) {
       break;
     case "requestUrl":
       return getCanonicalOrFullUrl();
-    case "updateMediaExcerptOutcomes":
-      updateMediaExcerptOutcomes(message.updatedOutcomes);
+    case "updateMediaExcerptOutcomes": {
+      const updatedOutcomes = deserializeMap(message.serializedUpdatedOutcomes);
+      updateMediaExcerptOutcomes(updatedOutcomes);
       break;
+    }
   }
 }
 
