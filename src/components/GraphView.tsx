@@ -114,15 +114,15 @@ export default function GraphView({ id, style }: GraphViewProps) {
     undefined as ElementDataDefinition | undefined,
   );
 
-  const dispatch = useAppDispatch();
-
-  useReactNodes(cyRef, dispatch, setVisitAppearancesDialogProposition);
+  useReactNodes(cyRef, setVisitAppearancesDialogProposition);
 
   const { zoomIn, zoomOut } = useZoomEventHandlers(cyRef);
 
   const layoutGraph = useCallback((fit = false) => {
     cyRef.current?.layout(getLayout(fit)).run();
   }, []);
+
+  const dispatch = useAppDispatch();
 
   useContextMenus(
     cyRef,
@@ -307,7 +307,6 @@ function usePanToFocusedNodes(
 
 function useReactNodes(
   cyRef: MutableRefObject<cytoscape.Core | undefined>,
-  dispatch: AppDispatch,
   setVisitAppearancesDialogProposition: (
     data: PropositionNodeData | undefined,
   ) => void,
@@ -364,7 +363,7 @@ function useReactNodes(
                 onClick={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
-                  void focusMediaExcerpt(dispatch, mediaExcerpt);
+                  void focusMediaExcerpt(mediaExcerpt);
                   return false;
                 }}
               >
@@ -382,7 +381,7 @@ function useReactNodes(
         },
       },
     ],
-    [dispatch, setVisitAppearancesDialogProposition],
+    [setVisitAppearancesDialogProposition],
   );
 
   useEffect(() => {

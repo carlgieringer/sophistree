@@ -9,7 +9,6 @@ import {
   Proposition,
 } from "../store/entitiesSlice";
 import { getTabUrl, FocusMediaExcerptMessage } from "../extension/messages";
-import { AppDispatch, useAppDispatch } from "../store";
 
 export interface AppearanceInfo {
   id: string;
@@ -30,7 +29,6 @@ export default function VisitPropositionAppearanceDialog({
   visible: boolean;
   onDismiss: () => void;
 }) {
-  const dispatch = useAppDispatch();
   return (
     <Dialog visible={visible} onDismiss={onDismiss}>
       <Dialog.Title>Appearances for “{data.text}”</Dialog.Title>
@@ -45,9 +43,7 @@ export default function VisitPropositionAppearanceDialog({
                 {appearance.mediaExcerpt.sourceInfo.name}
               </Text>
               <Button
-                onPress={() =>
-                  void focusMediaExcerpt(dispatch, appearance.mediaExcerpt)
-                }
+                onPress={() => void focusMediaExcerpt(appearance.mediaExcerpt)}
               >
                 Open {hostname}{" "}
                 <Tooltip title={url}>
@@ -71,10 +67,7 @@ const styles = StyleSheet.create({
   },
 });
 
-export async function focusMediaExcerpt(
-  dispatch: AppDispatch,
-  mediaExcerpt: MediaExcerpt,
-) {
+export async function focusMediaExcerpt(mediaExcerpt: MediaExcerpt) {
   const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
   const activeTab = tabs[0];
   const mediaExcerptUrl = preferredUrl(mediaExcerpt.urlInfo);
