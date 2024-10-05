@@ -149,7 +149,7 @@ class HighlightManager<Anchor, Data> {
     }
   }
 
-  activateHighlight(selector: HighlightSelector<Anchor, Data>) {
+  focusHighlight(selector: HighlightSelector<Anchor, Data>) {
     const highlight = this.highlights.find(selector);
     if (!highlight) {
       console.error(

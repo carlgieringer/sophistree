@@ -58,7 +58,7 @@ import { activeMapEntities } from "../store/selectors";
 import DebugElementDialog from "./DebugElementDialog";
 import "./GraphView.scss";
 import VisitPropositionAppearanceDialog, {
-  activateMediaExcerpt,
+  focusMediaExcerpt,
   AppearanceInfo,
   PropositionNodeData,
 } from "./VisitPropositionAppearanceDialog";
@@ -114,11 +114,11 @@ export default function GraphView({ id, style }: GraphViewProps) {
     undefined as ElementDataDefinition | undefined,
   );
 
-  useReactNodes(cyRef, setVisitAppearancesDialogProposition);
+  const dispatch = useAppDispatch();
+
+  useReactNodes(cyRef, dispatch, setVisitAppearancesDialogProposition);
 
   const { zoomIn, zoomOut } = useZoomEventHandlers(cyRef);
-
-  const dispatch = useAppDispatch();
 
   const layoutGraph = useCallback((fit = false) => {
     cyRef.current?.layout(getLayout(fit)).run();
@@ -307,6 +307,7 @@ function usePanToFocusedNodes(
 
 function useReactNodes(
   cyRef: MutableRefObject<cytoscape.Core | undefined>,
+  dispatch: AppDispatch,
   setVisitAppearancesDialogProposition: (
     data: PropositionNodeData | undefined,
   ) => void,
@@ -363,7 +364,7 @@ function useReactNodes(
                 onClick={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
-                  void activateMediaExcerpt(mediaExcerpt);
+                  void focusMediaExcerpt(dispatch, mediaExcerpt);
                   return false;
                 }}
               >
@@ -381,7 +382,7 @@ function useReactNodes(
         },
       },
     ],
-    [setVisitAppearancesDialogProposition],
+    [dispatch, setVisitAppearancesDialogProposition],
   );
 
   useEffect(() => {

@@ -38,7 +38,6 @@ this extension and use that in place of Sophistree?
 
 TODO:
 
-- Clicking on an appearance from the graph's dialog always opens a new tab (and not scroll to it.)
 - Clicking on "that would fundamentally change the election process, effectively disenfranchise voters" moves the Graph, but doesn't appear to select anything in the graph.
 
 - npm publish HighlightManager
