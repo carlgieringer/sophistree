@@ -1,4 +1,5 @@
 import debounce from "lodash.debounce";
+import { v4 as uuidv4 } from "uuid";
 
 interface Highlight<Anchor, Data> {
   /** The object that anchors the highlight to the document */
@@ -73,6 +74,8 @@ type HighlightSelector<Anchor, Data> = (
 class HighlightManager<Anchor, Data> {
   private readonly options: MergedHighlightManagerOptions<Anchor, Data>;
 
+  /** A unique ID for this highlight manager. Used to determine if a highlight belongs to this manager. */
+  private readonly highlightManagerId: string;
   private readonly highlights: Highlight<Anchor, Data>[] = [];
   private sortedHighlightElements: Array<{
     highlight: Highlight<Anchor, Data>;
@@ -80,6 +83,7 @@ class HighlightManager<Anchor, Data> {
   }> = [];
 
   constructor(options: HighlightManagerOptions<Anchor, Data>) {
+    this.highlightManagerId = uuidv4();
     this.options = {
       container: options.container,
       getRangesFromAnchor: options.getRangesFromAnchor,
@@ -322,16 +326,19 @@ class HighlightManager<Anchor, Data> {
   }
 
   private handleMouseMove(event: MouseEvent) {
+    // Reset all highlights to their default state
+    this.updateStyles();
+
     const highlightElement = this.getHighestHighlightElementAtPoint(
       event.clientX,
       event.clientY,
     );
-
-    // Reset all highlights to their default state
-    this.updateStyles();
-
-    if (highlightElement && highlightElement.dataset.highlightIndex) {
-      const highlightIndex = parseInt(highlightElement.dataset.highlightIndex);
+    const dataset = highlightElement?.dataset;
+    if (
+      dataset?.highlightManagerId === this.highlightManagerId &&
+      dataset?.highlightIndex
+    ) {
+      const highlightIndex = parseInt(dataset.highlightIndex);
       this.applyHoverStyle(highlightIndex);
     }
   }
@@ -476,6 +483,7 @@ class HighlightManager<Anchor, Data> {
       element.classList.add(highlight.colorClass);
     }
 
+    element.dataset.highlightManagerId = this.highlightManagerId;
     element.dataset.highlightIndex = this.highlights
       .indexOf(highlight)
       .toString();

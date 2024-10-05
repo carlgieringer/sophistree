@@ -158,20 +158,22 @@ export const entitiesSlice = createSlice({
     },
     addMediaExcerpt(state, action: PayloadAction<AddMediaExcerptData>) {
       const activeMap = state.maps.find((map) => map.id === state.activeMapId);
-      if (activeMap) {
-        const { quotation, url, canonicalUrl, sourceName, domAnchor, id } =
-          action.payload;
-        const newNode: MediaExcerpt = {
-          type: "MediaExcerpt",
-          ...defaultVisibilityProps,
-          id,
-          quotation,
-          urlInfo: { url, canonicalUrl },
-          sourceInfo: { name: sourceName },
-          domAnchor,
-        };
-        activeMap.entities.push(newNode);
+      if (!activeMap) {
+        window.alert("Please open a map to add excerpts.");
+        return;
       }
+      const { quotation, url, canonicalUrl, sourceName, domAnchor, id } =
+        action.payload;
+      const newNode: MediaExcerpt = {
+        type: "MediaExcerpt",
+        ...defaultVisibilityProps,
+        id,
+        quotation,
+        urlInfo: { url, canonicalUrl },
+        sourceInfo: { name: sourceName },
+        domAnchor,
+      };
+      activeMap.entities.push(newNode);
     },
     updateEntity(
       state,

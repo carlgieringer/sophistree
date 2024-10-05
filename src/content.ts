@@ -17,6 +17,7 @@ import {
 import { BasisOutcome } from "./outcomes/outcomes";
 import { outcomeValence } from "./outcomes/valences";
 import { deserializeMap } from "./extension/serialization";
+import { connectionErrorMessage, wrapCallback } from "./extension/callbacks";
 
 interface AddMediaExcerptMessage {
   action: "addMediaExcerpt";
@@ -25,6 +26,13 @@ interface AddMediaExcerptMessage {
 
 interface SelectMediaExcerptMessage {
   action: "selectMediaExcerpt";
+  data: {
+    mediaExcerptId: string;
+  };
+}
+
+interface CheckMediaExcerptExistenceMessage {
+  action: "checkMediaExcerptExistence";
   data: {
     mediaExcerptId: string;
   };
@@ -41,14 +49,17 @@ interface GetMediaExcerptsMessage {
 export type ChromeRuntimeMessage =
   | AddMediaExcerptMessage
   | SelectMediaExcerptMessage
+  | CheckMediaExcerptExistenceMessage
   | GetMediaExcerptsMessage;
 
 chrome.runtime.onMessage.addListener(
-  (
-    message: ContentMessage,
-    sender: chrome.runtime.MessageSender,
-    sendResponse: (response: unknown) => void,
-  ) => void handleMessage(message, sendResponse),
+  wrapCallback(
+    (
+      message: ContentMessage,
+      sender: chrome.runtime.MessageSender,
+      sendResponse: (response: unknown) => void,
+    ) => handleMessage(message, sendResponse),
+  ),
 );
 
 async function handleMessage(
@@ -56,9 +67,16 @@ async function handleMessage(
   sendResponse: (response: unknown) => void,
 ) {
   switch (message.action) {
-    case "createMediaExcerpt":
-      await createMediaExcerpt(message);
+    case "createMediaExcerpt": {
+      const highlight = await createMediaExcerpt(message);
+      if (
+        highlight &&
+        !(await mediaExcerptExists(highlight?.data.mediaExcerptId))
+      ) {
+        highlightManager.removeHighlight(highlight);
+      }
       break;
+    }
     case "focusMediaExcerpt":
       focusMediaExcerpt(message.mediaExcerptId);
       break;
@@ -70,6 +88,23 @@ async function handleMessage(
       updateMediaExcerptOutcomes(updatedOutcomes);
       break;
     }
+  }
+}
+
+async function mediaExcerptExists(mediaExcerptId: string) {
+  try {
+    return await chrome.runtime.sendMessage<
+      CheckMediaExcerptExistenceMessage,
+      boolean
+    >({
+      action: "checkMediaExcerptExistence",
+      data: {
+        mediaExcerptId,
+      },
+    });
+  } catch (error) {
+    console.error(connectionErrorMessage, error);
+    return false;
   }
 }
 
@@ -106,14 +141,31 @@ async function createMediaExcerpt(message: CreateMediaExcerptMessage) {
       sourceName,
       domAnchor: highlight.anchor,
     };
-    const sidebarMessage: ChromeRuntimeMessage = {
+    const message: AddMediaExcerptMessage = {
       action: "addMediaExcerpt",
       data,
     };
-    await chrome.runtime.sendMessage(sidebarMessage);
+    try {
+      await chrome.runtime.sendMessage(message);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.includes(connectionErrorMessage)
+      ) {
+        window.alert("Please open the Sophistree sidebar to add excerpts");
+      } else {
+        console.error(
+          `Unable to connect to extension to add media excerpt.`,
+          error,
+        );
+      }
+      highlightManager.removeHighlight(highlight);
+      return undefined;
+    }
   } else {
     await selectMediaExcerpt(highlight.data.mediaExcerptId);
   }
+  return highlight;
 }
 
 function getUrl() {
@@ -140,29 +192,36 @@ function getTitle() {
 }
 
 let mediaExcerptOutcomes: Map<string, BasisOutcome> = new Map();
-function getMediaExcerpts() {
+async function getMediaExcerpts() {
   const url = getUrl();
   const canonicalUrl = getCanonicalUrl();
-  chrome.runtime.sendMessage(
-    {
-      action: "getMediaExcerpts",
-      data: {
-        url,
-        canonicalUrl,
-      },
+  const message: GetMediaExcerptsMessage = {
+    action: "getMediaExcerpts",
+    data: {
+      url,
+      canonicalUrl,
     },
-    function getMediaExcerptsCallback(response?: GetMediaExcerptsResponse) {
-      if (!response) {
-        console.error("Unable to get media excerpts");
-        return;
-      }
-      const { mediaExcerpts, serializedOutcomes } = response;
-      mediaExcerptOutcomes = deserializeMap(serializedOutcomes);
-      highlightMediaExcerpts(mediaExcerpts);
-    },
-  );
+  };
+  let response: GetMediaExcerptsResponse;
+  try {
+    response = await chrome.runtime.sendMessage(message);
+  } catch (error) {
+    const message = "Unable to connect to extension to get media excerpts.";
+    if (
+      error instanceof Error &&
+      error.message.includes(connectionErrorMessage)
+    ) {
+      console.warn(`${message} Is the sidebar open?`);
+    } else {
+      console.error(message, error);
+    }
+    return;
+  }
+  const { mediaExcerpts, serializedOutcomes } = response;
+  mediaExcerptOutcomes = deserializeMap(serializedOutcomes);
+  highlightMediaExcerpts(mediaExcerpts);
 }
-getMediaExcerpts();
+void getMediaExcerpts();
 
 function highlightMediaExcerpts(mediaExcerpts: MediaExcerpt[]) {
   mediaExcerpts.forEach(({ id, domAnchor }) => highlightRanges(id, domAnchor));

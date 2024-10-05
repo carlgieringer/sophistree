@@ -22,6 +22,7 @@ import {
   sendUpdatedMediaExcerptOutcomes,
 } from "./extension/messages";
 import { serializeMap } from "./extension/serialization";
+import { wrapCallback } from "./extension/callbacks";
 
 const App: React.FC = () => {
   const dispatch = useDispatch();
@@ -87,42 +88,49 @@ function useHandleChromeRuntimeMessage() {
     selectors.activeMapMediaExcerptOutcomes,
   );
   useEffect(() => {
-    function handleChromeRuntimeMessage(
-      message: ChromeRuntimeMessage,
-      sender: chrome.runtime.MessageSender,
-      sendResponse: (response: unknown) => void,
-    ) {
-      switch (message.action) {
-        case "addMediaExcerpt": {
-          dispatch(addMediaExcerpt(message.data));
-          break;
-        }
-        case "selectMediaExcerpt": {
-          dispatch(selectEntities([message.data.mediaExcerptId]));
-          break;
-        }
-        case "getMediaExcerpts": {
-          const { url, canonicalUrl } = message.data;
-          const mediaExcerpts = entities.filter(
-            (entity) =>
-              entity.type === "MediaExcerpt" &&
-              (entity.urlInfo.canonicalUrl
-                ? entity.urlInfo.canonicalUrl === canonicalUrl
-                : entity.urlInfo.url === url),
-          ) as MediaExcerpt[];
+    const handleChromeRuntimeMessage = wrapCallback(
+      function handleChromeRuntimeMessage(
+        message: ChromeRuntimeMessage,
+        sender: chrome.runtime.MessageSender,
+        sendResponse: (response: unknown) => void,
+      ) {
+        switch (message.action) {
+          case "addMediaExcerpt": {
+            dispatch(addMediaExcerpt(message.data));
+            break;
+          }
+          case "selectMediaExcerpt": {
+            dispatch(selectEntities([message.data.mediaExcerptId]));
+            break;
+          }
+          case "checkMediaExcerptExistence":
+            return (
+              entities.find((e) => e.id === message.data.mediaExcerptId) !==
+              undefined
+            );
+          case "getMediaExcerpts": {
+            const { url, canonicalUrl } = message.data;
+            const mediaExcerpts = entities.filter(
+              (entity) =>
+                entity.type === "MediaExcerpt" &&
+                (entity.urlInfo.canonicalUrl
+                  ? entity.urlInfo.canonicalUrl === canonicalUrl
+                  : entity.urlInfo.url === url),
+            ) as MediaExcerpt[];
 
-          // Serialize for responding to the content script since Maps cannot
-          // pass the runtime boundary
-          const serializedOutcomes = serializeMap(mediaExcerptOutcomes);
-          const response: GetMediaExcerptsResponse = {
-            mediaExcerpts,
-            serializedOutcomes,
-          };
-          sendResponse(response);
-          break;
+            // Serialize for responding to the content script since Maps cannot
+            // pass the runtime boundary
+            const serializedOutcomes = serializeMap(mediaExcerptOutcomes);
+            const response: GetMediaExcerptsResponse = {
+              mediaExcerpts,
+              serializedOutcomes,
+            };
+            sendResponse(response);
+            break;
+          }
         }
-      }
-    }
+      },
+    );
     chrome.runtime.onMessage.addListener(handleChromeRuntimeMessage);
     return () => {
       chrome.runtime.onMessage.removeListener(handleChromeRuntimeMessage);

@@ -6,6 +6,7 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { MediaExcerpt, preferredUrl } from "../store/entitiesSlice";
 import { getTabUrl, FocusMediaExcerptMessage } from "../extension/messages";
 import { PropositionNodeData } from "./graphTypes";
+import { catchErrors } from "../extension/callbacks";
 
 export default function VisitPropositionAppearanceDialog({
   data,
@@ -100,20 +101,24 @@ async function getOrOpenTab(
 
 function waitForTabId(openerTabId: number): Promise<number> {
   return new Promise((resolve) => {
-    const tabCreatedListener = (tab: chrome.tabs.Tab) => {
-      if (tab.openerTabId === openerTabId) {
-        chrome.tabs.onUpdated.addListener(
-          function onUpdatedListener(tabId, info) {
-            if (info.status === "complete" && tabId === tab.id) {
-              chrome.tabs.onUpdated.removeListener(onUpdatedListener);
-              chrome.tabs.onCreated.removeListener(tabCreatedListener);
-              resolve(tabId);
-            }
-          },
-        );
-      }
-    };
-
-    chrome.tabs.onCreated.addListener(tabCreatedListener);
+    chrome.tabs.onCreated.addListener(function tabCreatedListener(
+      tab: chrome.tabs.Tab,
+    ) {
+      catchErrors(() => {
+        if (tab.openerTabId === openerTabId) {
+          chrome.tabs.onUpdated.addListener(
+            function onUpdatedListener(tabId, info) {
+              catchErrors(() => {
+                if (info.status === "complete" && tabId === tab.id) {
+                  chrome.tabs.onUpdated.removeListener(onUpdatedListener);
+                  chrome.tabs.onCreated.removeListener(tabCreatedListener);
+                  resolve(tabId);
+                }
+              });
+            },
+          );
+        }
+      });
+    });
   });
 }
