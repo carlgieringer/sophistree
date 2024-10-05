@@ -8,30 +8,42 @@ interface Highlight<Anchor, Data> {
   ranges: Range[];
   elements: HTMLElement[];
   onClick?: (highlight: Highlight<Anchor, Data>) => void;
+  /** The color class applied to the highlight, if any. */
+  colorClass?: string;
 }
 
 type GetRangesFromAnchorFunction<Anchor> = (anchor: Anchor) => Range[];
 
-export type HighlightManagerOptions<Anchor> = {
+export type HighlightManagerOptions<Anchor, Data> = {
   container: HTMLElement;
   getRangesFromAnchor: GetRangesFromAnchorFunction<Anchor>;
   highlightClass?: string;
-  colors: {
-    mode: "rotate";
-    count: number;
-    colorIndexClassFormat?: string;
-  };
+  colors:
+    | {
+        mode: "rotate";
+        count: number;
+        colorIndexClassFormat?: string;
+      }
+    | {
+        mode: "callback";
+        getColorClass: (data: Data) => string;
+      };
   hoverClass?: string;
 };
-type MergedHighlightManagerOptions<Anchor> = {
+type MergedHighlightManagerOptions<Anchor, Data> = {
   container: HTMLElement;
   getRangesFromAnchor: GetRangesFromAnchorFunction<Anchor>;
   highlightClass: string;
-  colors: {
-    mode: "rotate";
-    count: number;
-    colorIndexClassFormat: string;
-  };
+  colors:
+    | {
+        mode: "rotate";
+        count: number;
+        colorIndexClassFormat: string;
+      }
+    | {
+        mode: "callback";
+        getColorClass: (data: Data) => string;
+      };
   hoverClass: string;
 };
 
@@ -45,8 +57,21 @@ const defaultOptions = {
   hoverClass: "highlight-hover",
 };
 
+type ColorsOptions<Anchor, Data> = HighlightManagerOptions<
+  Anchor,
+  Data
+>["colors"];
+type MergedColorsOptions<Anchor, Data> = MergedHighlightManagerOptions<
+  Anchor,
+  Data
+>["colors"];
+
+type HighlightSelector<Anchor, Data> = (
+  highlight: Highlight<Anchor, Data>,
+) => boolean;
+
 class HighlightManager<Anchor, Data> {
-  private readonly options: MergedHighlightManagerOptions<Anchor>;
+  private readonly options: MergedHighlightManagerOptions<Anchor, Data>;
 
   private readonly highlights: Highlight<Anchor, Data>[] = [];
   private sortedHighlightElements: Array<{
@@ -54,25 +79,77 @@ class HighlightManager<Anchor, Data> {
     element: HTMLElement;
   }> = [];
 
-  constructor(options: HighlightManagerOptions<Anchor>) {
+  constructor(options: HighlightManagerOptions<Anchor, Data>) {
     this.options = {
       container: options.container,
       getRangesFromAnchor: options.getRangesFromAnchor,
       highlightClass: options.highlightClass ?? defaultOptions.highlightClass,
-      colors: {
-        mode: options.colors.mode,
-        colorIndexClassFormat:
-          options.colors.colorIndexClassFormat ??
-          defaultOptions.colors.colorIndexClassFormat,
-        count: options.colors.count,
-      },
+      colors: this.mergeColors(options.colors),
       hoverClass: options.hoverClass ?? defaultOptions.hoverClass,
     };
 
     this.addEventListeners();
   }
 
-  activateHighlight(selector: (highlight: Highlight<Anchor, Data>) => boolean) {
+  private mergeColors(
+    colors: ColorsOptions<Anchor, Data>,
+  ): MergedColorsOptions<Anchor, Data> {
+    switch (colors.mode) {
+      case "rotate":
+        return {
+          mode: colors.mode,
+          colorIndexClassFormat:
+            colors.colorIndexClassFormat ??
+            defaultOptions.colors.colorIndexClassFormat,
+          count: colors.count,
+        };
+      case "callback":
+        return colors;
+    }
+  }
+
+  updateHighlightsColorClass(selector: HighlightSelector<Anchor, Data>) {
+    const highlights = this.highlights.filter(selector);
+    if (highlights.length < 1) {
+      console.error(
+        `Could not update highlights color class for selector ${selector.name} because no highlights matched.`,
+      );
+      return;
+    }
+    highlights.forEach((highlight) => {
+      this.updateHighlightColorClass(highlight);
+    });
+  }
+
+  private updateHighlightColorClass(highlight: Highlight<Anchor, Data>) {
+    const newColorClass = this.getColorClass(highlight);
+    highlight.elements.forEach((element) => {
+      if (highlight.colorClass) {
+        element.classList.remove(highlight.colorClass);
+      }
+      element.classList.add(newColorClass);
+    });
+    highlight.colorClass = newColorClass;
+  }
+
+  private getColorClass(highlight: Highlight<Anchor, Data>) {
+    switch (this.options.colors.mode) {
+      case "rotate": {
+        const highlightColorIndex =
+          this.highlights.indexOf(highlight) % this.options.colors.count;
+
+        return this.options.colors.colorIndexClassFormat.replace(
+          classNameIndexPlaceholder,
+          highlightColorIndex.toString(),
+        );
+      }
+      case "callback": {
+        return this.options.colors.getColorClass(highlight.data);
+      }
+    }
+  }
+
+  activateHighlight(selector: HighlightSelector<Anchor, Data>) {
     const highlight = this.highlights.find(selector);
     if (!highlight) {
       console.error(
@@ -119,6 +196,8 @@ class HighlightManager<Anchor, Data> {
     };
 
     this.highlights.push(highlight);
+    // Must come after adding to highlights for rotation (index-based) coloring.
+    highlight.colorClass = this.getColorClass(highlight);
 
     const newElements = this.updateHighlightElements(highlight);
     this.options.container.append(...newElements);
@@ -390,19 +469,12 @@ class HighlightManager<Anchor, Data> {
     const element = document.createElement("div");
     element.style.position = "absolute";
     element.style.pointerEvents = "none";
-    element.style.borderWidth = "1px";
-    element.style.borderStyle = "solid";
     element.style.mixBlendMode = "multiply"; // This helps with color blending
 
     element.classList.add(this.options.highlightClass);
-    const highlightColorIndex =
-      this.highlights.indexOf(highlight) % this.options.colors.count;
-    element.classList.add(
-      this.options.colors.colorIndexClassFormat.replace(
-        classNameIndexPlaceholder,
-        highlightColorIndex.toString(),
-      ),
-    );
+    if (highlight.colorClass) {
+      element.classList.add(highlight.colorClass);
+    }
 
     element.dataset.highlightIndex = this.highlights
       .indexOf(highlight)
@@ -449,15 +521,6 @@ class HighlightManager<Anchor, Data> {
     combinedRects.push(currentRect);
 
     return combinedRects;
-  }
-
-  private isRectEncompassed(rect1: DOMRect, rect2: DOMRect): boolean {
-    return (
-      rect1.left >= rect2.left &&
-      rect1.right <= rect2.right &&
-      rect1.top >= rect2.top &&
-      rect1.bottom <= rect2.bottom
-    );
   }
 
   removeHighlight(highlight: Highlight<Anchor, Data>) {

@@ -61,11 +61,8 @@ import VisitPropositionAppearanceDialog, {
   AppearanceInfo,
   PropositionNodeData,
 } from "./VisitPropositionAppearanceDialog";
-import {
-  BasisOutcome,
-  determineOutcomes,
-  JustificationOutcome,
-} from "../outcomes/outcomes";
+import { BasisOutcome, JustificationOutcome } from "../outcomes/outcomes";
+import { outcomeValence } from "../outcomes/valences";
 
 cytoscape.use(elk);
 cytoscape.use(contextMenus);
@@ -108,9 +105,8 @@ export default function GraphView({ id, style }: GraphViewProps) {
     correctInvalidNodes(cyRef.current, elements);
   }
 
-  const { basisOutcomes, justificationOutcomes } = useMemo(
-    () => determineOutcomes(entities),
-    [entities],
+  const { basisOutcomes, justificationOutcomes } = useSelector(
+    selectors.activeMapEntitiesOutcomes,
   );
   useEffect(() => {
     const cy = cyRef.current;
@@ -1408,26 +1404,6 @@ type GraphNodeDataDefinition = SetRequired<NodeDataDefinition, "id"> & {
 
 function getZIndex(element: SingularElementArgument) {
   return element.style("z-index") as number | undefined;
-}
-
-type OutcomeValence = "positive" | "negative" | "neutral" | "contradictory";
-function outcomeValence(
-  outcome: BasisOutcome | JustificationOutcome,
-): OutcomeValence {
-  switch (outcome) {
-    case "Presumed":
-    case "Proven":
-    case "Valid":
-      return "positive";
-    case "Disproven":
-    case "Invalid":
-      return "negative";
-    case "Unknown":
-    case "Unproven":
-      return "neutral";
-    case "Contradictory":
-      return "contradictory";
-  }
 }
 function makeOutcomeClasses(outcome: BasisOutcome | JustificationOutcome) {
   const valence = outcomeValence(outcome);

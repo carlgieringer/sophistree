@@ -8,15 +8,43 @@ import EntityEditor from "./components/EntityEditor";
 import GraphView from "./components/GraphView";
 import HeaderBar from "./components/HeaderBar";
 import { ChromeRuntimeMessage } from "./content";
-import { addMediaExcerpt, selectEntities } from "./store/entitiesSlice";
+import {
+  addMediaExcerpt,
+  MediaExcerpt,
+  selectEntities,
+} from "./store/entitiesSlice";
 import EntityList from "./components/EntityList";
 import * as selectors from "./store/selectors";
 import { showNewMapDialog } from "./store/uiSlice";
+import { BasisOutcome } from "./outcomes/outcomes";
+import {
+  GetMediaExcerptsMessageResponse,
+  updateMediaExcerptOutcomes,
+} from "./extension/messages";
+import { serializeMap } from "./extension/serialization";
 
 const App: React.FC = () => {
   const dispatch = useDispatch();
 
   const entities = useSelector(selectors.activeMapEntities);
+  const mediaExcerptOutcomes = useSelector(
+    selectors.activeMapMediaExcerptOutcomes,
+  );
+
+  // Store the outcomes so that we can diff them when they change
+  const [prevMediaExcerptOutcomes, setPrevMediaExcerptOutcomes] =
+    React.useState<Map<string, BasisOutcome>>(new Map());
+
+  useEffect(() => {
+    const updatedMediaExcerptOutcomes = diffMediaExcerptOutcomes(
+      prevMediaExcerptOutcomes,
+      mediaExcerptOutcomes,
+    );
+    if (updatedMediaExcerptOutcomes.size > 0) {
+      void updateMediaExcerptOutcomes(updatedMediaExcerptOutcomes);
+    }
+    setPrevMediaExcerptOutcomes(mediaExcerptOutcomes);
+  }, [mediaExcerptOutcomes, prevMediaExcerptOutcomes]);
 
   useEffect(() => {
     function handleChromeRuntimeMessage(
@@ -41,8 +69,15 @@ const App: React.FC = () => {
               (entity.urlInfo.canonicalUrl
                 ? entity.urlInfo.canonicalUrl === canonicalUrl
                 : entity.urlInfo.url === url),
-          );
-          sendResponse({ mediaExcerpts });
+          ) as MediaExcerpt[];
+          // Serialize for responding to the content script since Maps cannot
+          // pass the runtime boundary
+          const serializedOutcomes = serializeMap(mediaExcerptOutcomes);
+          const response: GetMediaExcerptsMessageResponse = {
+            mediaExcerpts,
+            serializedOutcomes,
+          };
+          sendResponse(response);
           break;
         }
       }
@@ -51,7 +86,7 @@ const App: React.FC = () => {
     return () => {
       chrome.runtime.onMessage.removeListener(handleChromeRuntimeMessage);
     };
-  }, [dispatch, entities]);
+  }, [dispatch, entities, mediaExcerptOutcomes]);
 
   const activeMapId = useSelector(selectors.activeMapId);
   const graphView = activeMapId ? (
@@ -117,3 +152,29 @@ const styles = StyleSheet.create({
 });
 
 export default App;
+
+/** Return a map containing only the outcomes in newOutcomes that differ from oldOutcome.
+ * If an outcome is missing from newOutcomes, return undefined for the outcome.
+ */
+export function diffMediaExcerptOutcomes(
+  oldOutcomes: Map<string, BasisOutcome>,
+  newOutcomes: Map<string, BasisOutcome>,
+): Map<string, BasisOutcome | undefined> {
+  const diffOutcomes = new Map<string, BasisOutcome | undefined>();
+
+  // Check for outcomes that are in newOutcomes but different or missing in oldOutcomes
+  for (const [key, newOutcome] of newOutcomes) {
+    if (!oldOutcomes.has(key) || oldOutcomes.get(key) !== newOutcome) {
+      diffOutcomes.set(key, newOutcome);
+    }
+  }
+
+  // Check for outcomes that are in oldOutcomes but missing in newOutcomes
+  for (const key of oldOutcomes.keys()) {
+    if (!newOutcomes.has(key)) {
+      diffOutcomes.set(key, undefined);
+    }
+  }
+
+  return diffOutcomes;
+}
