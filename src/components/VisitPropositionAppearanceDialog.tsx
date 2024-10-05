@@ -15,7 +15,8 @@ export interface AppearanceInfo {
   mediaExcerpt: MediaExcerpt;
 }
 
-export type PropositionNodeData = Proposition & {
+export type PropositionNodeData = {
+  entity: Proposition;
   appearances: AppearanceInfo[] | undefined;
   isAnyAppearanceSelected: boolean;
 };
@@ -31,7 +32,7 @@ export default function VisitPropositionAppearanceDialog({
 }) {
   return (
     <Dialog visible={visible} onDismiss={onDismiss}>
-      <Dialog.Title>Appearances for “{data.text}”</Dialog.Title>
+      <Dialog.Title>Appearances for “{data.entity.text}”</Dialog.Title>
       <Dialog.Content>
         {data.appearances?.map((appearance) => {
           const url = preferredUrl(appearance.mediaExcerpt.urlInfo);
