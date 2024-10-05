@@ -12,7 +12,7 @@ import "./highlights/outcome-colors.scss";
 import {
   ContentMessage,
   CreateMediaExcerptMessage,
-  GetMediaExcerptsMessageResponse,
+  GetMediaExcerptsResponse,
 } from "./extension/messages";
 import { BasisOutcome } from "./outcomes/outcomes";
 import { outcomeValence } from "./outcomes/valences";
@@ -44,19 +44,27 @@ export type ChromeRuntimeMessage =
   | GetMediaExcerptsMessage;
 
 chrome.runtime.onMessage.addListener(
-  (message: ContentMessage) => void handleMessage(message),
+  (
+    message: ContentMessage,
+    sender: chrome.runtime.MessageSender,
+    sendResponse: (response: unknown) => void,
+  ) => void handleMessage(message, sendResponse),
 );
 
-async function handleMessage(message: ContentMessage) {
+async function handleMessage(
+  message: ContentMessage,
+  sendResponse: (response: unknown) => void,
+) {
   switch (message.action) {
     case "createMediaExcerpt":
       await createMediaExcerpt(message);
       break;
-    case "activateMediaExcerpt":
-      activateMediaExcerpt(message.mediaExcerpt);
+    case "focusMediaExcerpt":
+      focusMediaExcerpt(message.mediaExcerptId);
       break;
     case "requestUrl":
-      return getCanonicalOrFullUrl();
+      sendResponse(getCanonicalOrFullUrl());
+      break;
     case "updateMediaExcerptOutcomes": {
       const updatedOutcomes = deserializeMap(message.serializedUpdatedOutcomes);
       updateMediaExcerptOutcomes(updatedOutcomes);
@@ -65,9 +73,9 @@ async function handleMessage(message: ContentMessage) {
   }
 }
 
-function activateMediaExcerpt(mediaExcerpt: MediaExcerpt) {
-  highlightManager.activateHighlight(
-    (anchor) => anchor.data.mediaExcerptId === mediaExcerpt.id,
+function focusMediaExcerpt(mediaExcerptId: string) {
+  highlightManager.focusHighlight(
+    (anchor) => anchor.data.mediaExcerptId === mediaExcerptId,
   );
 }
 
@@ -143,9 +151,7 @@ function getMediaExcerpts() {
         canonicalUrl,
       },
     },
-    function getMediaExcerptsCallback(
-      response?: GetMediaExcerptsMessageResponse,
-    ) {
+    function getMediaExcerptsCallback(response?: GetMediaExcerptsResponse) {
       if (!response) {
         console.error("Unable to get media excerpts");
         return;

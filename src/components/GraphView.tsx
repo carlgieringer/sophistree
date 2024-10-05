@@ -58,7 +58,7 @@ import { activeMapEntities } from "../store/selectors";
 import DebugElementDialog from "./DebugElementDialog";
 import "./GraphView.scss";
 import VisitPropositionAppearanceDialog, {
-  activateMediaExcerpt,
+  focusMediaExcerpt,
   AppearanceInfo,
   PropositionNodeData,
 } from "./VisitPropositionAppearanceDialog";
@@ -118,11 +118,11 @@ export default function GraphView({ id, style }: GraphViewProps) {
 
   const { zoomIn, zoomOut } = useZoomEventHandlers(cyRef);
 
-  const dispatch = useAppDispatch();
-
   const layoutGraph = useCallback((fit = false) => {
     cyRef.current?.layout(getLayout(fit)).run();
   }, []);
+
+  const dispatch = useAppDispatch();
 
   useContextMenus(
     cyRef,
@@ -363,7 +363,7 @@ function useReactNodes(
                 onClick={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
-                  void activateMediaExcerpt(mediaExcerpt);
+                  void focusMediaExcerpt(mediaExcerpt);
                   return false;
                 }}
               >

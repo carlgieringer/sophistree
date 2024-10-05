@@ -6,9 +6,9 @@ export interface CreateMediaExcerptMessage {
   action: "createMediaExcerpt";
   selectedText: string;
 }
-export interface ActivateMediaExcerptMessage {
-  action: "activateMediaExcerpt";
-  mediaExcerpt: MediaExcerpt;
+export interface FocusMediaExcerptMessage {
+  action: "focusMediaExcerpt";
+  mediaExcerptId: string;
 }
 
 export interface RequestUrlMessage {
@@ -20,14 +20,14 @@ export interface UpdateMediaExcerptOutcomesMessage {
   serializedUpdatedOutcomes: [string, BasisOutcome | undefined][];
 }
 
-export type GetMediaExcerptsMessageResponse = {
+export type GetMediaExcerptsResponse = {
   mediaExcerpts: MediaExcerpt[];
   serializedOutcomes: [string, BasisOutcome][];
 };
 
 export type ContentMessage =
   | CreateMediaExcerptMessage
-  | ActivateMediaExcerptMessage
+  | FocusMediaExcerptMessage
   | RequestUrlMessage
   | UpdateMediaExcerptOutcomesMessage;
 
@@ -38,7 +38,7 @@ export function getTabUrl(tabId: number): Promise<string> {
   return chrome.tabs.sendMessage(tabId, message);
 }
 
-export async function updateMediaExcerptOutcomes(
+export async function sendUpdatedMediaExcerptOutcomes(
   updatedOutcomes: Map<string, BasisOutcome | undefined>,
 ) {
   const serializedUpdatedOutcomes = serializeMap(updatedOutcomes);

@@ -8,7 +8,7 @@ import {
   preferredUrl,
   Proposition,
 } from "../store/entitiesSlice";
-import { getTabUrl, ActivateMediaExcerptMessage } from "../extension/messages";
+import { getTabUrl, FocusMediaExcerptMessage } from "../extension/messages";
 
 export interface AppearanceInfo {
   id: string;
@@ -43,9 +43,7 @@ export default function VisitPropositionAppearanceDialog({
                 {appearance.mediaExcerpt.sourceInfo.name}
               </Text>
               <Button
-                onPress={() =>
-                  void activateMediaExcerpt(appearance.mediaExcerpt)
-                }
+                onPress={() => void focusMediaExcerpt(appearance.mediaExcerpt)}
               >
                 Open {hostname}{" "}
                 <Tooltip title={url}>
@@ -69,20 +67,25 @@ const styles = StyleSheet.create({
   },
 });
 
-export async function activateMediaExcerpt(mediaExcerpt: MediaExcerpt) {
+export async function focusMediaExcerpt(mediaExcerpt: MediaExcerpt) {
   const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
   const activeTab = tabs[0];
   const mediaExcerptUrl = preferredUrl(mediaExcerpt.urlInfo);
+  const mediaExcerptId = mediaExcerpt.id;
   const tabId = await getOrOpenTab(activeTab, mediaExcerptUrl);
 
-  const message: ActivateMediaExcerptMessage = {
-    action: "activateMediaExcerpt",
-    mediaExcerpt,
+  const message: FocusMediaExcerptMessage = {
+    action: "focusMediaExcerpt",
+    mediaExcerptId,
   };
   try {
     await chrome.tabs.sendMessage(tabId, message);
   } catch (error) {
-    console.error(`Failed to send message to tab`, error);
+    console.error(
+      `Failed to send focusMediaExcerpt message to tab`,
+      message,
+      error,
+    );
   }
 }
 
@@ -94,24 +97,24 @@ async function getOrOpenTab(
     throw new Error("Active tab ID was missing. This should never happen.");
   }
   // activeTab.url is often missing, so we request it from the tab.
-  let tabUrl;
+  let tabUrl = undefined;
   try {
     tabUrl = await getTabUrl(activeTab.id);
   } catch (error) {
-    console.error(`Failed to send message to tab`, error);
+    console.error(`Failed to getTabUrl`, error);
   }
   if (tabUrl === url) {
     return activeTab.id;
   }
-  const tabIdPromise = waitForTabId(url);
+  const tabIdPromise = waitForTabId(activeTab.id);
   window.open(url);
   return tabIdPromise;
 }
 
-function waitForTabId(url: string): Promise<number> {
+function waitForTabId(openerTabId: number): Promise<number> {
   return new Promise((resolve) => {
     const tabCreatedListener = (tab: chrome.tabs.Tab) => {
-      if (tab.pendingUrl === url) {
+      if (tab.openerTabId === openerTabId) {
         chrome.tabs.onUpdated.addListener(
           function onUpdatedListener(tabId, info) {
             if (info.status === "complete" && tabId === tab.id) {
