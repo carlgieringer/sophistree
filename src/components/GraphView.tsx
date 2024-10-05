@@ -582,21 +582,29 @@ function useSelectionEventHandlers(
     }
     const cy = cyRef.current;
 
-    cy.on("tap", "node", (event: EventObjectNode) => {
+    const tapNodeHandler = (event: EventObjectNode) => {
       const entityId = getEntityId(event.target);
       dispatch(selectEntities([entityId]));
-    });
+    };
+    cy.on("tap", "node", tapNodeHandler);
 
-    cy.on("tap", "edge", (event: EventObjectNode) => {
+    const tapEdgeHandler = (event: EventObjectNode) => {
       const entityId = getEntityId(event.target);
       dispatch(selectEntities([entityId]));
-    });
+    };
+    cy.on("tap", "edge", tapEdgeHandler);
 
-    cy.on("tap", (event: EventObject) => {
+    const tapHandler = (event: EventObject) => {
       if (event.target === cy) {
         dispatch(resetSelection());
       }
-    });
+    };
+    cy.on("tap", tapHandler);
+    return () => {
+      cy.off("tap", "node", tapNodeHandler);
+      cy.off("tap", "edge", tapEdgeHandler);
+      cy.off("tap", tapHandler);
+    };
   });
 }
 
@@ -610,7 +618,7 @@ function useDblTapToCreateNode(
     }
     const cy = cyRef.current;
 
-    cy.on("dbltap", (event: EventObject) => {
+    const dbltapHandler = (event: EventObject) => {
       if (event.target === cy) {
         const newNode = {
           id: uuidv4(),
@@ -620,7 +628,11 @@ function useDblTapToCreateNode(
         };
         dispatch(addEntity(newNode));
       }
-    });
+    };
+    cy.on("dbltap", dbltapHandler);
+    return () => {
+      cy.off("dbltap", dbltapHandler);
+    };
   });
 }
 
@@ -636,20 +648,20 @@ function useDragEventHandlers(
 
     let dragSource = undefined as NodeSingular | undefined;
     let dragSourceOriginalPosition: Position | undefined;
-    cy.on("mousedown", "node", (event: cytoscape.EventObjectNode) => {
+    const mouseDownOnNodeHandler = (event: cytoscape.EventObjectNode) => {
       dragSource = event.target;
       dragSourceOriginalPosition = { ...dragSource.position() };
       dragSource.ancestors().add(dragSource).addClass("dragging");
-    });
+    };
 
     // Store mousePosition for drags because using event.position caused weird
     // behavior when dragging nodes.
     let mousePosition: Position = { x: 0, y: 0 };
-    cy.on("mousemove", (event: EventObject) => {
+    const mouseMoveHandler = (event: EventObject) => {
       mousePosition = event.position;
-    });
+    };
 
-    cy.on("drag", "node", (event: EventObjectNode) => {
+    const dragNodeHandler = (event: EventObjectNode) => {
       cy.elements(".hover-highlight").removeClass("hover-highlight");
 
       const hoverTarget = getClosestValidDropTarget(
@@ -669,9 +681,9 @@ function useDragEventHandlers(
           .filter((e) => e.data("entityId") === hoverEntityId)
           .addClass("hover-highlight");
       }
-    });
+    };
 
-    cy.on("mouseup", (event: EventObject) => {
+    const mouseUpHandler = (event: EventObject) => {
       if (event.target === cy) {
         if (dragSource && dragSourceOriginalPosition) {
           // Return the node to its original position
@@ -712,7 +724,19 @@ function useDragEventHandlers(
       dragSource = undefined;
       dragSourceOriginalPosition = undefined;
       cy.elements().removeClass("hover-highlight");
-    });
+    };
+
+    cy.on("mousedown", "node", mouseDownOnNodeHandler);
+    cy.on("mousemove", mouseMoveHandler);
+    cy.on("drag", "node", dragNodeHandler);
+    cy.on("mouseup", mouseUpHandler);
+
+    return () => {
+      cy.off("mousedown", "node", mouseDownOnNodeHandler);
+      cy.off("mousemove", mouseMoveHandler);
+      cy.off("drag", "node", dragNodeHandler);
+      cy.off("mouseup", mouseUpHandler);
+    };
   }, [cyRef, dispatch]);
 }
 
@@ -732,6 +756,10 @@ function useLayoutOnceUponInitialLoad(
       return;
     }
     cy.on("layoutstop", initialFit);
+
+    return () => {
+      cy.off("layoutstop", initialFit);
+    };
   }, [cyRef, initialFit]);
 }
 
