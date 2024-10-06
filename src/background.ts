@@ -4,16 +4,19 @@ import {
 } from "./extension/callbacks";
 import { CreateMediaExcerptMessage } from "./extension/messages";
 
+chrome.runtime.onInstalled.addListener(
+  wrapCallback(installContentScriptsInOpenTabs),
+);
+chrome.runtime.onInstalled.addListener(wrapCallback(installContextMenus));
+chrome.contextMenus.onClicked.addListener(wrapCallback(handleContextMenuClick));
+void chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+
 const addToSophistreeContextMenuId =
   process.env.NODE_ENV === "production"
     ? "addToSophistree"
     : "addToSophistreeDev";
 const addToSophistreeContextMenuTitle =
   process.env.NODE_ENV === "production" ? "+ Sophistree" : "+ Sophistree (Dev)";
-
-chrome.runtime.onInstalled.addListener(
-  wrapCallback(() => void installContentScriptsInOpenTabs()),
-);
 
 async function installContentScriptsInOpenTabs() {
   const manifest = chrome.runtime.getManifest();
@@ -81,43 +84,40 @@ async function installContentScriptsInOpenTabs() {
   }
 }
 
-chrome.runtime.onInstalled.addListener(
-  wrapCallback(function installContextMenus() {
-    chrome.contextMenus.create({
-      id: addToSophistreeContextMenuId,
-      title: addToSophistreeContextMenuTitle,
-      contexts: ["selection"],
-    });
-  }),
-);
+function installContextMenus() {
+  chrome.contextMenus.create({
+    id: addToSophistreeContextMenuId,
+    title: addToSophistreeContextMenuTitle,
+    contexts: ["selection"],
+  });
+}
 
-chrome.contextMenus.onClicked.addListener(
-  wrapCallback(async function handleContextMenuClick(info, tab) {
-    if (info.menuItemId !== addToSophistreeContextMenuId) {
-      return;
-    }
-    if (!info.selectionText) {
-      console.log(`info.selectionText was missing`);
-      return;
-    }
-    if (!tab?.id) {
-      console.log(`tab.id was missing`);
-      return;
-    }
+async function handleContextMenuClick(
+  info: chrome.contextMenus.OnClickData,
+  tab?: chrome.tabs.Tab,
+) {
+  if (info.menuItemId !== addToSophistreeContextMenuId) {
+    return;
+  }
+  if (!info.selectionText) {
+    console.log(`info.selectionText was missing`);
+    return;
+  }
+  if (!tab?.id) {
+    console.log(`tab.id was missing`);
+    return;
+  }
 
-    const message: CreateMediaExcerptMessage = {
-      action: "createMediaExcerpt",
-      selectedText: info.selectionText,
-    };
-    try {
-      await chrome.tabs.sendMessage(tab.id, message);
-    } catch (error) {
-      console.error(
-        `Failed to sendMessage createMediaExcerpt to tab ID ${tab.id} URL ${tab.url}. Is the content script loaded?`,
-        error,
-      );
-    }
-  }),
-);
-
-void chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+  const message: CreateMediaExcerptMessage = {
+    action: "createMediaExcerpt",
+    selectedText: info.selectionText,
+  };
+  try {
+    await chrome.tabs.sendMessage(tab.id, message);
+  } catch (error) {
+    console.error(
+      `Failed to sendMessage createMediaExcerpt to tab ID ${tab.id} URL ${tab.url}. Is the content script loaded?`,
+      error,
+    );
+  }
+}

@@ -89,3 +89,19 @@ npm run check-all
 
 The model is the same as Howdju, and is explained here with a graph:
 https://docs.howdju.com/concepts
+
+## Extension components and permissions
+
+This section briefly describes why the extensions requires certain scripts and permissions:
+
+- `scripting` & `host_permissions`: `<all_urls>`: required for highlighting functionality to work on
+  pages that are open when the extension is installed
+- `service_worker`:
+  - The service worker script installs the content scripts when the extension is installed
+    (otherwise the user must reload all pages before highlighting will work.)
+  - Installs and responds to context menu items
+- `content_scripts`:
+
+  - The content script manages highlights and interacts with the sidebar to create excerpts and to
+    emphasize focused exerpts.
+  - `<all_urls>` so that Sophistree works on all pages

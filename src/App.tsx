@@ -89,7 +89,11 @@ function useHandleChromeRuntimeMessage() {
   );
   useEffect(() => {
     const handleChromeRuntimeMessage = wrapCallback(
-      function handleChromeRuntimeMessage(message: ChromeRuntimeMessage) {
+      function handleChromeRuntimeMessage(
+        message: ChromeRuntimeMessage,
+        sender: chrome.runtime.MessageSender,
+        sendResponse: (response: unknown) => void,
+      ) {
         switch (message.action) {
           case "addMediaExcerpt":
             dispatch(addMediaExcerpt(message.data));
@@ -97,11 +101,13 @@ function useHandleChromeRuntimeMessage() {
           case "selectMediaExcerpt":
             dispatch(selectEntities([message.data.mediaExcerptId]));
             break;
-          case "checkMediaExcerptExistence":
-            return (
+          case "checkMediaExcerptExistence": {
+            const response =
               entities.find((e) => e.id === message.data.mediaExcerptId) !==
-              undefined
-            );
+              undefined;
+            sendResponse(response);
+            break;
+          }
           case "getMediaExcerpts": {
             const { url, canonicalUrl } = message.data;
             const mediaExcerpts = entities.filter(
@@ -119,12 +125,17 @@ function useHandleChromeRuntimeMessage() {
               mediaExcerpts,
               serializedOutcomes,
             };
-            return response;
+            sendResponse(response);
+            break;
           }
         }
+        // The sendResponse need not remain active after this handler completes.
+        return false;
       },
     );
+
     chrome.runtime.onMessage.addListener(handleChromeRuntimeMessage);
+
     return () => {
       chrome.runtime.onMessage.removeListener(handleChromeRuntimeMessage);
     };

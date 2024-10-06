@@ -49,6 +49,9 @@ Guidelines:
 
 ## Outcomes
 
+- Highlights reflect outcomes
+- Highlights update to reflect changed outcomes.
+
 ## Graph management
 
 A user can:
@@ -71,7 +74,8 @@ Graph import guidelines:
 
 ## Selection
 
-- Clicking on a highlight selects any excerpts and appearances using the highlight's excerpt.
+- Clicking on a highlight selects any excerpts and appearances using the highlight's excerpt. It
+  also pans the graph to make the selected entities' elements visible if they are not already.
 - Clicking a graph element (node or edge) selects the element's entity.
 - Clicking on the graph canvas deselects all entities.
 - Clicking an entity list row selects the row's entity.

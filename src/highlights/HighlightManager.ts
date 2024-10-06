@@ -162,6 +162,9 @@ class HighlightManager<Anchor, Data> {
       return;
     }
 
+    // Reset styles to their default state
+    this.updateStyles();
+
     highlight.elements[0].scrollIntoView({
       behavior: "smooth",
       block: "center",

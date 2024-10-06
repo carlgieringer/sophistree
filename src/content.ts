@@ -52,18 +52,11 @@ export type ChromeRuntimeMessage =
   | CheckMediaExcerptExistenceMessage
   | GetMediaExcerptsMessage;
 
-chrome.runtime.onMessage.addListener(
-  wrapCallback(
-    (
-      message: ContentMessage,
-      sender: chrome.runtime.MessageSender,
-      sendResponse: (response: unknown) => void,
-    ) => handleMessage(message, sendResponse),
-  ),
-);
+chrome.runtime.onMessage.addListener(wrapCallback(handleMessage));
 
 async function handleMessage(
   message: ContentMessage,
+  sender: chrome.runtime.MessageSender,
   sendResponse: (response: unknown) => void,
 ) {
   switch (message.action) {
@@ -89,6 +82,8 @@ async function handleMessage(
       break;
     }
   }
+  // The sendResponse need not remain active after this handler completes.
+  return false;
 }
 
 async function mediaExcerptExists(mediaExcerptId: string) {

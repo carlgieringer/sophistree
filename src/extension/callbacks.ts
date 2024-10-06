@@ -3,9 +3,9 @@ type WrapperReturn<R> = R extends Promise<unknown> ? undefined : R | undefined;
 /**
  * Wrap top-level callbacks to prevent uncaught exceptions.
  *
- * Returns a new function, so the old function reference cannot be
+ * Returns a new function, so the wrapped function reference cannot be
  * removed from handlers. Use catchErrors inside a callback if you
- * want to remove the wrapped function.
+ * need to remove the function.
  */
 export function wrapCallback<Args extends unknown[], Return>(
   callback: (...args: Args) => Return,
@@ -14,6 +14,8 @@ export function wrapCallback<Args extends unknown[], Return>(
     try {
       const result = callback(...args);
       if (result instanceof Promise) {
+        // Although Promise return values are often not supported in callbacks (e.g. in Chrome
+        // extension callbacks), accept them as a convenience and catch any uncaught errors.
         result.catch((error) => {
           // This would be a good place to do error reporting.
           console.error(error);
