@@ -206,14 +206,16 @@ async function getMediaExcerpts() {
   try {
     response = await chrome.runtime.sendMessage(message);
   } catch (error) {
-    const message = "Unable to connect to extension to get media excerpts.";
     if (
       error instanceof Error &&
       error.message.includes(connectionErrorMessage)
     ) {
-      console.warn(`${message} Is the sidebar open?`);
+      // This is expected when the sidebar is not open.
     } else {
-      console.error(message, error);
+      console.error(
+        "Unable to connect to extension to get media excerpts.",
+        error,
+      );
     }
     return;
   }

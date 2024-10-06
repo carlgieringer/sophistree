@@ -89,20 +89,14 @@ function useHandleChromeRuntimeMessage() {
   );
   useEffect(() => {
     const handleChromeRuntimeMessage = wrapCallback(
-      function handleChromeRuntimeMessage(
-        message: ChromeRuntimeMessage,
-        sender: chrome.runtime.MessageSender,
-        sendResponse: (response: unknown) => void,
-      ) {
+      function handleChromeRuntimeMessage(message: ChromeRuntimeMessage) {
         switch (message.action) {
-          case "addMediaExcerpt": {
+          case "addMediaExcerpt":
             dispatch(addMediaExcerpt(message.data));
             break;
-          }
-          case "selectMediaExcerpt": {
+          case "selectMediaExcerpt":
             dispatch(selectEntities([message.data.mediaExcerptId]));
             break;
-          }
           case "checkMediaExcerptExistence":
             return (
               entities.find((e) => e.id === message.data.mediaExcerptId) !==
@@ -125,8 +119,7 @@ function useHandleChromeRuntimeMessage() {
               mediaExcerpts,
               serializedOutcomes,
             };
-            sendResponse(response);
-            break;
+            return response;
           }
         }
       },
