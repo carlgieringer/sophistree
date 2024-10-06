@@ -6,20 +6,10 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import {
   MediaExcerpt,
   preferredUrl,
-  Proposition,
 } from "../store/entitiesSlice";
 import { getTabUrl, FocusMediaExcerptMessage } from "../extension/messages";
+import { PropositionNodeData } from "./graphTypes";
 
-export interface AppearanceInfo {
-  id: string;
-  mediaExcerpt: MediaExcerpt;
-}
-
-export type PropositionNodeData = {
-  entity: Proposition;
-  appearances: AppearanceInfo[] | undefined;
-  isAnyAppearanceSelected: boolean;
-};
 
 export default function VisitPropositionAppearanceDialog({
   data,

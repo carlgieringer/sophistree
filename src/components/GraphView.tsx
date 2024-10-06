@@ -59,12 +59,15 @@ import DebugElementDialog from "./DebugElementDialog";
 import "./GraphView.scss";
 import VisitPropositionAppearanceDialog, {
   focusMediaExcerpt,
-  AppearanceInfo,
-  PropositionNodeData,
 } from "./VisitPropositionAppearanceDialog";
 import { BasisOutcome, JustificationOutcome } from "../outcomes/outcomes";
 import { outcomeValence } from "../outcomes/valences";
 import { AppDispatch, useAppDispatch } from "../store";
+import {
+  AppearanceInfo,
+  EntityElementData,
+  PropositionNodeData,
+} from "./graphTypes";
 
 cytoscape.use(elk);
 cytoscape.use(contextMenus);
@@ -314,7 +317,7 @@ function useReactNodes(
   const reactNodesConfig = useMemo(
     () => [
       {
-        query: `node[type="Proposition"]`,
+        query: `node[entity.type="Proposition"]`,
         template: function (data: NodeDataDefinition) {
           const nodeData = data as PropositionNodeData;
           const appearanceCount = nodeData.appearances?.length;
@@ -338,7 +341,7 @@ function useReactNodes(
                   {appearanceCount}
                 </span>
               ) : undefined}
-              <p>{data.text}</p>
+              <p>{nodeData.entity.text}</p>
             </>
           );
         },
@@ -350,13 +353,13 @@ function useReactNodes(
         },
       },
       {
-        query: `node[type="MediaExcerpt"]`,
+        query: `node[entity.type="MediaExcerpt"]`,
         template: function (data: NodeDataDefinition) {
           const mediaExcerpt = data.entity as MediaExcerpt;
           const url = preferredUrl(mediaExcerpt.urlInfo);
           return (
             <>
-              <p>{data.quotation}</p>
+              <p>{mediaExcerpt.quotation}</p>
               <a
                 href={url}
                 title={url}
@@ -776,7 +779,7 @@ function makeElements(entities: Entity[], selectedEntityIds: string[]) {
     selectedEntityIds,
   );
   const focusedNodeIds = nodeDatas.reduce((acc, nodeData) => {
-    if (selectedEntityIds.includes(nodeData.entityId)) {
+    if (selectedEntityIds.includes(nodeData.entity.id)) {
       acc.push(nodeData.id);
     }
     if (nodeData.type === "Proposition" && nodeData.isAnyAppearanceSelected) {
@@ -923,8 +926,6 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
           acc.nodes.push({
             id: compoundNodeId,
             entity,
-            entityId: entity.id,
-            type: entity.type,
           });
 
           entity.atomIds.forEach((atomId) => {
@@ -952,11 +953,13 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
               return;
             }
             acc.nodes.push({
+              ...proposition,
               id: atomNodeId,
               parent: compoundNodeId,
               entity: proposition,
               entityId: proposition.id,
-              type: proposition.type,
+              atomId,
+              entityType: proposition.type,
               appearances,
               isAnyAppearanceSelected,
             });
@@ -991,7 +994,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
               id: intermediateNodeId,
               entity,
               entityId: entity.id,
-              type: entity.type,
+              entityType: entity.type,
               polarity: entity.polarity,
             });
 
@@ -1001,7 +1004,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
               target: intermediateNodeId,
               entity,
               entityId: entity.id,
-              type: entity.type,
+              entityType: entity.type,
               polarity: entity.polarity,
               arrow: "none",
             });
@@ -1012,7 +1015,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
               target: targetNodeId,
               entity,
               entityId: entity.id,
-              type: entity.type,
+              entityType: entity.type,
               polarity: entity.polarity,
             });
           } else {
@@ -1022,7 +1025,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
               target: targetNodeId,
               entity,
               entityId: entity.id,
-              type: entity.type,
+              entityType: entity.type,
               polarity: entity.polarity,
             });
           }
@@ -1038,7 +1041,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
                 target: nodeId,
                 entity,
                 entityId: entity.id,
-                type: entity.type,
+                entityType: entity.type,
                 polarity: entity.polarity,
               });
             });
@@ -1066,7 +1069,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
             id,
             entity,
             entityId: entity.id,
-            type: entity.type,
+            entityType: entity.type,
             appearances,
             isAnyAppearanceSelected,
           });
@@ -1084,7 +1087,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
             id,
             entity,
             entityId: entity.id,
-            type: entity.type,
+            entityType: entity.type,
           });
           break;
         }
@@ -1092,8 +1095,8 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
       return acc;
     },
     {
-      nodes: [] as GraphNodeDataDefinition[],
-      edges: [] as EdgeDataDefinition[],
+      nodes: [] as EntityNodeDataDefinition[],
+      edges: [] as EntityEdgeDataDefinition[],
     },
   );
 
@@ -1139,32 +1142,32 @@ const stylesheet: cytoscape.Stylesheet[] = [
     } as const,
   },
   {
-    selector: 'node[type="Proposition"]',
+    selector: 'node[entity.type="Proposition"]',
     style: {
       shape: "round-rectangle",
-      label: "data(text)",
+      label: "data(entity.text)",
       width: "label",
       height: "label",
     },
   },
   {
-    selector: `node[type="Proposition"][height]`,
+    selector: `node[entity.type="Proposition"][height]`,
     style: {
       // reactNodes will dynamically set the nodes' height to match the wrapped JSX.
       height: "data(height)",
     },
   },
   {
-    selector: `node[type="MediaExcerpt"]`,
+    selector: `node[entity.type="MediaExcerpt"]`,
     style: {
       shape: "round-rectangle",
-      label: "data(quotation)",
+      label: "data(entity.quotation)",
       width: "label",
       height: "label",
     },
   },
   {
-    selector: `node[type="MediaExcerpt"][height]`,
+    selector: `node[entity.type="MediaExcerpt"][height]`,
     style: {
       // reactNodes will dynamically set the nodes' height to match the wrapped JSX.
       height: "data(height)",
@@ -1194,7 +1197,7 @@ const stylesheet: cytoscape.Stylesheet[] = [
     },
   },
   {
-    selector: `node[type="Justification"]`,
+    selector: `node[entity.type="Justification"]`,
     style: {
       shape: "ellipse",
       width: "10px",
@@ -1202,13 +1205,13 @@ const stylesheet: cytoscape.Stylesheet[] = [
     },
   },
   {
-    selector: `node[type="Justification"][polarity="Positive"]`,
+    selector: `node[entity.type="Justification"][polarity="Positive"]`,
     style: {
       "background-color": nephritis,
     },
   },
   {
-    selector: `node[type="Justification"][polarity="Negative"]`,
+    selector: `node[entity.type="Justification"][polarity="Negative"]`,
     style: {
       "background-color": pomegranate,
     },
@@ -1246,13 +1249,13 @@ const stylesheet: cytoscape.Stylesheet[] = [
     },
   },
   {
-    selector: `.dragging[type="Justification"]`,
+    selector: `.dragging[entity.type="Justification"]`,
     style: {
       opacity: 0.5,
     },
   },
   {
-    selector: `.dragging[type="PropositionCompound"]`,
+    selector: `.dragging[entity.type="PropositionCompound"]`,
     style: {
       opacity: 0.5,
     },
@@ -1523,7 +1526,7 @@ type GestureEvent = Event & {
 };
 
 function getEntityId(element: SingularElementArgument): string {
-  const entityId = element.data("entityId") as string | undefined;
+  const entityId = element.data("entity.id") as string | undefined;
   if (!entityId) {
     throw new Error(`entityId not found for element ID ${element.id()}`);
   }
@@ -1531,21 +1534,22 @@ function getEntityId(element: SingularElementArgument): string {
 }
 
 function getEntityType(element: SingularElementArgument): EntityType {
-  const entityType = element.data("type") as EntityType | undefined;
+  const entityType = element.data("entity.type") as EntityType | undefined;
   if (!entityType) {
     throw new Error(`entityType not found for element ID ${element.id()}`);
   }
   return entityType;
 }
 
-type GraphNodeDataDefinition = SetRequired<NodeDataDefinition, "id"> & {
-  entityId: string;
-  entity: Entity;
-};
+type EntityNodeDataDefinition = SetRequired<NodeDataDefinition, "id"> &
+  EntityElementData;
+type EntityEdgeDataDefinition = SetRequired<EdgeDataDefinition, "id"> &
+  EntityElementData;
 
 function getZIndex(element: SingularElementArgument) {
   return element.style("z-index") as number | undefined;
 }
+
 function makeOutcomeClasses(outcome: BasisOutcome | JustificationOutcome) {
   const valence = outcomeValence(outcome);
   const nodeClass = `node-outcome-${valence}`;
