@@ -3,13 +3,9 @@ import { StyleSheet, View } from "react-native";
 import { Dialog, Button, Text, Tooltip } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
-import {
-  MediaExcerpt,
-  preferredUrl,
-} from "../store/entitiesSlice";
+import { MediaExcerpt, preferredUrl } from "../store/entitiesSlice";
 import { getTabUrl, FocusMediaExcerptMessage } from "../extension/messages";
 import { PropositionNodeData } from "./graphTypes";
-
 
 export default function VisitPropositionAppearanceDialog({
   data,
