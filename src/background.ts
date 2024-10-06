@@ -1,6 +1,5 @@
 import {
   accessChromeUrlErrorMessage,
-  connectionErrorMessage,
   wrapCallback,
 } from "./extension/callbacks";
 import { CreateMediaExcerptMessage } from "./extension/messages";
