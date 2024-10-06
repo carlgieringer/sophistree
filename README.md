@@ -38,7 +38,7 @@ in public don't trigger changes, but are picked up when the JS changes.
 
 1. Open Chrome and navigate to `chrome://extensions`.
 2. Enable "Developer mode" in the top right corner.
-3. Click "Load unpacked" and select the `dist` folder created in the previous step.
+3. Click "Load unpacked" and select the `dist/dev` folder created in the previous step.
 
 To reload JS changes, you can just close and re-open the sidebar using the action button in Chrome's
 toolbar.

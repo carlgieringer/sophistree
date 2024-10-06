@@ -23,13 +23,7 @@ async function installContentScriptsInOpenTabs() {
     return;
   }
   for (const cs of contentScripts) {
-    const queryInfo = manifest.permissions?.includes("tabs")
-      ? { url: cs.matches }
-      : {};
-    for (const tab of await chrome.tabs.query(queryInfo)) {
-      if (tab.url?.match(/^(chrome|chrome-extension):\/\//)) {
-        continue;
-      }
+    for (const tab of await chrome.tabs.query({})) {
       if (!tab.id) {
         continue;
       }
@@ -48,6 +42,7 @@ async function installContentScriptsInOpenTabs() {
             e.message.includes(accessChromeUrlErrorMessage)
           ) {
             // Ignore this error, it's expected when trying to inject into chrome:// URLs.
+            // We don't request tabs permission to be able to limit which tabs we process.
             continue;
           } else {
             console.warn(
@@ -73,6 +68,7 @@ async function installContentScriptsInOpenTabs() {
             e.message.includes(accessChromeUrlErrorMessage)
           ) {
             // Ignore this error, it's expected when trying to inject into chrome:// URLs.
+            // We don't request tabs permission to be able to limit which tabs we process.
             continue;
           } else {
             console.warn(
@@ -96,45 +92,33 @@ chrome.runtime.onInstalled.addListener(
   }),
 );
 
-function handleContextMenuClick(
-  info: chrome.contextMenus.OnClickData,
-  tab: chrome.tabs.Tab | undefined,
-) {
-  if (info.menuItemId !== addToSophistreeContextMenuId) {
-    return;
-  }
-  if (!info.selectionText) {
-    console.log(`info.selectionText was missing`);
-    return;
-  }
-  if (!tab?.id) {
-    console.log(`tab.id was missing`);
-    return;
-  }
+chrome.contextMenus.onClicked.addListener(
+  wrapCallback(async function handleContextMenuClick(info, tab) {
+    if (info.menuItemId !== addToSophistreeContextMenuId) {
+      return;
+    }
+    if (!info.selectionText) {
+      console.log(`info.selectionText was missing`);
+      return;
+    }
+    if (!tab?.id) {
+      console.log(`tab.id was missing`);
+      return;
+    }
 
-  const message: CreateMediaExcerptMessage = {
-    action: "createMediaExcerpt",
-    selectedText: info.selectionText,
-  };
-  chrome.tabs.sendMessage(tab.id, message).catch((reason) => {
-    if (
-      reason instanceof Error &&
-      reason.message.includes(connectionErrorMessage)
-    ) {
-      console.warn(
-        `Failed to create MediaExcerpt on tab ID ${tab.id} URL ${tab.url}. Is the sidebar open?`,
-      );
-    } else {
+    const message: CreateMediaExcerptMessage = {
+      action: "createMediaExcerpt",
+      selectedText: info.selectionText,
+    };
+    try {
+      await chrome.tabs.sendMessage(tab.id, message);
+    } catch (error) {
       console.error(
-        `Failed to sendMessage createMediaExcerpt to tab ID ${tab.id} URL ${tab.url}`,
-        reason,
+        `Failed to sendMessage createMediaExcerpt to tab ID ${tab.id} URL ${tab.url}. Is the content script loaded?`,
+        error,
       );
     }
-  });
-}
-
-chrome.contextMenus.onClicked.addListener(
-  wrapCallback((info, tab) => void handleContextMenuClick(info, tab)),
+  }),
 );
 
 void chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
