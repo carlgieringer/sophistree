@@ -28,7 +28,7 @@ Sophistree is a Chrome extension for mapping arguments.
 This continuously builds the javascript:
 
 ```sh
-npm run build-dev
+npm run build-dev-watch
 ```
 
 This will build the javascript and watch for changes. Changes to static files
