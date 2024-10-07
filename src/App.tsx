@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { StyleSheet, View, ScrollView } from "react-native";
 import { Button, Text } from "react-native-paper";
 import { useDispatch, useSelector } from "react-redux";
@@ -19,6 +19,7 @@ import { showNewMapDialog } from "./store/uiSlice";
 import { BasisOutcome } from "./outcomes/outcomes";
 import {
   GetMediaExcerptsResponse,
+  sendRefreshMediaExcerptsMessage,
   sendUpdatedMediaExcerptOutcomes,
 } from "./extension/messages";
 import { serializeMap } from "./extension/serialization";
@@ -27,6 +28,7 @@ import * as appLogger from "./logging/appLogging";
 
 const App: React.FC = () => {
   const dispatch = useDispatch();
+  useRefreshContentPageMediaExcerptsWhenActiveMapChanges();
   useSendUpdatedMediaExcerptOutcomes();
   useHandleChromeRuntimeMessage();
   useContentScriptKeepAliveConnection();
@@ -96,14 +98,29 @@ async function connectToOpenTabs() {
   }
 }
 
+function useRefreshContentPageMediaExcerptsWhenActiveMapChanges() {
+  const activeMapId = useSelector(selectors.activeMapId);
+  const [prevActiveMapId, setPrevActiveMapId] = useState(
+    undefined as string | undefined,
+  );
+
+  useEffect(() => {
+    if (activeMapId !== prevActiveMapId) {
+      void sendRefreshMediaExcerptsMessage();
+      setPrevActiveMapId(activeMapId);
+    }
+  }, [activeMapId, prevActiveMapId, setPrevActiveMapId]);
+}
+
 function useSendUpdatedMediaExcerptOutcomes() {
   const mediaExcerptOutcomes = useSelector(
     selectors.activeMapMediaExcerptOutcomes,
   );
 
   // Store the outcomes so that we can diff them when they change
-  const [prevMediaExcerptOutcomes, setPrevMediaExcerptOutcomes] =
-    React.useState<Map<string, BasisOutcome>>(new Map());
+  const [prevMediaExcerptOutcomes, setPrevMediaExcerptOutcomes] = useState<
+    Map<string, BasisOutcome>
+  >(new Map());
 
   useEffect(() => {
     const updatedMediaExcerptOutcomes = diffMediaExcerptOutcomes(

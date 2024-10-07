@@ -21,22 +21,35 @@ export interface UpdateMediaExcerptOutcomesMessage {
   serializedUpdatedOutcomes: [string, BasisOutcome | undefined][];
 }
 
-export type GetMediaExcerptsResponse = {
+export interface GetMediaExcerptsResponse {
   mediaExcerpts: MediaExcerpt[];
   serializedOutcomes: [string, BasisOutcome][];
-};
+}
+
+export interface RefreshMediaExcerptsMessage {
+  action: "refreshMediaExcerpts";
+}
 
 export type ContentMessage =
   | CreateMediaExcerptMessage
   | FocusMediaExcerptMessage
   | RequestUrlMessage
-  | UpdateMediaExcerptOutcomesMessage;
+  | UpdateMediaExcerptOutcomesMessage
+  | RefreshMediaExcerptsMessage;
 
 export function getTabUrl(tabId: number): Promise<string> {
   const message: RequestUrlMessage = {
     action: "requestUrl",
   };
   return chrome.tabs.sendMessage(tabId, message);
+}
+
+export async function sendRefreshMediaExcerptsMessage() {
+  const message: RefreshMediaExcerptsMessage = {
+    action: "refreshMediaExcerpts",
+  };
+
+  await sendMessageToAllCompleteTabs(message);
 }
 
 export async function sendUpdatedMediaExcerptOutcomes(
@@ -48,6 +61,10 @@ export async function sendUpdatedMediaExcerptOutcomes(
     serializedUpdatedOutcomes,
   };
 
+  await sendMessageToAllCompleteTabs(message);
+}
+
+async function sendMessageToAllCompleteTabs(message: ContentMessage) {
   const tabs = await getCompleteTabs();
   return Promise.all(
     tabs.map(async (tab) => {

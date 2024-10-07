@@ -67,6 +67,10 @@ async function handleMessage(
       updateMediaExcerptOutcomes(updatedOutcomes);
       break;
     }
+    case "refreshMediaExcerpts": {
+      highlightManager.removeAllHighlights();
+      await getMediaExcerpts();
+    }
   }
 }
 
