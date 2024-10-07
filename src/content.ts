@@ -20,6 +20,8 @@ import { deserializeMap } from "./extension/serialization";
 import { connectionErrorMessage } from "./extension/errorMessages";
 import * as contentLogger from "./logging/contentLogging";
 
+void getMediaExcerpts();
+
 chrome.runtime.onConnect.addListener(getMediaExcerptsWhenSidebarOpens);
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

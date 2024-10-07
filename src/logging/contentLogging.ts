@@ -59,22 +59,26 @@ export function log(
   level: SeverityLevel = "log",
   error?: unknown,
 ) {
+  const logArgs: unknown[] = [message];
+  if (error) {
+    logArgs.push(error);
+  }
   switch (level) {
     case "error":
-      console.error(message);
+      console.error(...logArgs);
       break;
     case "warning":
-      console.warn(message);
+      console.warn(...logArgs);
       break;
     case "log":
     default:
-      console.log(message);
+      console.log(...logArgs);
       break;
     case "info":
-      console.info(message);
+      console.info(...logArgs);
       break;
     case "debug":
-      console.debug(message);
+      console.debug(...logArgs);
       break;
   }
   scope.captureMessage(message, level);
