@@ -20,38 +20,7 @@ import { deserializeMap } from "./extension/serialization";
 import { connectionErrorMessage } from "./extension/errorMessages";
 import * as contentLogger from "./logging/contentLogging";
 
-interface AddMediaExcerptMessage {
-  action: "addMediaExcerpt";
-  data: AddMediaExcerptData;
-}
-
-interface SelectMediaExcerptMessage {
-  action: "selectMediaExcerpt";
-  data: {
-    mediaExcerptId: string;
-  };
-}
-
-interface CheckMediaExcerptExistenceMessage {
-  action: "checkMediaExcerptExistence";
-  data: {
-    mediaExcerptId: string;
-  };
-}
-
-interface GetMediaExcerptsMessage {
-  action: "getMediaExcerpts";
-  data: {
-    url: string;
-    canonicalUrl?: string;
-  };
-}
-
-export type ChromeRuntimeMessage =
-  | AddMediaExcerptMessage
-  | SelectMediaExcerptMessage
-  | CheckMediaExcerptExistenceMessage
-  | GetMediaExcerptsMessage;
+chrome.runtime.onConnect.addListener(getMediaExcerptsWhenSidebarOpens);
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   handleMessage(message as ContentMessage, sendResponse).catch((error) => {
@@ -60,6 +29,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // The sendResponse needs to remain active after this handler completes since it is processed asynchronously.
   return true;
 });
+
+export const sidepanelKeepalivePortName = "keepalive";
+
+function getMediaExcerptsWhenSidebarOpens(port: chrome.runtime.Port) {
+  if (port.name === sidepanelKeepalivePortName) {
+    void getMediaExcerpts();
+    port.onDisconnect.addListener(() => {
+      highlightManager.removeAllHighlights();
+    });
+  }
+}
 
 async function handleMessage(
   message: ContentMessage,
@@ -222,7 +202,6 @@ async function getMediaExcerpts() {
   mediaExcerptOutcomes = deserializeMap(serializedOutcomes);
   highlightMediaExcerpts(mediaExcerpts);
 }
-void getMediaExcerpts();
 
 function highlightMediaExcerpts(mediaExcerpts: MediaExcerpt[]) {
   mediaExcerpts.forEach(({ id, domAnchor }) => highlightRanges(id, domAnchor));
@@ -253,7 +232,7 @@ const highlightManager = new HighlightManager<DomAnchor, HighlightData>({
   getRangesFromAnchor: (anchor: DomAnchor) =>
     getRangesFromDomAnchor(document.body, anchor),
   colors: {
-    mode: "callback",
+    mode: "class-callback",
     // Corresponds to the classes in highlights/colors.scss
     getColorClass: (data) => getHighlightColorClass(data.mediaExcerptId),
   },
@@ -302,3 +281,36 @@ async function selectMediaExcerpt(mediaExcerptId: string) {
   };
   await chrome.runtime.sendMessage(message);
 }
+
+interface AddMediaExcerptMessage {
+  action: "addMediaExcerpt";
+  data: AddMediaExcerptData;
+}
+
+interface SelectMediaExcerptMessage {
+  action: "selectMediaExcerpt";
+  data: {
+    mediaExcerptId: string;
+  };
+}
+
+interface CheckMediaExcerptExistenceMessage {
+  action: "checkMediaExcerptExistence";
+  data: {
+    mediaExcerptId: string;
+  };
+}
+
+interface GetMediaExcerptsMessage {
+  action: "getMediaExcerpts";
+  data: {
+    url: string;
+    canonicalUrl?: string;
+  };
+}
+
+export type ChromeRuntimeMessage =
+  | AddMediaExcerptMessage
+  | SelectMediaExcerptMessage
+  | CheckMediaExcerptExistenceMessage
+  | GetMediaExcerptsMessage;

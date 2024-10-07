@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 import { StyleSheet, View, ScrollView } from "react-native";
 import { Button, Text } from "react-native-paper";
 import { useDispatch, useSelector } from "react-redux";
@@ -7,7 +7,7 @@ import "./App.scss";
 import EntityEditor from "./components/EntityEditor";
 import GraphView from "./components/GraphView";
 import HeaderBar from "./components/HeaderBar";
-import { ChromeRuntimeMessage } from "./content";
+import { ChromeRuntimeMessage, sidepanelKeepalivePortName } from "./content";
 import {
   addMediaExcerpt,
   MediaExcerpt,
@@ -23,11 +23,13 @@ import {
 } from "./extension/messages";
 import { serializeMap } from "./extension/serialization";
 import { wrapCallback } from "./extension/callbacks";
+import * as appLogger from "./logging/appLogging";
 
 const App: React.FC = () => {
   const dispatch = useDispatch();
   useSendUpdatedMediaExcerptOutcomes();
   useHandleChromeRuntimeMessage();
+  useContentScriptKeepAliveConnection();
 
   const activeMapId = useSelector(selectors.activeMapId);
   const graphView = activeMapId ? (
@@ -59,6 +61,40 @@ const App: React.FC = () => {
     </View>
   );
 };
+
+function useContentScriptKeepAliveConnection() {
+  const tabCreatedListener = useCallback((tab: chrome.tabs.Tab) => {
+    if (!tab.id) {
+      return;
+    }
+    chrome.tabs.connect(tab.id, { name: sidepanelKeepalivePortName });
+  }, []);
+  useEffect(() => {
+    void connectToOpenTabs().catch((error) => {
+      appLogger.error("Failed to connect to open tabs", error);
+    });
+
+    chrome.tabs.onCreated.addListener(tabCreatedListener);
+
+    return () => {
+      chrome.tabs.onCreated.removeListener(tabCreatedListener);
+    };
+  }, [tabCreatedListener]);
+}
+
+async function connectToOpenTabs() {
+  const tabs = await chrome.tabs.query({});
+  for (const tab of tabs) {
+    if (!tab.id) {
+      continue;
+    }
+    try {
+      chrome.tabs.connect(tab.id, { name: sidepanelKeepalivePortName });
+    } catch (error) {
+      appLogger.error("Failed to connect to tab", error);
+    }
+  }
+}
 
 function useSendUpdatedMediaExcerptOutcomes() {
   const mediaExcerptOutcomes = useSelector(

@@ -28,7 +28,7 @@ export type HighlightManagerOptions<Anchor, Data> = {
         colorIndexClassFormat?: string;
       }
     | {
-        mode: "callback";
+        mode: "class-callback";
         getColorClass: (data: Data) => string;
       };
   hoverClass?: string;
@@ -46,7 +46,7 @@ type MergedHighlightManagerOptions<Anchor, Data> = {
         colorIndexClassFormat: string;
       }
     | {
-        mode: "callback";
+        mode: "class-callback";
         getColorClass: (data: Data) => string;
       };
   hoverClass: string;
@@ -112,7 +112,7 @@ class HighlightManager<Anchor, Data> {
             defaultOptions.colors.colorIndexClassFormat,
           count: colors.count,
         };
-      case "callback":
+      case "class-callback":
         return colors;
     }
   }
@@ -152,7 +152,7 @@ class HighlightManager<Anchor, Data> {
           highlightColorIndex.toString(),
         );
       }
-      case "callback": {
+      case "class-callback": {
         return this.options.colors.getColorClass(highlight.data);
       }
     }
