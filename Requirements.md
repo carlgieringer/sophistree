@@ -38,15 +38,7 @@ this extension and use that in place of Sophistree?
 
 TODO:
 
-- When reload extension:
-
-  - content script reloads
-  - loses HighlightManager
-  - requests MediaExcerpts? Fails because sidebar is empty?
-  - When sidebar opens, receives updates to outcomes, but has no highlights to update.
-
 - Publish to Chrome Web Store.
-  - Message origin checks
 - npm publish HighlightManager
 
 - Try adding
@@ -56,7 +48,6 @@ TODO:
 
 - Justification appearances
 - Collapsing
-- Reload highlights when active map changes
 
 - Mobile experience
 
@@ -73,4 +64,3 @@ TODO:
   - combine justifications
 - Support setting Justification polarity via drag.
   - https://github.com/cytoscape/cytoscape.js-popper for polarity targets?
-- Retrieve MediaExcerpts from background scripts instead of sidebar?

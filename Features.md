@@ -37,9 +37,9 @@ Excerpt creation guidelines:
 - Loading a content page while the sidebar is open with an active will apply highlights for all
   excerpts in the graph that came from this page.
 - Hovering over a higlight will emphasize the highlight.
-- [Future] closing the sidebar removes highlights from all pages.
-- [Future] opening the sidebar with an active graph adds highlights to all pages.
-- [Future] Activating a new graph replaces highlights from the previously active graph, if any, with
+- Closing the sidebar removes highlights from all pages.
+- Opening the sidebar with an active graph adds highlights to all pages.
+- Activating a new graph replaces highlights from the previously active graph, if any, with
   highlights from the new graph in all pages.
 
 Guidelines:
