@@ -23,8 +23,8 @@ import {
   sendUpdatedMediaExcerptOutcomes,
 } from "./extension/messages";
 import { serializeMap } from "./extension/serialization";
-import { wrapCallback } from "./extension/callbacks";
 import * as appLogger from "./logging/appLogging";
+import { catchErrors } from "./extension/callbacks";
 
 const App: React.FC = () => {
   const dispatch = useDispatch();
@@ -140,13 +140,13 @@ function useHandleChromeRuntimeMessage() {
   const mediaExcerptOutcomes = useSelector(
     selectors.activeMapMediaExcerptOutcomes,
   );
-  useEffect(() => {
-    const handleChromeRuntimeMessage = wrapCallback(
-      function handleChromeRuntimeMessage(
-        message: ChromeRuntimeMessage,
-        sender: chrome.runtime.MessageSender,
-        sendResponse: (response: unknown) => void,
-      ) {
+  const handleChromeRuntimeMessage = useCallback(
+    (
+      message: ChromeRuntimeMessage,
+      sender: chrome.runtime.MessageSender,
+      sendResponse: (response: unknown) => void,
+    ) => {
+      catchErrors(() => {
         switch (message.action) {
           case "addMediaExcerpt":
             dispatch(addMediaExcerpt(message.data));
@@ -182,17 +182,16 @@ function useHandleChromeRuntimeMessage() {
             break;
           }
         }
-        // The sendResponse need not remain active after this handler completes.
-        return false;
-      },
-    );
-
+      });
+    },
+    [dispatch, entities, mediaExcerptOutcomes],
+  );
+  useEffect(() => {
     chrome.runtime.onMessage.addListener(handleChromeRuntimeMessage);
-
     return () => {
       chrome.runtime.onMessage.removeListener(handleChromeRuntimeMessage);
     };
-  }, [dispatch, entities, mediaExcerptOutcomes]);
+  }, [handleChromeRuntimeMessage]);
 }
 
 const styles = StyleSheet.create({

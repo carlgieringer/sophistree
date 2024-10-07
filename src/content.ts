@@ -20,19 +20,11 @@ import { deserializeMap } from "./extension/serialization";
 import { connectionErrorMessage } from "./extension/errorMessages";
 import * as contentLogger from "./logging/contentLogging";
 
+// Load MediaExcerpts upon load.
 void getMediaExcerpts();
 
 chrome.runtime.onConnect.addListener(getMediaExcerptsWhenSidebarOpens);
-
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  handleMessage(message as ContentMessage, sendResponse).catch((error) => {
-    contentLogger.error("Failed to handle message", error);
-  });
-  // The sendResponse needs to remain active after this handler completes since it is processed asynchronously.
-  return true;
-});
-
-export const sidepanelKeepalivePortName = "keepalive";
+chrome.runtime.onMessage.addListener(handleMessage);
 
 function getMediaExcerptsWhenSidebarOpens(port: chrome.runtime.Port) {
   if (port.name === sidepanelKeepalivePortName) {
@@ -43,19 +35,16 @@ function getMediaExcerptsWhenSidebarOpens(port: chrome.runtime.Port) {
   }
 }
 
-async function handleMessage(
+export const sidepanelKeepalivePortName = "keepalive";
+
+function handleMessage(
   message: ContentMessage,
+  sender: chrome.runtime.MessageSender,
   sendResponse: (response: unknown) => void,
 ) {
   switch (message.action) {
     case "createMediaExcerpt": {
-      const highlight = await createMediaExcerpt(message);
-      if (
-        highlight &&
-        !(await mediaExcerptExists(highlight?.data.mediaExcerptId))
-      ) {
-        highlightManager.removeHighlight(highlight);
-      }
+      void createMediaExcerptAndCheckItExists(message);
       break;
     }
     case "focusMediaExcerpt":
@@ -63,7 +52,7 @@ async function handleMessage(
       break;
     case "requestUrl":
       sendResponse(getCanonicalOrFullUrl());
-      break;
+      return;
     case "updateMediaExcerptOutcomes": {
       const updatedOutcomes = deserializeMap(message.serializedUpdatedOutcomes);
       updateMediaExcerptOutcomes(updatedOutcomes);
@@ -71,8 +60,20 @@ async function handleMessage(
     }
     case "refreshMediaExcerpts": {
       highlightManager.removeAllHighlights();
-      await getMediaExcerpts();
+      void getMediaExcerpts();
     }
+  }
+}
+
+async function createMediaExcerptAndCheckItExists(
+  message: CreateMediaExcerptMessage,
+) {
+  const highlight = await createMediaExcerpt(message);
+  if (
+    highlight &&
+    !(await mediaExcerptExists(highlight?.data.mediaExcerptId))
+  ) {
+    highlightManager.removeHighlight(highlight);
   }
 }
 
