@@ -13,6 +13,8 @@ interface Highlight<Anchor, Data> {
   colorClass?: string;
 }
 
+export type Logger = Pick<typeof console, "error" | "warn">;
+
 type GetRangesFromAnchorFunction<Anchor> = (anchor: Anchor) => Range[];
 
 export type HighlightManagerOptions<Anchor, Data> = {
@@ -30,9 +32,11 @@ export type HighlightManagerOptions<Anchor, Data> = {
         getColorClass: (data: Data) => string;
       };
   hoverClass?: string;
+  logger?: Logger;
 };
 type MergedHighlightManagerOptions<Anchor, Data> = {
   container: HTMLElement;
+  logger: Logger;
   getRangesFromAnchor: GetRangesFromAnchorFunction<Anchor>;
   highlightClass: string;
   colors:
@@ -86,6 +90,7 @@ class HighlightManager<Anchor, Data> {
     this.highlightManagerId = uuidv4();
     this.options = {
       container: options.container,
+      logger: options.logger ?? console,
       getRangesFromAnchor: options.getRangesFromAnchor,
       highlightClass: options.highlightClass ?? defaultOptions.highlightClass,
       colors: this.mergeColors(options.colors),
@@ -115,7 +120,7 @@ class HighlightManager<Anchor, Data> {
   updateHighlightsColorClass(selector: HighlightSelector<Anchor, Data>) {
     const highlights = this.highlights.filter(selector);
     if (highlights.length < 1) {
-      console.error(
+      this.options.logger.error(
         `Could not update highlights color class for selector ${selector.name} because no highlights matched.`,
       );
       return;
@@ -156,7 +161,7 @@ class HighlightManager<Anchor, Data> {
   focusHighlight(selector: HighlightSelector<Anchor, Data>) {
     const highlight = this.highlights.find(selector);
     if (!highlight) {
-      console.error(
+      this.options.logger.error(
         `Could not activate highlight for selector ${selector.name} because the highlight wasn't found.`,
       );
       return;
@@ -306,7 +311,7 @@ class HighlightManager<Anchor, Data> {
       if (comparison !== 0) {
         return comparison > 0;
       }
-      console.error(
+      this.options.logger.error(
         "Encountered coextensive highlights. This should not happen.",
       );
       return false;

@@ -4,6 +4,7 @@ import ReactDOM from "react-dom/client";
 import debounce from "lodash.debounce";
 
 import { sunflower } from "../colors";
+import * as appLogger from "../logging/appLogging";
 
 declare module "cytoscape" {
   interface Core {
@@ -87,7 +88,7 @@ function makeReactNode(
         node.style("opacity", 0);
         break;
       default:
-        console.error(`reactNodes doesnt' support mode ${options.mode}`);
+        appLogger.error(`reactNodes doesnt' support mode ${options.mode}`);
     }
 
     const htmlElement = document.createElement("div");

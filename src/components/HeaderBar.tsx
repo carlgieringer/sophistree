@@ -15,6 +15,7 @@ import {
   selectIsNewMapDialogVisible,
   showNewMapDialog,
 } from "../store/uiSlice";
+import * as appLogger from "../logging/appLogging";
 
 function HeaderBar({ id }: { id?: string }) {
   const dispatch = useDispatch();
@@ -46,7 +47,7 @@ function HeaderBar({ id }: { id?: string }) {
 
   function deleteActiveMap() {
     if (!activeMapId) {
-      console.warn("No active map to delete");
+      appLogger.warn("No active map to delete");
       return;
     }
     dispatch(deleteMap(activeMapId));

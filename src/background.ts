@@ -1,8 +1,7 @@
-import {
-  accessChromeUrlErrorMessage,
-  wrapCallback,
-} from "./extension/callbacks";
+import { wrapCallback } from "./extension/callbacks";
+import { accessChromeUrlErrorMessage } from "./extension/errorMessages";
 import { CreateMediaExcerptMessage } from "./extension/messages";
+import * as appLogger from "./logging/appLogging";
 
 chrome.runtime.onInstalled.addListener(
   wrapCallback(installContentScriptsInOpenTabs),
@@ -47,7 +46,7 @@ async function installContentScriptsInOpenTabs() {
             // We don't request tabs permission to be able to limit which tabs we process.
             continue;
           } else {
-            console.warn(
+            appLogger.warn(
               `Failed to executeScript [${cs.js.join(",")}] in tab ID ${tab.id} URL: ${tab.url}`,
               e,
             );
@@ -73,7 +72,7 @@ async function installContentScriptsInOpenTabs() {
             // We don't request tabs permission to be able to limit which tabs we process.
             continue;
           } else {
-            console.warn(
+            appLogger.warn(
               `Failed to insertCSS [${cs.css.join(",")}] in tab ID ${tab.id} URL: ${tab.url}`,
               e,
             );
@@ -100,11 +99,11 @@ async function handleContextMenuClick(
     return;
   }
   if (!info.selectionText) {
-    console.log(`info.selectionText was missing`);
+    appLogger.info(`info.selectionText was missing`);
     return;
   }
   if (!tab?.id) {
-    console.log(`tab.id was missing`);
+    appLogger.info(`tab.id was missing`);
     return;
   }
 
@@ -115,7 +114,7 @@ async function handleContextMenuClick(
   try {
     await chrome.tabs.sendMessage(tab.id, message);
   } catch (error) {
-    console.error(
+    appLogger.error(
       `Failed to sendMessage createMediaExcerpt to tab ID ${tab.id} URL ${tab.url}. Is the content script loaded?`,
       error,
     );

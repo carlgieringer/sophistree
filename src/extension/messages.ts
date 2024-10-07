@@ -1,6 +1,7 @@
 import { BasisOutcome } from "../outcomes/outcomes";
 import { MediaExcerpt } from "../store/entitiesSlice";
 import { serializeMap } from "./serialization";
+import * as appLogger from "../logging/appLogging";
 
 export interface CreateMediaExcerptMessage {
   action: "createMediaExcerpt";
@@ -51,7 +52,7 @@ export async function sendUpdatedMediaExcerptOutcomes(
   return Promise.all(
     tabs.map(async (tab) => {
       if (!tab.id) {
-        console.error("Tab id is undefined");
+        appLogger.error("Tab id is undefined");
         return;
       }
       try {
@@ -60,7 +61,7 @@ export async function sendUpdatedMediaExcerptOutcomes(
           message,
         )) as Promise<unknown>;
       } catch (error) {
-        console.warn("Error sending message to tab:", error);
+        appLogger.warn("Error sending message to tab:", error);
       }
     }),
   );
@@ -70,7 +71,7 @@ async function getCompleteTabs() {
   try {
     return await chrome.tabs.query({ status: "complete" });
   } catch (error) {
-    console.error("Error querying tabs:", error);
+    appLogger.error("Error querying tabs:", error);
     return [];
   }
 }

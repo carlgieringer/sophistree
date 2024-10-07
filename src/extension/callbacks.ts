@@ -1,3 +1,5 @@
+import * as appLogger from "../logging/appLogging";
+
 type WrapperReturn<R> = R extends Promise<unknown> ? undefined : R | undefined;
 
 /**
@@ -17,15 +19,13 @@ export function wrapCallback<Args extends unknown[], Return>(
         // Although Promise return values are often not supported in callbacks (e.g. in Chrome
         // extension callbacks), accept them as a convenience and catch any uncaught errors.
         result.catch((error) => {
-          // This would be a good place to do error reporting.
-          console.error(error);
+          appLogger.error("Callback failed unexpectedly", error);
         });
         return undefined as WrapperReturn<Return>;
       }
       return result as WrapperReturn<Return>;
     } catch (error) {
-      // This would be a good place to do error reporting.
-      console.error(error);
+      appLogger.error("Callback failed unexpectedly", error);
     }
     return undefined as WrapperReturn<Return>;
   };
@@ -36,12 +36,6 @@ export function catchErrors<Return>(callback: () => Return) {
   try {
     return callback();
   } catch (error) {
-    // This would be a good place to do error reporting.
-    console.error(error);
+    appLogger.error("Callback failed unexpectedly", error);
   }
 }
-
-export const connectionErrorMessage =
-  "Could not establish connection. Receiving end does not exist.";
-
-export const accessChromeUrlErrorMessage = "Cannot access a chrome:// URL";

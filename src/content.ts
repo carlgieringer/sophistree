@@ -9,7 +9,7 @@ import {
 import { HighlightManager } from "./highlights";
 import "./highlights/rotation-colors.scss";
 import "./highlights/outcome-colors.scss";
-import {
+import type {
   ContentMessage,
   CreateMediaExcerptMessage,
   GetMediaExcerptsResponse,
@@ -17,7 +17,8 @@ import {
 import { BasisOutcome } from "./outcomes/outcomes";
 import { outcomeValence } from "./outcomes/valences";
 import { deserializeMap } from "./extension/serialization";
-import { connectionErrorMessage, wrapCallback } from "./extension/callbacks";
+import { connectionErrorMessage } from "./extension/errorMessages";
+import * as contentLogger from "./logging/contentLogging";
 
 interface AddMediaExcerptMessage {
   action: "addMediaExcerpt";
@@ -52,11 +53,16 @@ export type ChromeRuntimeMessage =
   | CheckMediaExcerptExistenceMessage
   | GetMediaExcerptsMessage;
 
-chrome.runtime.onMessage.addListener(wrapCallback(handleMessage));
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  handleMessage(message as ContentMessage, sendResponse).catch((error) => {
+    contentLogger.error("Failed to handle message", error);
+  });
+  // The sendResponse needs to remain active after this handler completes since it is processed asynchronously.
+  return true;
+});
 
 async function handleMessage(
   message: ContentMessage,
-  sender: chrome.runtime.MessageSender,
   sendResponse: (response: unknown) => void,
 ) {
   switch (message.action) {
@@ -82,8 +88,6 @@ async function handleMessage(
       break;
     }
   }
-  // The sendResponse need not remain active after this handler completes.
-  return false;
 }
 
 async function mediaExcerptExists(mediaExcerptId: string) {
@@ -98,7 +102,7 @@ async function mediaExcerptExists(mediaExcerptId: string) {
       },
     });
   } catch (error) {
-    console.error(connectionErrorMessage, error);
+    contentLogger.error("Error checking media excerpt existence", error);
     return false;
   }
 }
@@ -117,13 +121,13 @@ async function createMediaExcerpt(message: CreateMediaExcerptMessage) {
   const sourceName = getTitle();
 
   if (!quotation) {
-    console.error(`Cannot createMediaExcerpt for empty quotation`);
+    contentLogger.error(`Cannot createMediaExcerpt for empty quotation`);
     return;
   }
 
   const highlight = highlightCurrentSelection(id);
   if (!highlight) {
-    console.error(`Faild to highlight current selection.`);
+    contentLogger.error(`Failed to highlight current selection.`);
     return;
   }
 
@@ -149,7 +153,7 @@ async function createMediaExcerpt(message: CreateMediaExcerptMessage) {
       ) {
         window.alert("Please open the Sophistree sidebar to add excerpts");
       } else {
-        console.error(
+        contentLogger.error(
           `Unable to connect to extension to add media excerpt.`,
           error,
         );
@@ -207,7 +211,7 @@ async function getMediaExcerpts() {
     ) {
       // This is expected when the sidebar is not open.
     } else {
-      console.error(
+      contentLogger.error(
         "Unable to connect to extension to get media excerpts.",
         error,
       );
@@ -227,13 +231,13 @@ function highlightMediaExcerpts(mediaExcerpts: MediaExcerpt[]) {
 function highlightCurrentSelection(mediaExcerptId: string) {
   const selection = window.getSelection();
   if (!selection || selection.isCollapsed) {
-    console.error(`Cannot highlight empty selection.`);
+    contentLogger.error(`Cannot highlight empty selection.`);
     return undefined;
   }
 
   const domAnchor = makeDomAnchorFromSelection(selection);
   if (!domAnchor) {
-    console.error(`Cannot createMediaExcerpt for empty domAnchor`);
+    contentLogger.error(`Cannot createMediaExcerpt for empty domAnchor`);
     return undefined;
   }
   return highlightRanges(mediaExcerptId, domAnchor);
@@ -245,6 +249,7 @@ interface HighlightData {
 
 const highlightManager = new HighlightManager<DomAnchor, HighlightData>({
   container: document.body,
+  logger: contentLogger,
   getRangesFromAnchor: (anchor: DomAnchor) =>
     getRangesFromDomAnchor(document.body, anchor),
   colors: {

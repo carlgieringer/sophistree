@@ -38,7 +38,7 @@ this extension and use that in place of Sophistree?
 
 TODO:
 
-- Publish to Chrome Web Store. Reduce permissions? Error reporting?
+- Publish to Chrome Web Store.
 - npm publish HighlightManager
 
 - Try adding

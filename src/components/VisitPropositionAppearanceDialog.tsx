@@ -7,6 +7,7 @@ import { MediaExcerpt, preferredUrl } from "../store/entitiesSlice";
 import { getTabUrl, FocusMediaExcerptMessage } from "../extension/messages";
 import { PropositionNodeData } from "./graphTypes";
 import { catchErrors } from "../extension/callbacks";
+import * as appLogger from "../logging/appLogging";
 
 export default function VisitPropositionAppearanceDialog({
   data,
@@ -69,11 +70,7 @@ export async function focusMediaExcerpt(mediaExcerpt: MediaExcerpt) {
   try {
     await chrome.tabs.sendMessage(tabId, message);
   } catch (error) {
-    console.error(
-      `Failed to send focusMediaExcerpt message to tab`,
-      message,
-      error,
-    );
+    appLogger.error(`Failed to send focusMediaExcerpt message to tab`, error);
   }
 }
 
@@ -89,7 +86,7 @@ async function getOrOpenTab(
   try {
     tabUrl = await getTabUrl(activeTab.id);
   } catch (error) {
-    console.error(`Failed to getTabUrl`, error);
+    appLogger.error(`Failed to getTabUrl`, error);
   }
   if (tabUrl === url) {
     return activeTab.id;

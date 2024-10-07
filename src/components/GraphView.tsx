@@ -68,6 +68,7 @@ import {
   EntityElementData,
   PropositionNodeData,
 } from "./graphTypes";
+import * as appLogger from "../logging/appLogging";
 
 cytoscape.use(elk);
 cytoscape.use(contextMenus);
@@ -412,7 +413,7 @@ function useZoomEventHandlers(
     }) => {
       const cy = cyRef.current;
       if (!cy) {
-        console.warn("Cannot zoom because there is no cy ref.");
+        appLogger.warn("Cannot zoom because there is no cy ref.");
         return;
       }
       cy.zoom({ level, renderedPosition });
@@ -424,7 +425,7 @@ function useZoomEventHandlers(
     (factor: number, renderedPosition: { x: number; y: number }) => {
       const cy = cyRef.current;
       if (!cy) {
-        console.warn("Cannot zoom because there is no cy ref.");
+        appLogger.warn("Cannot zoom because there is no cy ref.");
         return;
       }
       const level = cy.zoom() * factor;
@@ -918,7 +919,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
         case "PropositionCompound": {
           const compoundNodeId = justificationBasisNodeIds.get(entity.id);
           if (!compoundNodeId) {
-            console.error(
+            appLogger.error(
               `Missing node ID for PropositionCompound ID ${entity.id}`,
             );
             break;
@@ -931,7 +932,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
           entity.atomIds.forEach((atomId) => {
             const proposition = propositionsById.get(atomId);
             if (!proposition) {
-              console.error(
+              appLogger.error(
                 `No Proposition found for PropositionCompound atom ID ${atomId}. This should be impossible.`,
               );
               return;
@@ -947,7 +948,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
               .get(atomId)
               ?.get(entity.id);
             if (!atomNodeId) {
-              console.error(
+              appLogger.error(
                 `No atom node ID found for PropositionCompound atom ID ${atomId}. This should be impossible.`,
               );
               return;
@@ -970,7 +971,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
           const basisNodeId = justificationBasisNodeIds.get(entity.basisId);
           const targetNodeId = justificationTargetNodeIds.get(entity.targetId);
           if (!basisNodeId || !targetNodeId) {
-            console.error(
+            appLogger.error(
               `Missing node ID for justification ${entity.id}. Basis: ${entity.basisId}, Target: ${entity.targetId}`,
             );
             break;
@@ -983,7 +984,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
               entity.id,
             );
             if (!intermediateNodeId) {
-              console.error(
+              appLogger.error(
                 `Missing intermediate node ID for justification ID ${entity.id}`,
               );
               break;
@@ -1078,7 +1079,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
         case "MediaExcerpt": {
           const id = justificationBasisNodeIds.get(entity.id);
           if (!id) {
-            console.error(
+            appLogger.error(
               `No node ID found for media excerpt ID ${entity.id}. This should be impossible.`,
             );
             break;

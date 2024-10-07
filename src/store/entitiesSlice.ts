@@ -2,6 +2,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { v4 as uuidv4 } from "uuid";
 
 import { DomAnchor } from "../anchors";
+import * as appLogger from "../logging/appLogging";
 
 interface BaseEntity {
   id: string;
@@ -150,7 +151,7 @@ export const entitiesSlice = createSlice({
     addEntity(state, action: PayloadAction<Entity>) {
       const activeMap = state.maps.find((map) => map.id === state.activeMapId);
       if (!activeMap) {
-        console.error(`Cannot addEntity because there is no activeMap`);
+        appLogger.error(`Cannot addEntity because there is no activeMap`);
         return;
       }
       activeMap.entities.push(action.payload);
@@ -184,14 +185,14 @@ export const entitiesSlice = createSlice({
     ) {
       const activeMap = state.maps.find((map) => map.id === state.activeMapId);
       if (!activeMap) {
-        console.error(`Cannot updateEntity because there is no activeMap`);
+        appLogger.error(`Cannot updateEntity because there is no activeMap`);
         return;
       }
       const index = activeMap.entities.findIndex(
         (entity) => entity.id === action.payload.id,
       );
       if (index < 1) {
-        console.error(
+        appLogger.error(
           `Cannot updateEntity because there is no entity with id ${action.payload.id}`,
         );
         return;
@@ -235,7 +236,7 @@ export const entitiesSlice = createSlice({
         (entity) => entity.id === action.payload.id,
       );
       if (index === -1) {
-        console.error(
+        appLogger.error(
           `Cannot update Justification node because no node has ID ${action.payload.id}`,
         );
         return;
@@ -253,12 +254,12 @@ export const entitiesSlice = createSlice({
 
       const source = activeMap.entities.find((n) => n.id === sourceId);
       if (!source) {
-        console.error(`Drag source node with id ${sourceId} not found`);
+        appLogger.error(`Drag source node with id ${sourceId} not found`);
         return;
       }
       const target = activeMap.entities.find((n) => n.id === targetId);
       if (!target) {
-        console.error(`Drag target node with id ${targetId} not found`);
+        appLogger.error(`Drag target node with id ${targetId} not found`);
         return;
       }
 
@@ -268,7 +269,7 @@ export const entitiesSlice = createSlice({
     selectEntities(state, action: PayloadAction<string[]>) {
       const activeMap = state.maps.find((map) => map.id === state.activeMapId);
       if (!activeMap) {
-        console.warn("Cannot select entities because there is no active map");
+        appLogger.warn("Cannot select entities because there is no active map");
         return;
       }
       const selectedEntityIds = action.payload;
@@ -363,7 +364,9 @@ export function updateConclusions(map: ArgumentMap) {
               .get(entity.apparitionId)!
               .add(preferredUrl(mediaExcerpt.urlInfo));
           } else {
-            console.warn(`MediaExcerpt not found for Appearance: ${entity.id}`);
+            appLogger.warn(
+              `MediaExcerpt not found for Appearance: ${entity.id}`,
+            );
           }
         }
         return acc;
@@ -503,7 +506,7 @@ function applyDragOperation(
           if (!target.atomIds.includes(source.id)) {
             target.atomIds.push(source.id);
           } else {
-            console.log(
+            appLogger.log(
               `Proposition ID ${source.id} is already an atom of proposition compound ID ${target.id}. Skipping add it.`,
             );
           }
@@ -548,14 +551,14 @@ function applyDragOperation(
             });
             updateMediaExcerptAutoVisibility(state, mediaExcerptId);
           } else {
-            console.log(
+            appLogger.log(
               `Appearance between apparition ID ${apparitionId} and media excerpt ID ${mediaExcerptId} already exists. Skipping creation.`,
             );
           }
           return;
         }
         default: {
-          console.error(
+          appLogger.error(
             `Invalid target type ${target.type} for source type ${source.type}`,
           );
           return;
@@ -567,7 +570,7 @@ function applyDragOperation(
       switch (target.type) {
         case "MediaExcerpt":
         case "PropositionCompound":
-          console.error(
+          appLogger.error(
             `Invalid target type ${target.type} for source type ${source.type}`,
           );
           return;
@@ -578,7 +581,7 @@ function applyDragOperation(
       break;
     }
     default:
-      console.error(`Invalid drag source type type: ${source.type}`);
+      appLogger.error(`Invalid drag source type type: ${source.type}`);
       return;
   }
 
@@ -589,7 +592,7 @@ function applyDragOperation(
       e.basisId === basisId,
   );
   if (extantJustification) {
-    console.info("Extant justification found, not creating a new one.");
+    appLogger.info("Extant justification found, not creating a new one.");
     return;
   }
 
@@ -637,14 +640,14 @@ function updateEntityVisibility(
 ) {
   const activeMap = state.maps.find((map) => map.id === state.activeMapId);
   if (!activeMap) {
-    console.error(
+    appLogger.error(
       `Unable to update entity visibility because the active map ${state.activeMapId} was not found.`,
     );
     return;
   }
   const entity = activeMap.entities.find((entity) => entity.id === entityId);
   if (!entity) {
-    console.error(
+    appLogger.error(
       `Unable to update entity visibility because the entity with ID ${state.activeMapId} was not found.`,
     );
     return;
@@ -689,7 +692,7 @@ function updateMediaExcerptAutoVisibility(
     (entity) => entity.id === mediaExcerptId,
   );
   if (!mediaExcerpt) {
-    console.error(
+    appLogger.error(
       `Unable to update MediaExcerpt visibility because MediaExcerpt with ID ${mediaExcerptId} was missing`,
     );
     return;

@@ -18,7 +18,6 @@ export default function NewMapDialog({
   const inputRef = useRef<RNTextInput | null>(null);
 
   useEffect(() => {
-    console.log(inputRef.current);
     inputRef.current?.focus();
   }, [visible]);
 
