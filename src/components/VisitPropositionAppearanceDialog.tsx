@@ -8,6 +8,7 @@ import { getTabUrl, FocusMediaExcerptMessage } from "../extension/messages";
 import { PropositionNodeData } from "./graphTypes";
 import { catchErrors } from "../extension/callbacks";
 import * as appLogger from "../logging/appLogging";
+import { tabConnectDelayMillis } from "../App";
 
 export default function VisitPropositionAppearanceDialog({
   data,
@@ -109,7 +110,8 @@ function waitForTabId(openerTabId: number): Promise<number> {
                 if (info.status === "complete" && tabId === tab.id) {
                   chrome.tabs.onUpdated.removeListener(onUpdatedListener);
                   chrome.tabs.onCreated.removeListener(tabCreatedListener);
-                  resolve(tabId);
+                  // Give the tab time to load the highlights.
+                  setTimeout(() => resolve(tabId), 1.1 * tabConnectDelayMillis);
                 }
               });
             },

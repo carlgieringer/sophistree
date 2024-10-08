@@ -113,7 +113,7 @@ async function getMediaExcerpt(mediaExcerptId: string) {
 
 function focusMediaExcerpt(mediaExcerptId: string) {
   highlightManager.focusHighlight(
-    (anchor) => anchor.data.mediaExcerptId === mediaExcerptId,
+    (h) => h.data.mediaExcerptId === mediaExcerptId,
   );
 }
 

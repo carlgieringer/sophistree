@@ -87,6 +87,8 @@ async function connectToOpenTabs() {
   }
 }
 
+export const tabConnectDelayMillis = 500;
+
 function connectToReloadedTabs(
   tabId: number,
   info: chrome.tabs.TabChangeInfo,
@@ -95,7 +97,7 @@ function connectToReloadedTabs(
   if (info.status === "complete") {
     // For some reason connecting immediately to just opened tabs fails silently.
     // So wait a little bit before connecting.
-    setTimeout(() => connectToTab(tab), 500);
+    setTimeout(() => connectToTab(tab), tabConnectDelayMillis);
   }
 }
 

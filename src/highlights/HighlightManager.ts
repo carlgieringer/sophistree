@@ -162,7 +162,7 @@ class HighlightManager<Anchor, Data> {
     const highlight = this.highlights.find(selector);
     if (!highlight) {
       this.options.logger.error(
-        `Could not activate highlight for selector ${selector.name} because the highlight wasn't found.`,
+        `Could not focus highlight for selector ${selector.name} because the highlight wasn't found.`,
       );
       return;
     }
