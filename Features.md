@@ -6,7 +6,7 @@ This document describes Sophistree's features.
 
 Sophistree has four major components:
 
-- The graph canvas: a two dimensional diagram of entities in the argument graph. Not all entities
+- The canvas: a two dimensional diagram of entities in the argument map. Not all entities
   will be visible depending on the context.
 - The entity list: a table listing all the entities. Users can control the visibility of hidden
   elements here.
@@ -18,7 +18,7 @@ Sophistree has four major components:
 
 A user can:
 
-- create a new Proposition by double-tapping the graph canvas
+- create a new Proposition by double-tapping the canvas
 - create a new Excerpt by selecting text in the content page and adding to Sophistree from the
   context menu.
 - add a proposition to a compound by dragging a proposition node into the compound node
@@ -30,17 +30,19 @@ Excerpt creation guidelines:
 - The sidebar must be open to create a new excerpt. If the sidebar is not open, the user gets an
   error message when trying to crate a media excerpt.
 - If excerpt creation fails, no highlight is created.
-- There must be an active graph to create a new excerpt. Otherwise, the user gets an error message.
+- There must be an active map to create a new excerpt. Otherwise, the user gets an error message.
 
 ## Highlights
 
-- Loading a content page while the sidebar is open with an active will apply highlights for all
-  excerpts in the graph that came from this page.
+- Creating a new excerpt highlights the selected text
+- Loading a content page while the sidebar is open with an active map will apply highlights for all
+  excerpts in the map from this page.
 - Hovering over a higlight will emphasize the highlight.
 - Closing the sidebar removes highlights from all pages.
-- Opening the sidebar with an active graph adds highlights to all pages.
-- Activating a new graph replaces highlights from the previously active graph, if any, with
-  highlights from the new graph in all pages.
+- Opening the sidebar with an active map adds highlights to all pages.
+- Activating a new map replaces highlights from the previously active map, if any, with
+  highlights from the new map in all pages.
+- Deleting the last map removes highlights from the content pages.
 
 Guidelines:
 
@@ -49,41 +51,43 @@ Guidelines:
 
 ## Outcomes
 
+- Node coloring updates to reflect outcomes.
+- Edge style updates to reflect outcomes.
 - Highlights reflect outcomes
 - Highlights update to reflect changed outcomes.
 
-## Graph management
+## Map management
 
 A user can:
 
 - rename a map
-- delete a graph (if any graph exists)
-- create a new graph
-- open an existing graph
-- download a graph
-- download all graphs
-- import a graph by uploading a file containing a single graph
-- import multiple graphs by uploading a file containing multiple graphs
+- delete a map (if any map exists)
+- create a new map
+- open an existing map
+- download a map
+- download all maps
+- import a map by uploading a file containing a single map
+- import multiple maps by uploading a file containing multiple maps
 
 …from the app menu.
 
-Graph import guidelines:
+Map import guidelines:
 
-- imported graphs do not overwrite existing graphs
-- a graph file with an older format is automatically converted to the current format if possible.
+- imported maps do not overwrite existing maps
+- a map file with an older format is automatically converted to the current format if possible.
 
 ## Selection
 
 - Clicking on a highlight selects any excerpts and appearances using the highlight's excerpt. It
-  also pans the graph to make the selected entities' elements visible if they are not already.
-- Clicking a graph element (node or edge) selects the element's entity.
-- Clicking on the graph canvas deselects all entities.
+  also pans the canvas to make the selected entities' elements visible if they are not already.
+- Clicking a canvas element (node or edge) selects the element's entity.
+- Clicking on the canvas canvas deselects all entities.
 - Clicking an entity list row selects the row's entity.
 
 Guidelines:
 
 - When an entity is selected:
-  - It's elements in the graph get a distinguishing outline.
+  - It's elements in the canvas get a distinguishing outline.
   - It's row in the entity list gains a distinguishing color.
   - The node editor displays that entity's information
 

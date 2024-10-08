@@ -38,7 +38,8 @@ export default function NewMapDialog({
       <Dialog.Title>Create new map</Dialog.Title>
       <Dialog.Content>
         <TextInput
-          label="Map Name"
+          label="Map name"
+          placeholder="Enter a map name"
           ref={inputRef}
           value={mapName}
           onSubmitEditing={handleCreateMap}

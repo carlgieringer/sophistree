@@ -7,14 +7,8 @@ import { MapMigrationIndex, migrateMap } from "../store/migrations";
 
 type SophistreeMapFileContents = {
   sophistreeMapFileVersion: number;
-} & (
-  | {
-      map: ArgumentMap;
-    }
-  | {
-      maps: ArgumentMap[];
-    }
-);
+  maps: ArgumentMap[];
+};
 
 const UploadMapsDialog = ({
   onDismiss,
@@ -48,8 +42,7 @@ const UploadMapsDialog = ({
         return;
       }
 
-      const maps = "maps" in jsonContent ? jsonContent.maps : [jsonContent.map];
-      const updatedMaps = maps.map((map: ArgumentMap) => {
+      const updatedMaps = jsonContent.maps.map((map: ArgumentMap) => {
         let updatedMap = map;
         for (
           let i = jsonContent.sophistreeMapFileVersion;
