@@ -682,7 +682,7 @@ function useDragEventHandlers(
         // two edges when any one of them is hovered.
         const hoverEntityId = getEntityId(hoverTarget);
         cy.elements()
-          .filter((e) => e.data("entityId") === hoverEntityId)
+          .filter((e) => e.data("entity.id") === hoverEntityId)
           .addClass("hover-highlight");
       }
     };
