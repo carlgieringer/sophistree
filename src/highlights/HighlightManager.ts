@@ -357,12 +357,16 @@ class HighlightManager<Anchor, Data> {
       event.clientX,
       event.clientY,
     );
-
     if (!highlightElement) {
+      return;
+    }
+
+    if (highlightElement.dataset.highlightManagerId !== this.highlightManagerId) {
       return;
     }
     const highlightIndex = highlightElement.dataset.highlightIndex;
     if (!highlightIndex) {
+      this.options.logger.error(`highlight element was missing a highlight index.`)
       return;
     }
 

@@ -1,5 +1,5 @@
 import { BasisOutcome } from "../outcomes/outcomes";
-import { MediaExcerpt } from "../store/entitiesSlice";
+import { AddMediaExcerptData, MediaExcerpt } from "../store/entitiesSlice";
 import { serializeMap } from "./serialization";
 import * as appLogger from "../logging/appLogging";
 
@@ -30,12 +30,18 @@ export interface RefreshMediaExcerptsMessage {
   action: "refreshMediaExcerpts";
 }
 
+export interface NotifyTabOfNewMediaExcerptMessage {
+  action: "notifyTabOfNewMediaExcerpt";
+  data: AddMediaExcerptData;
+}
+
 export type ContentMessage =
   | CreateMediaExcerptMessage
   | FocusMediaExcerptMessage
   | RequestUrlMessage
   | UpdateMediaExcerptOutcomesMessage
-  | RefreshMediaExcerptsMessage;
+  | RefreshMediaExcerptsMessage
+  | NotifyTabOfNewMediaExcerptMessage;
 
 export function getTabUrl(tabId: number): Promise<string> {
   const message: RequestUrlMessage = {
@@ -90,5 +96,27 @@ async function getCompleteTabs() {
   } catch (error) {
     appLogger.error("Error querying tabs:", error);
     return [];
+  }
+}
+
+export async function notifyTabOfNewMediaExcerpt(
+  tab: chrome.tabs.Tab,
+  data: AddMediaExcerptData,
+) {
+  if (!tab.id) {
+    appLogger.error("Tab id is undefined");
+    return;
+  }
+  const message: NotifyTabOfNewMediaExcerptMessage = {
+    action: "notifyTabOfNewMediaExcerpt",
+    data,
+  };
+  try {
+    await chrome.tabs.sendMessage(tab.id, message);
+  } catch (error) {
+    appLogger.error(
+      `Failed to notify tab ${tab.id} of new MediaExcerpt`,
+      error,
+    );
   }
 }

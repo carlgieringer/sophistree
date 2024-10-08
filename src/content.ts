@@ -58,29 +58,44 @@ function handleMessage(
     case "refreshMediaExcerpts": {
       highlightManager.removeAllHighlights();
       void getMediaExcerpts();
+      break;
+    }
+    case "notifyTabOfNewMediaExcerpt": {
+      highlightNewMediaExcerptIfOnPage(message.data);
+      break;
     }
   }
+}
+
+function highlightNewMediaExcerptIfOnPage(data: AddMediaExcerptData) {
+  const canonicalUrl = getCanonicalUrl();
+  if (canonicalUrl) {
+    if (canonicalUrl !== data.canonicalUrl) {
+      return;
+    }
+  } else {
+    const url = getUrl();
+    if (url !== data.url) {
+      return;
+    }
+  }
+
+  createHighlight(data.id, data.domAnchor);
 }
 
 async function createMediaExcerptAndCheckItExists(
   message: CreateMediaExcerptMessage,
 ) {
   const highlight = await createMediaExcerpt(message);
-  if (
-    highlight &&
-    !(await mediaExcerptExists(highlight?.data.mediaExcerptId))
-  ) {
+  if (highlight && !(await getMediaExcerpt(highlight.data.mediaExcerptId))) {
     highlightManager.removeHighlight(highlight);
   }
 }
 
-async function mediaExcerptExists(mediaExcerptId: string) {
+async function getMediaExcerpt(mediaExcerptId: string) {
   try {
-    return await chrome.runtime.sendMessage<
-      CheckMediaExcerptExistenceMessage,
-      boolean
-    >({
-      action: "checkMediaExcerptExistence",
+    return await chrome.runtime.sendMessage<GetMediaExcerptMessage, boolean>({
+      action: "getMediaExcerpt",
       data: {
         mediaExcerptId,
       },
@@ -208,7 +223,7 @@ async function getMediaExcerpts() {
 }
 
 function highlightMediaExcerpts(mediaExcerpts: MediaExcerpt[]) {
-  mediaExcerpts.forEach(({ id, domAnchor }) => highlightRanges(id, domAnchor));
+  mediaExcerpts.forEach(({ id, domAnchor }) => createHighlight(id, domAnchor));
 }
 
 function highlightCurrentSelection(mediaExcerptId: string) {
@@ -223,7 +238,7 @@ function highlightCurrentSelection(mediaExcerptId: string) {
     contentLogger.error(`Cannot createMediaExcerpt for empty domAnchor`);
     return undefined;
   }
-  return highlightRanges(mediaExcerptId, domAnchor);
+  return createHighlight(mediaExcerptId, domAnchor);
 }
 
 interface HighlightData {
@@ -266,7 +281,7 @@ function getHighlightColorClass(mediaExcerptId: string) {
   return `highlight-color-${valence}`;
 }
 
-function highlightRanges(mediaExcerptId: string, domAnchor: DomAnchor) {
+function createHighlight(mediaExcerptId: string, domAnchor: DomAnchor) {
   return highlightManager.createHighlight(
     domAnchor,
     { mediaExcerptId },
@@ -298,8 +313,8 @@ interface SelectMediaExcerptMessage {
   };
 }
 
-interface CheckMediaExcerptExistenceMessage {
-  action: "checkMediaExcerptExistence";
+interface GetMediaExcerptMessage {
+  action: "getMediaExcerpt";
   data: {
     mediaExcerptId: string;
   };
@@ -316,5 +331,5 @@ interface GetMediaExcerptsMessage {
 export type ChromeRuntimeMessage =
   | AddMediaExcerptMessage
   | SelectMediaExcerptMessage
-  | CheckMediaExcerptExistenceMessage
+  | GetMediaExcerptMessage
   | GetMediaExcerptsMessage;

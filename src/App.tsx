@@ -10,6 +10,7 @@ import HeaderBar from "./components/HeaderBar";
 import { ChromeRuntimeMessage, sidepanelKeepalivePortName } from "./content";
 import {
   addMediaExcerpt,
+  AddMediaExcerptData,
   MediaExcerpt,
   selectEntities,
 } from "./store/entitiesSlice";
@@ -19,6 +20,7 @@ import { showNewMapDialog } from "./store/uiSlice";
 import { BasisOutcome } from "./outcomes/outcomes";
 import {
   GetMediaExcerptsResponse,
+  notifyTabOfNewMediaExcerpt,
   sendRefreshMediaExcerptsMessage,
   sendUpdatedMediaExcerptOutcomes,
 } from "./extension/messages";
@@ -162,15 +164,15 @@ function useHandleChromeRuntimeMessage() {
         switch (message.action) {
           case "addMediaExcerpt":
             dispatch(addMediaExcerpt(message.data));
+            void notifyTabsOfNewMediaExcerpt(sender.tab, message.data);
             break;
           case "selectMediaExcerpt":
             dispatch(selectEntities([message.data.mediaExcerptId]));
             break;
-          case "checkMediaExcerptExistence": {
-            const response =
-              entities.find((e) => e.id === message.data.mediaExcerptId) !==
-              undefined;
-            sendResponse(response);
+          case "getMediaExcerpt": {
+            sendResponse(
+              entities.find((e) => e.id === message.data.mediaExcerptId),
+            );
             break;
           }
           case "getMediaExcerpts": {
@@ -204,6 +206,19 @@ function useHandleChromeRuntimeMessage() {
       chrome.runtime.onMessage.removeListener(handleChromeRuntimeMessage);
     };
   }, [handleChromeRuntimeMessage]);
+}
+
+async function notifyTabsOfNewMediaExcerpt(
+  originTab: chrome.tabs.Tab | undefined,
+  data: AddMediaExcerptData,
+) {
+  const tabs = await chrome.tabs.query({});
+  for (const tab of tabs) {
+    if (tab.id && tab.id === originTab?.id) {
+      continue;
+    }
+    await notifyTabOfNewMediaExcerpt(tab, data);
+  }
 }
 
 const styles = StyleSheet.create({
