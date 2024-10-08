@@ -20,13 +20,10 @@ import { deserializeMap } from "./extension/serialization";
 import { connectionErrorMessage } from "./extension/errorMessages";
 import * as contentLogger from "./logging/contentLogging";
 
-// Load MediaExcerpts upon load.
-void getMediaExcerpts();
-
-chrome.runtime.onConnect.addListener(getMediaExcerptsWhenSidebarOpens);
+chrome.runtime.onConnect.addListener(getMediaExcerptsWhenSidebarConnects);
 chrome.runtime.onMessage.addListener(handleMessage);
 
-function getMediaExcerptsWhenSidebarOpens(port: chrome.runtime.Port) {
+function getMediaExcerptsWhenSidebarConnects(port: chrome.runtime.Port) {
   if (port.name === sidepanelKeepalivePortName) {
     void getMediaExcerpts();
     port.onDisconnect.addListener(() => {

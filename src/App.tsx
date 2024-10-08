@@ -65,36 +65,48 @@ const App: React.FC = () => {
 };
 
 function useContentScriptKeepAliveConnection() {
-  const tabCreatedListener = useCallback((tab: chrome.tabs.Tab) => {
-    if (!tab.id) {
-      return;
-    }
-    chrome.tabs.connect(tab.id, { name: sidepanelKeepalivePortName });
-  }, []);
   useEffect(() => {
-    void connectToOpenTabs().catch((error) => {
-      appLogger.error("Failed to connect to open tabs", error);
-    });
-
-    chrome.tabs.onCreated.addListener(tabCreatedListener);
-
+    void connectToOpenTabs();
+    chrome.tabs.onUpdated.addListener(connectToReloadedTabs);
     return () => {
-      chrome.tabs.onCreated.removeListener(tabCreatedListener);
+      chrome.tabs.onUpdated.removeListener(connectToReloadedTabs);
     };
-  }, [tabCreatedListener]);
+  }, []);
 }
 
 async function connectToOpenTabs() {
-  const tabs = await chrome.tabs.query({});
-  for (const tab of tabs) {
-    if (!tab.id) {
-      continue;
+  try {
+    const tabs = await chrome.tabs.query({});
+    for (const tab of tabs) {
+      connectToTab(tab);
     }
-    try {
-      chrome.tabs.connect(tab.id, { name: sidepanelKeepalivePortName });
-    } catch (error) {
-      appLogger.error("Failed to connect to tab", error);
-    }
+  } catch (error) {
+    appLogger.error("Failed to connect to open tabs", error);
+  }
+}
+
+function connectToReloadedTabs(
+  tabId: number,
+  info: chrome.tabs.TabChangeInfo,
+  tab: chrome.tabs.Tab,
+) {
+  if (info.status === "complete") {
+    // For some reason connecting immediately to just opened tabs fails silently.
+    // So wait a little bit before connecting.
+    setTimeout(() => connectToTab(tab), 500);
+  }
+}
+
+function connectToTab(tab: chrome.tabs.Tab) {
+  if (!tab.id) {
+    return;
+  }
+  try {
+    chrome.tabs.connect(tab.id, {
+      name: sidepanelKeepalivePortName,
+    });
+  } catch (error) {
+    appLogger.error("Failed to connect to tab", error);
   }
 }
 
