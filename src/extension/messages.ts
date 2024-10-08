@@ -35,13 +35,19 @@ export interface NotifyTabOfNewMediaExcerptMessage {
   data: AddMediaExcerptData;
 }
 
+export interface NotifyTabsOfDeletedMediaExcerptsMessage {
+  action: "notifyTabsOfDeletedMediaExcerpts";
+  mediaExcerptId: string;
+}
+
 export type ContentMessage =
   | CreateMediaExcerptMessage
   | FocusMediaExcerptMessage
   | RequestUrlMessage
   | UpdateMediaExcerptOutcomesMessage
   | RefreshMediaExcerptsMessage
-  | NotifyTabOfNewMediaExcerptMessage;
+  | NotifyTabOfNewMediaExcerptMessage
+  | NotifyTabsOfDeletedMediaExcerptsMessage;
 
 export function getTabUrl(tabId: number): Promise<string> {
   const message: RequestUrlMessage = {
@@ -67,6 +73,14 @@ export async function sendUpdatedMediaExcerptOutcomes(
     serializedUpdatedOutcomes,
   };
 
+  await sendMessageToAllCompleteTabs(message);
+}
+
+export async function notifyTabsOfDeletedMediaExcerpt(mediaExcerptId: string) {
+  const message: NotifyTabsOfDeletedMediaExcerptsMessage = {
+    action: "notifyTabsOfDeletedMediaExcerpts",
+    mediaExcerptId,
+  };
   await sendMessageToAllCompleteTabs(message);
 }
 

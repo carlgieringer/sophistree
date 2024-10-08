@@ -120,7 +120,7 @@ class HighlightManager<Anchor, Data> {
   updateHighlightsColorClass(selector: HighlightSelector<Anchor, Data>) {
     const highlights = this.highlights.filter(selector);
     if (highlights.length < 1) {
-      this.options.logger.error(
+      this.options.logger.warn(
         `Could not update highlights color class for selector ${selector.name} because no highlights matched.`,
       );
       return;
@@ -361,12 +361,16 @@ class HighlightManager<Anchor, Data> {
       return;
     }
 
-    if (highlightElement.dataset.highlightManagerId !== this.highlightManagerId) {
+    if (
+      highlightElement.dataset.highlightManagerId !== this.highlightManagerId
+    ) {
       return;
     }
     const highlightIndex = highlightElement.dataset.highlightIndex;
     if (!highlightIndex) {
-      this.options.logger.error(`highlight element was missing a highlight index.`)
+      this.options.logger.error(
+        `highlight element was missing a highlight index.`,
+      );
       return;
     }
 
@@ -554,6 +558,13 @@ class HighlightManager<Anchor, Data> {
       this.removeSortedElement(element);
     });
     this.updateStyles();
+  }
+
+  removeHighlights(selector: HighlightSelector<Anchor, Data>) {
+    const highlights = this.highlights.filter(selector);
+    for (const highlight of highlights) {
+      this.removeHighlight(highlight);
+    }
   }
 
   removeAllHighlights() {

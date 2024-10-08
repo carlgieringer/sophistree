@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import { DomAnchor } from "../anchors";
 import * as appLogger from "../logging/appLogging";
+import { notifyTabsOfDeletedMediaExcerpt } from "../extension/messages";
 
 interface BaseEntity {
   id: string;
@@ -293,9 +294,14 @@ export const entitiesSlice = createSlice({
       if (!activeMap) return;
 
       const entityIdToDelete = action.payload;
+      const entity = activeMap.entities.find((e) => e.id === entityIdToDelete);
 
       applyDeleteOperation(state, activeMap, entityIdToDelete);
       updateConclusions(activeMap);
+
+      if (entity?.type === "MediaExcerpt") {
+        void notifyTabsOfDeletedMediaExcerpt(entityIdToDelete);
+      }
     },
     showEntity(state, action: PayloadAction<string>) {
       updateEntityVisibility(state, action.payload, "Visible");

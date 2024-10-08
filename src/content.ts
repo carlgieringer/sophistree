@@ -64,6 +64,11 @@ function handleMessage(
       highlightNewMediaExcerptIfOnPage(message.data);
       break;
     }
+    case "notifyTabsOfDeletedMediaExcerpts": {
+      highlightManager.removeHighlights(
+        (h) => h.data.mediaExcerptId === message.mediaExcerptId,
+      );
+    }
   }
 }
 

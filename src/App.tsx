@@ -215,6 +215,7 @@ async function notifyTabsOfNewMediaExcerpt(
   const tabs = await chrome.tabs.query({});
   for (const tab of tabs) {
     if (tab.id && tab.id === originTab?.id) {
+      // Skip the tab that created the MediaExcerpt
       continue;
     }
     await notifyTabOfNewMediaExcerpt(tab, data);

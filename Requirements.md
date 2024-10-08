@@ -38,7 +38,6 @@ this extension and use that in place of Sophistree?
 
 TODO:
 
-- Deleting MediaExcerpts does not delete the highlights.
 - Publish to Chrome Web Store.
 - npm publish HighlightManager
 
