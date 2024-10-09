@@ -31,7 +31,7 @@ export default function DownloadMapsDialog({
   }
 
   function downloadAllMaps() {
-    const timestamp = new Date().toString();
+    const timestamp = new Date().toISOString();
     const count = maps.length;
     downloadJSON(`maps (${count}) ${timestamp}.sophistree.json`, {
       maps,

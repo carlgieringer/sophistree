@@ -300,6 +300,7 @@ export const entitiesSlice = createSlice({
       updateConclusions(activeMap);
 
       if (entity?.type === "MediaExcerpt") {
+        // TODO: #3 - remove this side effect. Maybe detect the removal via useState in a component?
         void notifyTabsOfDeletedMediaExcerpt(entityIdToDelete);
       }
     },
