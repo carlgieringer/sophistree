@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { TextInput, Text } from "react-native-paper";
 import { View } from "react-native";
+import debounce from "lodash.debounce";
 
 import {
   updateJustification,
@@ -41,13 +42,21 @@ function chooseEditor(entity: Entity) {
 function PropositionEditor({ entity }: { entity: Proposition }) {
   const dispatch = useDispatch();
 
-  function handleTextChange(text: string) {
+  const [text, setText] = useState(entity.text);
+
+  // For some reason the graph updates cause typing to be really laggy. So
+  // throttle them.
+  const dispatchEvent = debounce(function dispatchEvent(text: string) {
     dispatch(updateProposition({ id: entity.id, updates: { text } }));
+  }, 500);
+  function handleTextChange(text: string) {
+    setText(text);
+    dispatchEvent(text);
   }
   return (
     <View>
       <TextInput
-        value={entity.text}
+        value={text}
         multiline={true}
         numberOfLines={1}
         onChangeText={handleTextChange}

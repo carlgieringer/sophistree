@@ -4,6 +4,9 @@ Sophistree is a Chrome extension for mapping arguments.
 
 ![screenshot](https://github.com/carlgieringer/sophistree/blob/main/docs/screenshot.png?raw=true)
 
+See [Features.md](https://github.com/carlgieringer/sophistree/blob/main/docs/Features.md) for a list
+of CUJs.
+
 ## Development Setup
 
 ### Installation
