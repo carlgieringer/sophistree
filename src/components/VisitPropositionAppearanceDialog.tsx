@@ -1,7 +1,6 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
 import { Dialog, Button, Text, Tooltip } from "react-native-paper";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 import { MediaExcerpt, preferredUrl } from "../store/entitiesSlice";
 import { getTabUrl, FocusMediaExcerptMessage } from "../extension/messages";
@@ -30,15 +29,15 @@ export default function VisitPropositionAppearanceDialog({
             <View key={appearance.id}>
               <Text>“{appearance.mediaExcerpt.quotation}”</Text>
               <Text style={styles.sourceName}>
-                {appearance.mediaExcerpt.sourceInfo.name}
+                {appearance.mediaExcerpt.sourceInfo.name}{" "}
               </Text>
+              <Tooltip title={url}>
+                <Text style={styles.hostname}>{hostname}</Text>
+              </Tooltip>
               <Button
                 onPress={() => void focusMediaExcerpt(appearance.mediaExcerpt)}
               >
-                Open {hostname}{" "}
-                <Tooltip title={url}>
-                  <Icon name="link" size={16} />
-                </Tooltip>
+                Go
               </Button>
             </View>
           );
@@ -53,6 +52,9 @@ export default function VisitPropositionAppearanceDialog({
 
 const styles = StyleSheet.create({
   sourceName: {
+    fontWeight: "bold",
+  },
+  hostname: {
     fontWeight: "bold",
   },
 });

@@ -46,6 +46,7 @@ function PropositionEditor({ entity }: { entity: Proposition }) {
 
   // For some reason the graph updates cause typing to be really laggy. So
   // throttle them.
+  // TODO: #1 - Remove the throttle
   const dispatchEvent = debounce(function dispatchEvent(text: string) {
     dispatch(updateProposition({ id: entity.id, updates: { text } }));
   }, 500);

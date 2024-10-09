@@ -87,6 +87,7 @@ async function connectToOpenTabs() {
   }
 }
 
+// TODO: #2 - try to remove this
 export const tabConnectDelayMillis = 500;
 
 function connectToReloadedTabs(

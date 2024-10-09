@@ -94,6 +94,7 @@ Guidelines:
 ## Focusing excerpts
 
 - Clicking on an excerpt's link focuses on the excerpt in the content page
+- Clicking on an appearance's 'go' button focuses on the excerpt in the content page
 
 Guidelines:
 

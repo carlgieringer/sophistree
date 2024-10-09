@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/carlgieringer/sophistree.git"
+  },
   "scripts": {
     "build-prod": "NODE_ENV=production node esbuild.config.mjs",
     "build-dev": "NODE_ENV=development node esbuild.config.mjs",
