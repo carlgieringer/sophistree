@@ -22,7 +22,7 @@ const options = {
   },
   sourcemap: prod ? false : "inline",
   target: ["chrome58", "firefox57"],
-  outdir: "dist",
+  outdir: prod ? "dist/prod" : "dist/dev",
   resolveExtensions: [
     ".web.tsx",
     ".tsx",
@@ -55,7 +55,7 @@ const options = {
       },
     },
     clean({
-      patterns: ["./dist/*", "./dist/*/"],
+      patterns: prod ? ["./dist/prod/*"] : ["./dist/dev/*"],
     }),
     copy({
       assets: [

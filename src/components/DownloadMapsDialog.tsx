@@ -24,11 +24,19 @@ export default function DownloadMapsDialog({
   }
 
   function downloadMap(map: ArgumentMap) {
-    downloadJSON(`${map.name}.json`, { map, sophistreeMapFileVersion });
+    downloadJSON(`${map.name}.sophistree.json`, {
+      maps: [map],
+      sophistreeMapFileVersion,
+    });
   }
 
   function downloadAllMaps() {
-    downloadJSON("maps.json", { maps, sophistreeMapFileVersion });
+    const timestamp = new Date().toString();
+    const count = maps.length;
+    downloadJSON(`maps (${count}) ${timestamp}.sophistree.json`, {
+      maps,
+      sophistreeMapFileVersion,
+    });
   }
 
   const buttons = maps.map((m) => (
@@ -39,7 +47,7 @@ export default function DownloadMapsDialog({
 
   return (
     <Dialog visible={visible} onDismiss={hideModal}>
-      <Dialog.Title>Open a map</Dialog.Title>
+      <Dialog.Title>Download maps</Dialog.Title>
       <Dialog.Content>
         {buttons}
         <Button onPress={downloadAllMaps}>Download all maps</Button>

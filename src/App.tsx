@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { StyleSheet, View, ScrollView } from "react-native";
 import { Button, Text } from "react-native-paper";
 import { useDispatch, useSelector } from "react-redux";
@@ -7,9 +7,10 @@ import "./App.scss";
 import EntityEditor from "./components/EntityEditor";
 import GraphView from "./components/GraphView";
 import HeaderBar from "./components/HeaderBar";
-import { ChromeRuntimeMessage } from "./content";
+import { ChromeRuntimeMessage, sidepanelKeepalivePortName } from "./content";
 import {
   addMediaExcerpt,
+  AddMediaExcerptData,
   MediaExcerpt,
   selectEntities,
 } from "./store/entitiesSlice";
@@ -19,14 +20,20 @@ import { showNewMapDialog } from "./store/uiSlice";
 import { BasisOutcome } from "./outcomes/outcomes";
 import {
   GetMediaExcerptsResponse,
+  notifyTabOfNewMediaExcerpt,
+  sendRefreshMediaExcerptsMessage,
   sendUpdatedMediaExcerptOutcomes,
 } from "./extension/messages";
 import { serializeMap } from "./extension/serialization";
+import * as appLogger from "./logging/appLogging";
+import { catchErrors } from "./extension/callbacks";
 
 const App: React.FC = () => {
   const dispatch = useDispatch();
+  useRefreshContentPageMediaExcerptsWhenActiveMapChanges();
   useSendUpdatedMediaExcerptOutcomes();
   useHandleChromeRuntimeMessage();
+  useContentScriptKeepAliveConnection();
 
   const activeMapId = useSelector(selectors.activeMapId);
   const graphView = activeMapId ? (
@@ -59,14 +66,78 @@ const App: React.FC = () => {
   );
 };
 
+function useContentScriptKeepAliveConnection() {
+  useEffect(() => {
+    void connectToOpenTabs();
+    chrome.tabs.onUpdated.addListener(connectToReloadedTabs);
+    return () => {
+      chrome.tabs.onUpdated.removeListener(connectToReloadedTabs);
+    };
+  }, []);
+}
+
+async function connectToOpenTabs() {
+  try {
+    const tabs = await chrome.tabs.query({});
+    for (const tab of tabs) {
+      connectToTab(tab);
+    }
+  } catch (error) {
+    appLogger.error("Failed to connect to open tabs", error);
+  }
+}
+
+// TODO: #2 - try to remove this
+export const tabConnectDelayMillis = 500;
+
+function connectToReloadedTabs(
+  tabId: number,
+  info: chrome.tabs.TabChangeInfo,
+  tab: chrome.tabs.Tab,
+) {
+  if (info.status === "complete") {
+    // For some reason connecting immediately to just opened tabs fails silently.
+    // So wait a little bit before connecting.
+    setTimeout(() => connectToTab(tab), tabConnectDelayMillis);
+  }
+}
+
+function connectToTab(tab: chrome.tabs.Tab) {
+  if (!tab.id) {
+    return;
+  }
+  try {
+    chrome.tabs.connect(tab.id, {
+      name: sidepanelKeepalivePortName,
+    });
+  } catch (error) {
+    appLogger.error("Failed to connect to tab", error);
+  }
+}
+
+function useRefreshContentPageMediaExcerptsWhenActiveMapChanges() {
+  const activeMapId = useSelector(selectors.activeMapId);
+  const [prevActiveMapId, setPrevActiveMapId] = useState(
+    undefined as string | undefined,
+  );
+
+  useEffect(() => {
+    if (activeMapId !== prevActiveMapId) {
+      void sendRefreshMediaExcerptsMessage();
+      setPrevActiveMapId(activeMapId);
+    }
+  }, [activeMapId, prevActiveMapId, setPrevActiveMapId]);
+}
+
 function useSendUpdatedMediaExcerptOutcomes() {
   const mediaExcerptOutcomes = useSelector(
     selectors.activeMapMediaExcerptOutcomes,
   );
 
   // Store the outcomes so that we can diff them when they change
-  const [prevMediaExcerptOutcomes, setPrevMediaExcerptOutcomes] =
-    React.useState<Map<string, BasisOutcome>>(new Map());
+  const [prevMediaExcerptOutcomes, setPrevMediaExcerptOutcomes] = useState<
+    Map<string, BasisOutcome>
+  >(new Map());
 
   useEffect(() => {
     const updatedMediaExcerptOutcomes = diffMediaExcerptOutcomes(
@@ -86,48 +157,72 @@ function useHandleChromeRuntimeMessage() {
   const mediaExcerptOutcomes = useSelector(
     selectors.activeMapMediaExcerptOutcomes,
   );
-  useEffect(() => {
-    function handleChromeRuntimeMessage(
+  const handleChromeRuntimeMessage = useCallback(
+    (
       message: ChromeRuntimeMessage,
       sender: chrome.runtime.MessageSender,
       sendResponse: (response: unknown) => void,
-    ) {
-      switch (message.action) {
-        case "addMediaExcerpt": {
-          dispatch(addMediaExcerpt(message.data));
-          break;
-        }
-        case "selectMediaExcerpt": {
-          dispatch(selectEntities([message.data.mediaExcerptId]));
-          break;
-        }
-        case "getMediaExcerpts": {
-          const { url, canonicalUrl } = message.data;
-          const mediaExcerpts = entities.filter(
-            (entity) =>
-              entity.type === "MediaExcerpt" &&
-              (entity.urlInfo.canonicalUrl
-                ? entity.urlInfo.canonicalUrl === canonicalUrl
-                : entity.urlInfo.url === url),
-          ) as MediaExcerpt[];
+    ) => {
+      catchErrors(() => {
+        switch (message.action) {
+          case "addMediaExcerpt":
+            dispatch(addMediaExcerpt(message.data));
+            void notifyTabsOfNewMediaExcerpt(sender.tab, message.data);
+            break;
+          case "selectMediaExcerpt":
+            dispatch(selectEntities([message.data.mediaExcerptId]));
+            break;
+          case "getMediaExcerpt": {
+            sendResponse(
+              entities.find((e) => e.id === message.data.mediaExcerptId),
+            );
+            break;
+          }
+          case "getMediaExcerpts": {
+            const { url, canonicalUrl } = message.data;
+            const mediaExcerpts = entities.filter(
+              (entity) =>
+                entity.type === "MediaExcerpt" &&
+                (entity.urlInfo.canonicalUrl
+                  ? entity.urlInfo.canonicalUrl === canonicalUrl
+                  : entity.urlInfo.url === url),
+            ) as MediaExcerpt[];
 
-          // Serialize for responding to the content script since Maps cannot
-          // pass the runtime boundary
-          const serializedOutcomes = serializeMap(mediaExcerptOutcomes);
-          const response: GetMediaExcerptsResponse = {
-            mediaExcerpts,
-            serializedOutcomes,
-          };
-          sendResponse(response);
-          break;
+            // Serialize for responding to the content script since Maps cannot
+            // pass the runtime boundary
+            const serializedOutcomes = serializeMap(mediaExcerptOutcomes);
+            const response: GetMediaExcerptsResponse = {
+              mediaExcerpts,
+              serializedOutcomes,
+            };
+            sendResponse(response);
+            break;
+          }
         }
-      }
-    }
+      });
+    },
+    [dispatch, entities, mediaExcerptOutcomes],
+  );
+  useEffect(() => {
     chrome.runtime.onMessage.addListener(handleChromeRuntimeMessage);
     return () => {
       chrome.runtime.onMessage.removeListener(handleChromeRuntimeMessage);
     };
-  }, [dispatch, entities, mediaExcerptOutcomes]);
+  }, [handleChromeRuntimeMessage]);
+}
+
+async function notifyTabsOfNewMediaExcerpt(
+  originTab: chrome.tabs.Tab | undefined,
+  data: AddMediaExcerptData,
+) {
+  const tabs = await chrome.tabs.query({});
+  for (const tab of tabs) {
+    if (tab.id && tab.id === originTab?.id) {
+      // Skip the tab that created the MediaExcerpt
+      continue;
+    }
+    await notifyTabOfNewMediaExcerpt(tab, data);
+  }
 }
 
 const styles = StyleSheet.create({

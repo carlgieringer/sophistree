@@ -4,6 +4,9 @@ Sophistree is a Chrome extension for mapping arguments.
 
 ![screenshot](https://github.com/carlgieringer/sophistree/blob/main/docs/screenshot.png?raw=true)
 
+See [Features.md](https://github.com/carlgieringer/sophistree/blob/main/docs/Features.md) for a list
+of CUJs.
+
 ## Development Setup
 
 ### Installation
@@ -28,7 +31,7 @@ Sophistree is a Chrome extension for mapping arguments.
 This continuously builds the javascript:
 
 ```sh
-npm run build-dev
+npm run build-dev-watch
 ```
 
 This will build the javascript and watch for changes. Changes to static files
@@ -38,7 +41,7 @@ in public don't trigger changes, but are picked up when the JS changes.
 
 1. Open Chrome and navigate to `chrome://extensions`.
 2. Enable "Developer mode" in the top right corner.
-3. Click "Load unpacked" and select the `dist` folder created in the previous step.
+3. Click "Load unpacked" and select the `dist/dev` folder created in the previous step.
 
 To reload JS changes, you can just close and re-open the sidebar using the action button in Chrome's
 toolbar.
@@ -89,3 +92,19 @@ npm run check-all
 
 The model is the same as Howdju, and is explained here with a graph:
 https://docs.howdju.com/concepts
+
+## Extension components and permissions
+
+This section briefly describes why the extensions requires certain scripts and permissions:
+
+- `scripting` & `host_permissions`: `<all_urls>`: required for highlighting functionality to work on
+  pages that are open when the extension is installed
+- `service_worker`:
+  - The service worker script installs the content scripts when the extension is installed
+    (otherwise the user must reload all pages before highlighting will work.)
+  - Installs and responds to context menu items
+- `content_scripts`:
+
+  - The content script manages highlights and interacts with the sidebar to create excerpts and to
+    emphasize focused exerpts.
+  - `<all_urls>` so that Sophistree works on all pages

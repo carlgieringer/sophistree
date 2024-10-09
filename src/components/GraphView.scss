@@ -32,17 +32,24 @@ p {
   cursor: pointer;
 }
 
+$positive-color: color.scale($nephritis, $lightness: 40%);
+$negative-color: color.scale($pomegranate, $lightness: 60%);
+
 .node-outcome-positive {
-  background-color: color.scale($nephritis, $lightness: 40%);
+  background-color: $positive-color;
 }
 .node-outcome-negative {
-  background-color: color.scale($pomegranate, $lightness: 60%);
+  background-color: $negative-color;
 }
 .node-outcome-neutral {
   background-color: color.scale($belizeHole, $lightness: 80%);
 }
 .node-outcome-contradictory {
-  background-image: linear-gradient(to right, $nephritis 50%, $pomegranate 50%);
+  background-image: linear-gradient(
+    to right,
+    $positive-color 20%,
+    $negative-color 80%
+  );
 }
 .edge-outcome-positive,
 .edge-outcome-neutral {

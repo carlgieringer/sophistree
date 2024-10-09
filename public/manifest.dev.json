@@ -4,7 +4,6 @@
   "version": "1.0",
   "description": "A browser extension for mapping arguments",
   "permissions": [
-    "activeTab",
     "contextMenus",
     "management",
     "scripting",
@@ -24,6 +23,7 @@
       "css": ["content.css"]
     }
   ],
+  "host_permissions": ["<all_urls>"],
   "side_panel": {
     "default_path": "sidebar.html"
   },

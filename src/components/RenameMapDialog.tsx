@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { TextInput as RNTextInput } from "react-native";
 import { Dialog, TextInput, Button } from "react-native-paper";
 import { useDispatch } from "react-redux";
 
@@ -17,6 +18,11 @@ const RenameMapDialog: React.FC<RenameMapDialogProps> = ({
 }) => {
   const dispatch = useDispatch();
   const [newName, setNewName] = useState(mapName);
+  const inputRef = useRef<RNTextInput | null>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, [visible]);
 
   const handleRename = () => {
     dispatch(renameActiveMap(newName));
@@ -28,9 +34,11 @@ const RenameMapDialog: React.FC<RenameMapDialogProps> = ({
       <Dialog.Title>Rename Map</Dialog.Title>
       <Dialog.Content>
         <TextInput
+          label="Map name"
+          placeholder="Enter a map name"
           value={newName}
           onChangeText={(text) => setNewName(text)}
-          placeholder="Enter a map name"
+          onSubmitEditing={handleRename}
         />
       </Dialog.Content>
       <Dialog.Actions>

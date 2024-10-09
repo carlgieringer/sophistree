@@ -9,7 +9,7 @@ import {
 import { HighlightManager } from "./highlights";
 import "./highlights/rotation-colors.scss";
 import "./highlights/outcome-colors.scss";
-import {
+import type {
   ContentMessage,
   CreateMediaExcerptMessage,
   GetMediaExcerptsResponse,
@@ -17,65 +17,103 @@ import {
 import { BasisOutcome } from "./outcomes/outcomes";
 import { outcomeValence } from "./outcomes/valences";
 import { deserializeMap } from "./extension/serialization";
+import { connectionErrorMessage } from "./extension/errorMessages";
+import * as contentLogger from "./logging/contentLogging";
 
-interface AddMediaExcerptMessage {
-  action: "addMediaExcerpt";
-  data: AddMediaExcerptData;
+chrome.runtime.onConnect.addListener(getMediaExcerptsWhenSidebarConnects);
+chrome.runtime.onMessage.addListener(handleMessage);
+
+function getMediaExcerptsWhenSidebarConnects(port: chrome.runtime.Port) {
+  if (port.name === sidepanelKeepalivePortName) {
+    void getMediaExcerpts();
+    port.onDisconnect.addListener(() => {
+      highlightManager.removeAllHighlights();
+    });
+  }
 }
 
-interface SelectMediaExcerptMessage {
-  action: "selectMediaExcerpt";
-  data: {
-    mediaExcerptId: string;
-  };
-}
+export const sidepanelKeepalivePortName = "keepalive";
 
-interface GetMediaExcerptsMessage {
-  action: "getMediaExcerpts";
-  data: {
-    url: string;
-    canonicalUrl?: string;
-  };
-}
-
-export type ChromeRuntimeMessage =
-  | AddMediaExcerptMessage
-  | SelectMediaExcerptMessage
-  | GetMediaExcerptsMessage;
-
-chrome.runtime.onMessage.addListener(
-  (
-    message: ContentMessage,
-    sender: chrome.runtime.MessageSender,
-    sendResponse: (response: unknown) => void,
-  ) => void handleMessage(message, sendResponse),
-);
-
-async function handleMessage(
+function handleMessage(
   message: ContentMessage,
+  sender: chrome.runtime.MessageSender,
   sendResponse: (response: unknown) => void,
 ) {
   switch (message.action) {
-    case "createMediaExcerpt":
-      await createMediaExcerpt(message);
+    case "createMediaExcerpt": {
+      void createMediaExcerptAndCheckItExists(message);
       break;
+    }
     case "focusMediaExcerpt":
       focusMediaExcerpt(message.mediaExcerptId);
       break;
     case "requestUrl":
       sendResponse(getCanonicalOrFullUrl());
-      break;
+      return;
     case "updateMediaExcerptOutcomes": {
       const updatedOutcomes = deserializeMap(message.serializedUpdatedOutcomes);
       updateMediaExcerptOutcomes(updatedOutcomes);
       break;
     }
+    case "refreshMediaExcerpts": {
+      highlightManager.removeAllHighlights();
+      void getMediaExcerpts();
+      break;
+    }
+    case "notifyTabOfNewMediaExcerpt": {
+      highlightNewMediaExcerptIfOnPage(message.data);
+      break;
+    }
+    case "notifyTabsOfDeletedMediaExcerpts": {
+      highlightManager.removeHighlights(
+        (h) => h.data.mediaExcerptId === message.mediaExcerptId,
+      );
+    }
+  }
+}
+
+function highlightNewMediaExcerptIfOnPage(data: AddMediaExcerptData) {
+  const canonicalUrl = getCanonicalUrl();
+  if (canonicalUrl) {
+    if (canonicalUrl !== data.canonicalUrl) {
+      return;
+    }
+  } else {
+    const url = getUrl();
+    if (url !== data.url) {
+      return;
+    }
+  }
+
+  createHighlight(data.id, data.domAnchor);
+}
+
+async function createMediaExcerptAndCheckItExists(
+  message: CreateMediaExcerptMessage,
+) {
+  const highlight = await createMediaExcerpt(message);
+  if (highlight && !(await getMediaExcerpt(highlight.data.mediaExcerptId))) {
+    highlightManager.removeHighlight(highlight);
+  }
+}
+
+async function getMediaExcerpt(mediaExcerptId: string) {
+  try {
+    return await chrome.runtime.sendMessage<GetMediaExcerptMessage, boolean>({
+      action: "getMediaExcerpt",
+      data: {
+        mediaExcerptId,
+      },
+    });
+  } catch (error) {
+    contentLogger.error("Error checking media excerpt existence", error);
+    return false;
   }
 }
 
 function focusMediaExcerpt(mediaExcerptId: string) {
   highlightManager.focusHighlight(
-    (anchor) => anchor.data.mediaExcerptId === mediaExcerptId,
+    (h) => h.data.mediaExcerptId === mediaExcerptId,
   );
 }
 
@@ -87,13 +125,13 @@ async function createMediaExcerpt(message: CreateMediaExcerptMessage) {
   const sourceName = getTitle();
 
   if (!quotation) {
-    console.error(`Cannot createMediaExcerpt for empty quotation`);
+    contentLogger.error(`Cannot createMediaExcerpt for empty quotation`);
     return;
   }
 
   const highlight = highlightCurrentSelection(id);
   if (!highlight) {
-    console.error(`Faild to highlight current selection.`);
+    contentLogger.error(`Failed to highlight current selection.`);
     return;
   }
 
@@ -106,14 +144,31 @@ async function createMediaExcerpt(message: CreateMediaExcerptMessage) {
       sourceName,
       domAnchor: highlight.anchor,
     };
-    const sidebarMessage: ChromeRuntimeMessage = {
+    const message: AddMediaExcerptMessage = {
       action: "addMediaExcerpt",
       data,
     };
-    await chrome.runtime.sendMessage(sidebarMessage);
+    try {
+      await chrome.runtime.sendMessage(message);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.includes(connectionErrorMessage)
+      ) {
+        window.alert("Please open the Sophistree sidebar to add excerpts");
+      } else {
+        contentLogger.error(
+          `Unable to connect to extension to add media excerpt.`,
+          error,
+        );
+      }
+      highlightManager.removeHighlight(highlight);
+      return undefined;
+    }
   } else {
     await selectMediaExcerpt(highlight.data.mediaExcerptId);
   }
+  return highlight;
 }
 
 function getUrl() {
@@ -140,47 +195,55 @@ function getTitle() {
 }
 
 let mediaExcerptOutcomes: Map<string, BasisOutcome> = new Map();
-function getMediaExcerpts() {
+async function getMediaExcerpts() {
   const url = getUrl();
   const canonicalUrl = getCanonicalUrl();
-  chrome.runtime.sendMessage(
-    {
-      action: "getMediaExcerpts",
-      data: {
-        url,
-        canonicalUrl,
-      },
+  const message: GetMediaExcerptsMessage = {
+    action: "getMediaExcerpts",
+    data: {
+      url,
+      canonicalUrl,
     },
-    function getMediaExcerptsCallback(response?: GetMediaExcerptsResponse) {
-      if (!response) {
-        console.error("Unable to get media excerpts");
-        return;
-      }
-      const { mediaExcerpts, serializedOutcomes } = response;
-      mediaExcerptOutcomes = deserializeMap(serializedOutcomes);
-      highlightMediaExcerpts(mediaExcerpts);
-    },
-  );
+  };
+  let response: GetMediaExcerptsResponse;
+  try {
+    response = await chrome.runtime.sendMessage(message);
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes(connectionErrorMessage)
+    ) {
+      // This is expected when the sidebar is not open.
+    } else {
+      contentLogger.error(
+        "Unable to connect to extension to get media excerpts.",
+        error,
+      );
+    }
+    return;
+  }
+  const { mediaExcerpts, serializedOutcomes } = response;
+  mediaExcerptOutcomes = deserializeMap(serializedOutcomes);
+  highlightMediaExcerpts(mediaExcerpts);
 }
-getMediaExcerpts();
 
 function highlightMediaExcerpts(mediaExcerpts: MediaExcerpt[]) {
-  mediaExcerpts.forEach(({ id, domAnchor }) => highlightRanges(id, domAnchor));
+  mediaExcerpts.forEach(({ id, domAnchor }) => createHighlight(id, domAnchor));
 }
 
 function highlightCurrentSelection(mediaExcerptId: string) {
   const selection = window.getSelection();
   if (!selection || selection.isCollapsed) {
-    console.error(`Cannot highlight empty selection.`);
+    contentLogger.error(`Cannot highlight empty selection.`);
     return undefined;
   }
 
   const domAnchor = makeDomAnchorFromSelection(selection);
   if (!domAnchor) {
-    console.error(`Cannot createMediaExcerpt for empty domAnchor`);
+    contentLogger.error(`Cannot createMediaExcerpt for empty domAnchor`);
     return undefined;
   }
-  return highlightRanges(mediaExcerptId, domAnchor);
+  return createHighlight(mediaExcerptId, domAnchor);
 }
 
 interface HighlightData {
@@ -189,10 +252,11 @@ interface HighlightData {
 
 const highlightManager = new HighlightManager<DomAnchor, HighlightData>({
   container: document.body,
+  logger: contentLogger,
   getRangesFromAnchor: (anchor: DomAnchor) =>
     getRangesFromDomAnchor(document.body, anchor),
   colors: {
-    mode: "callback",
+    mode: "class-callback",
     // Corresponds to the classes in highlights/colors.scss
     getColorClass: (data) => getHighlightColorClass(data.mediaExcerptId),
   },
@@ -222,7 +286,7 @@ function getHighlightColorClass(mediaExcerptId: string) {
   return `highlight-color-${valence}`;
 }
 
-function highlightRanges(mediaExcerptId: string, domAnchor: DomAnchor) {
+function createHighlight(mediaExcerptId: string, domAnchor: DomAnchor) {
   return highlightManager.createHighlight(
     domAnchor,
     { mediaExcerptId },
@@ -241,3 +305,36 @@ async function selectMediaExcerpt(mediaExcerptId: string) {
   };
   await chrome.runtime.sendMessage(message);
 }
+
+interface AddMediaExcerptMessage {
+  action: "addMediaExcerpt";
+  data: AddMediaExcerptData;
+}
+
+interface SelectMediaExcerptMessage {
+  action: "selectMediaExcerpt";
+  data: {
+    mediaExcerptId: string;
+  };
+}
+
+interface GetMediaExcerptMessage {
+  action: "getMediaExcerpt";
+  data: {
+    mediaExcerptId: string;
+  };
+}
+
+interface GetMediaExcerptsMessage {
+  action: "getMediaExcerpts";
+  data: {
+    url: string;
+    canonicalUrl?: string;
+  };
+}
+
+export type ChromeRuntimeMessage =
+  | AddMediaExcerptMessage
+  | SelectMediaExcerptMessage
+  | GetMediaExcerptMessage
+  | GetMediaExcerptsMessage;

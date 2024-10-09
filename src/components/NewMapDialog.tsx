@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
+import { TextInput as RNTextInput } from "react-native";
 import { Button, Dialog, TextInput } from "react-native-paper";
 import { useDispatch } from "react-redux";
 
@@ -14,6 +15,11 @@ export default function NewMapDialog({
   const dispatch = useDispatch();
 
   const [mapName, setMapName] = React.useState("");
+  const inputRef = useRef<RNTextInput | null>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, [visible]);
 
   function hideModal() {
     if (onDismiss) {
@@ -32,8 +38,11 @@ export default function NewMapDialog({
       <Dialog.Title>Create new map</Dialog.Title>
       <Dialog.Content>
         <TextInput
-          label="Map Name"
+          label="Map name"
+          placeholder="Enter a map name"
+          ref={inputRef}
           value={mapName}
+          onSubmitEditing={handleCreateMap}
           onChangeText={(text) => setMapName(text)}
         />
       </Dialog.Content>

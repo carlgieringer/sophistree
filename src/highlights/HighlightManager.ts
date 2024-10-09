@@ -1,4 +1,5 @@
 import debounce from "lodash.debounce";
+import { v4 as uuidv4 } from "uuid";
 
 interface Highlight<Anchor, Data> {
   /** The object that anchors the highlight to the document */
@@ -11,6 +12,8 @@ interface Highlight<Anchor, Data> {
   /** The color class applied to the highlight, if any. */
   colorClass?: string;
 }
+
+export type Logger = Pick<typeof console, "error" | "warn">;
 
 type GetRangesFromAnchorFunction<Anchor> = (anchor: Anchor) => Range[];
 
@@ -25,13 +28,15 @@ export type HighlightManagerOptions<Anchor, Data> = {
         colorIndexClassFormat?: string;
       }
     | {
-        mode: "callback";
+        mode: "class-callback";
         getColorClass: (data: Data) => string;
       };
   hoverClass?: string;
+  logger?: Logger;
 };
 type MergedHighlightManagerOptions<Anchor, Data> = {
   container: HTMLElement;
+  logger: Logger;
   getRangesFromAnchor: GetRangesFromAnchorFunction<Anchor>;
   highlightClass: string;
   colors:
@@ -41,7 +46,7 @@ type MergedHighlightManagerOptions<Anchor, Data> = {
         colorIndexClassFormat: string;
       }
     | {
-        mode: "callback";
+        mode: "class-callback";
         getColorClass: (data: Data) => string;
       };
   hoverClass: string;
@@ -73,6 +78,8 @@ type HighlightSelector<Anchor, Data> = (
 class HighlightManager<Anchor, Data> {
   private readonly options: MergedHighlightManagerOptions<Anchor, Data>;
 
+  /** A unique ID for this highlight manager. Used to determine if a highlight belongs to this manager. */
+  private readonly highlightManagerId: string;
   private readonly highlights: Highlight<Anchor, Data>[] = [];
   private sortedHighlightElements: Array<{
     highlight: Highlight<Anchor, Data>;
@@ -80,8 +87,10 @@ class HighlightManager<Anchor, Data> {
   }> = [];
 
   constructor(options: HighlightManagerOptions<Anchor, Data>) {
+    this.highlightManagerId = uuidv4();
     this.options = {
       container: options.container,
+      logger: options.logger ?? console,
       getRangesFromAnchor: options.getRangesFromAnchor,
       highlightClass: options.highlightClass ?? defaultOptions.highlightClass,
       colors: this.mergeColors(options.colors),
@@ -103,7 +112,7 @@ class HighlightManager<Anchor, Data> {
             defaultOptions.colors.colorIndexClassFormat,
           count: colors.count,
         };
-      case "callback":
+      case "class-callback":
         return colors;
     }
   }
@@ -111,7 +120,7 @@ class HighlightManager<Anchor, Data> {
   updateHighlightsColorClass(selector: HighlightSelector<Anchor, Data>) {
     const highlights = this.highlights.filter(selector);
     if (highlights.length < 1) {
-      console.error(
+      this.options.logger.warn(
         `Could not update highlights color class for selector ${selector.name} because no highlights matched.`,
       );
       return;
@@ -143,7 +152,7 @@ class HighlightManager<Anchor, Data> {
           highlightColorIndex.toString(),
         );
       }
-      case "callback": {
+      case "class-callback": {
         return this.options.colors.getColorClass(highlight.data);
       }
     }
@@ -152,11 +161,14 @@ class HighlightManager<Anchor, Data> {
   focusHighlight(selector: HighlightSelector<Anchor, Data>) {
     const highlight = this.highlights.find(selector);
     if (!highlight) {
-      console.error(
-        `Could not activate highlight for selector ${selector.name} because the highlight wasn't found.`,
+      this.options.logger.error(
+        `Could not focus highlight for selector ${selector.name} because the highlight wasn't found.`,
       );
       return;
     }
+
+    // Reset styles to their default state
+    this.updateStyles();
 
     highlight.elements[0].scrollIntoView({
       behavior: "smooth",
@@ -299,7 +311,7 @@ class HighlightManager<Anchor, Data> {
       if (comparison !== 0) {
         return comparison > 0;
       }
-      console.error(
+      this.options.logger.error(
         "Encountered coextensive highlights. This should not happen.",
       );
       return false;
@@ -322,16 +334,19 @@ class HighlightManager<Anchor, Data> {
   }
 
   private handleMouseMove(event: MouseEvent) {
+    // Reset all highlights to their default state
+    this.updateStyles();
+
     const highlightElement = this.getHighestHighlightElementAtPoint(
       event.clientX,
       event.clientY,
     );
-
-    // Reset all highlights to their default state
-    this.updateStyles();
-
-    if (highlightElement && highlightElement.dataset.highlightIndex) {
-      const highlightIndex = parseInt(highlightElement.dataset.highlightIndex);
+    const dataset = highlightElement?.dataset;
+    if (
+      dataset?.highlightManagerId === this.highlightManagerId &&
+      dataset?.highlightIndex
+    ) {
+      const highlightIndex = parseInt(dataset.highlightIndex);
       this.applyHoverStyle(highlightIndex);
     }
   }
@@ -342,12 +357,20 @@ class HighlightManager<Anchor, Data> {
       event.clientX,
       event.clientY,
     );
-
     if (!highlightElement) {
+      return;
+    }
+
+    if (
+      highlightElement.dataset.highlightManagerId !== this.highlightManagerId
+    ) {
       return;
     }
     const highlightIndex = highlightElement.dataset.highlightIndex;
     if (!highlightIndex) {
+      this.options.logger.error(
+        `highlight element was missing a highlight index.`,
+      );
       return;
     }
 
@@ -476,6 +499,7 @@ class HighlightManager<Anchor, Data> {
       element.classList.add(highlight.colorClass);
     }
 
+    element.dataset.highlightManagerId = this.highlightManagerId;
     element.dataset.highlightIndex = this.highlights
       .indexOf(highlight)
       .toString();
@@ -534,6 +558,13 @@ class HighlightManager<Anchor, Data> {
       this.removeSortedElement(element);
     });
     this.updateStyles();
+  }
+
+  removeHighlights(selector: HighlightSelector<Anchor, Data>) {
+    const highlights = this.highlights.filter(selector);
+    for (const highlight of highlights) {
+      this.removeHighlight(highlight);
+    }
   }
 
   removeAllHighlights() {

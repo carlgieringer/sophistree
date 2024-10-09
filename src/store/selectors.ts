@@ -3,6 +3,7 @@ import { createSelector } from "@reduxjs/toolkit";
 import { RootState } from "./store";
 import { Appearance, Entity } from "./entitiesSlice";
 import { BasisOutcome, determineOutcomes } from "../outcomes/outcomes";
+import * as appLogger from "../logging/appLogging";
 
 const emptyEntities: Entity[] = [];
 
@@ -84,7 +85,7 @@ export const activeMapMediaExcerptOutcomes = createSelector(
       const appearanceOutcomes = appearances.flatMap((appearance) => {
         const propositionOutcome = basisOutcomes.get(appearance.apparitionId);
         if (propositionOutcome === undefined) {
-          console.error(
+          appLogger.error(
             `Could not find proposition outcome for appearance ${appearance.id}. This should be imossible.`,
           );
           return [];

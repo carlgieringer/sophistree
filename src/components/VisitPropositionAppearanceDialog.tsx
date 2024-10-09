@@ -1,11 +1,13 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
 import { Dialog, Button, Text, Tooltip } from "react-native-paper";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 import { MediaExcerpt, preferredUrl } from "../store/entitiesSlice";
 import { getTabUrl, FocusMediaExcerptMessage } from "../extension/messages";
 import { PropositionNodeData } from "./graphTypes";
+import { catchErrors } from "../extension/callbacks";
+import * as appLogger from "../logging/appLogging";
+import { tabConnectDelayMillis } from "../App";
 
 export default function VisitPropositionAppearanceDialog({
   data,
@@ -27,15 +29,15 @@ export default function VisitPropositionAppearanceDialog({
             <View key={appearance.id}>
               <Text>“{appearance.mediaExcerpt.quotation}”</Text>
               <Text style={styles.sourceName}>
-                {appearance.mediaExcerpt.sourceInfo.name}
+                {appearance.mediaExcerpt.sourceInfo.name}{" "}
               </Text>
+              <Tooltip title={url}>
+                <Text style={styles.hostname}>{hostname}</Text>
+              </Tooltip>
               <Button
                 onPress={() => void focusMediaExcerpt(appearance.mediaExcerpt)}
               >
-                Open {hostname}{" "}
-                <Tooltip title={url}>
-                  <Icon name="link" size={16} />
-                </Tooltip>
+                Go
               </Button>
             </View>
           );
@@ -50,6 +52,9 @@ export default function VisitPropositionAppearanceDialog({
 
 const styles = StyleSheet.create({
   sourceName: {
+    fontWeight: "bold",
+  },
+  hostname: {
     fontWeight: "bold",
   },
 });
@@ -68,11 +73,7 @@ export async function focusMediaExcerpt(mediaExcerpt: MediaExcerpt) {
   try {
     await chrome.tabs.sendMessage(tabId, message);
   } catch (error) {
-    console.error(
-      `Failed to send focusMediaExcerpt message to tab`,
-      message,
-      error,
-    );
+    appLogger.error(`Failed to send focusMediaExcerpt message to tab`, error);
   }
 }
 
@@ -88,7 +89,7 @@ async function getOrOpenTab(
   try {
     tabUrl = await getTabUrl(activeTab.id);
   } catch (error) {
-    console.error(`Failed to getTabUrl`, error);
+    appLogger.error(`Failed to getTabUrl`, error);
   }
   if (tabUrl === url) {
     return activeTab.id;
@@ -100,20 +101,25 @@ async function getOrOpenTab(
 
 function waitForTabId(openerTabId: number): Promise<number> {
   return new Promise((resolve) => {
-    const tabCreatedListener = (tab: chrome.tabs.Tab) => {
-      if (tab.openerTabId === openerTabId) {
-        chrome.tabs.onUpdated.addListener(
-          function onUpdatedListener(tabId, info) {
-            if (info.status === "complete" && tabId === tab.id) {
-              chrome.tabs.onUpdated.removeListener(onUpdatedListener);
-              chrome.tabs.onCreated.removeListener(tabCreatedListener);
-              resolve(tabId);
-            }
-          },
-        );
-      }
-    };
-
-    chrome.tabs.onCreated.addListener(tabCreatedListener);
+    chrome.tabs.onCreated.addListener(function tabCreatedListener(
+      tab: chrome.tabs.Tab,
+    ) {
+      catchErrors(() => {
+        if (tab.openerTabId === openerTabId) {
+          chrome.tabs.onUpdated.addListener(
+            function onUpdatedListener(tabId, info) {
+              catchErrors(() => {
+                if (info.status === "complete" && tabId === tab.id) {
+                  chrome.tabs.onUpdated.removeListener(onUpdatedListener);
+                  chrome.tabs.onCreated.removeListener(tabCreatedListener);
+                  // Give the tab time to load the highlights.
+                  setTimeout(() => resolve(tabId), 1.1 * tabConnectDelayMillis);
+                }
+              });
+            },
+          );
+        }
+      });
+    });
   });
 }

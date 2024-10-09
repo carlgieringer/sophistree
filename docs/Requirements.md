@@ -38,8 +38,8 @@ this extension and use that in place of Sophistree?
 
 TODO:
 
+- Publish to Chrome Web Store.
 - npm publish HighlightManager
-- Publish to Chrome Web Store. Reduce permissions? Error reporting?
 
 - Try adding
 
@@ -48,7 +48,6 @@ TODO:
 
 - Justification appearances
 - Collapsing
-- Reload highlights when active map changes
 
 - Mobile experience
 
@@ -65,5 +64,3 @@ TODO:
   - combine justifications
 - Support setting Justification polarity via drag.
   - https://github.com/cytoscape/cytoscape.js-popper for polarity targets?
-- Message origin checks
-- Retrieve MediaExcerpts from background scripts instead of sidebar?
