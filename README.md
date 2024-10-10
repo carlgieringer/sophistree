@@ -90,6 +90,12 @@ npm run check-all
   - Drag a Proposition to a PropositionCompound (wrapper around Proposition(s) already
     in a Justification) to combine the Propositions into a Justification basis.
 
+Due to an apparent limitation of Chrome extension sidebars, pinch-to-zoom does not work on the
+graph. Use command-/control- scroll to zoom.
+
+See [Features.md](https://github.com/carlgieringer/sophistree/blob/main/docs/Features.md) for a list
+of CUJs.
+
 The model is the same as Howdju, and is explained here with a graph:
 https://docs.howdju.com/concepts
 

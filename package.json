@@ -8,9 +8,11 @@
     "url": "https://github.com/carlgieringer/sophistree.git"
   },
   "scripts": {
-    "build-prod": "NODE_ENV=production node esbuild.config.mjs",
     "build-dev": "NODE_ENV=development node esbuild.config.mjs",
     "build-dev-watch": "NODE_ENV=development node esbuild.config.mjs --watch",
+    "build-prod": "NODE_ENV=production node esbuild.config.mjs",
+    "zip-extension": "node bin/zip-extension.js",
+    "package-extension": "npm run build-prod && npm run zip-extension",
     "test": "jest",
     "test-watch": "jest --watch",
     "test-debug": "node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand --watch",

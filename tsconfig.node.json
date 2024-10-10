@@ -6,5 +6,6 @@
     "allowSyntheticDefaultImports": true,
     "emitDeclarationOnly": true
   },
+  "include": ["bin/*.js"],
   "files": ["babel.config.js", "esbuild.config.mjs", ".eslintrc.js"]
 }

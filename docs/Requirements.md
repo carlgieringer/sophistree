@@ -38,8 +38,20 @@ this extension and use that in place of Sophistree?
 
 TODO:
 
+- Test with another example
+
 - Publish to Chrome Web Store.
 - npm publish HighlightManager
+
+- Delete appearances
+- Include outcomes in map card
+- Add 'sources excerpted for evidence' in map card
+
+ReactFlow questions
+
+- How to ensure parent height/width within flex?
+- How to do a node targeting an edge?
+- How to do proposition compounds? (Sub flow with no edges?)
 
 - Try adding
 
@@ -49,7 +61,12 @@ TODO:
 - Justification appearances
 - Collapsing
 
+- Sharing a map
+- Critiquing a map (voting, adding new justifications, how to calculate outcomes?)
 - Mobile experience
+- Aggregating maps
+- Surfacing aggregated info in a map when editing and critiquing.
+- Coauthoring maps (group permissions)
 
 - Stable graph layout
 - Non-neutral outcome navigation on content page

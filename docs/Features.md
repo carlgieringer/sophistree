@@ -56,6 +56,11 @@ Guidelines:
 - Highlights reflect outcomes
 - Highlights update to reflect changed outcomes.
 
+## Conclusions
+
+- The 'open map' dialog shows map conclusions
+- Map conclusions automatically reflect updated map content
+
 ## Map management
 
 A user can:
