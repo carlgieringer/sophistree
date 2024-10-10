@@ -57,9 +57,9 @@ import * as selectors from "../store/selectors";
 import { activeMapEntities } from "../store/selectors";
 import DebugElementDialog from "./DebugElementDialog";
 import "./GraphView.scss";
-import VisitPropositionAppearanceDialog, {
+import PropositionAppearanceDialog, {
   focusMediaExcerpt,
-} from "./VisitPropositionAppearanceDialog";
+} from "./PropositionAppearanceDialog";
 import { BasisOutcome, JustificationOutcome } from "../outcomes/outcomes";
 import { outcomeValence } from "../outcomes/valences";
 import { AppDispatch, useAppDispatch } from "../store";
@@ -165,7 +165,7 @@ export default function GraphView({ id, style }: GraphViewProps) {
       />
       <Portal>
         {visitAppearancesDialogProposition && (
-          <VisitPropositionAppearanceDialog
+          <PropositionAppearanceDialog
             data={visitAppearancesDialogProposition}
             visible={!!visitAppearancesDialogProposition}
             onDismiss={() => setVisitAppearancesDialogProposition(undefined)}

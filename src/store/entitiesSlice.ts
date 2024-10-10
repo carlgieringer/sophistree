@@ -302,6 +302,8 @@ export const entitiesSlice = createSlice({
       if (entity?.type === "MediaExcerpt") {
         // TODO: #3 - remove this side effect. Maybe detect the removal via useState in a component?
         void notifyTabsOfDeletedMediaExcerpt(entityIdToDelete);
+      } else if (entity?.type === "Appearance") {
+        updateMediaExcerptAutoVisibility(state, entity.mediaExcerptId);
       }
     },
     showEntity(state, action: PayloadAction<string>) {

@@ -1,15 +1,21 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
 import { Dialog, Button, Text, Tooltip } from "react-native-paper";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
-import { MediaExcerpt, preferredUrl } from "../store/entitiesSlice";
+import {
+  deleteEntity,
+  MediaExcerpt,
+  preferredUrl,
+} from "../store/entitiesSlice";
 import { getTabUrl, FocusMediaExcerptMessage } from "../extension/messages";
 import { PropositionNodeData } from "./graphTypes";
 import { catchErrors } from "../extension/callbacks";
 import * as appLogger from "../logging/appLogging";
 import { tabConnectDelayMillis } from "../App";
+import { useAppDispatch } from "../store";
 
-export default function VisitPropositionAppearanceDialog({
+export default function PropositionAppearanceDialog({
   data,
   visible,
   onDismiss,
@@ -18,6 +24,7 @@ export default function VisitPropositionAppearanceDialog({
   visible: boolean;
   onDismiss: () => void;
 }) {
+  const dispatch = useAppDispatch();
   return (
     <Dialog visible={visible} onDismiss={onDismiss}>
       <Dialog.Title>Appearances for “{data.entity.text}”</Dialog.Title>
@@ -26,19 +33,33 @@ export default function VisitPropositionAppearanceDialog({
           const url = preferredUrl(appearance.mediaExcerpt.urlInfo);
           const hostname = new URL(url).hostname;
           return (
-            <View key={appearance.id}>
-              <Text>“{appearance.mediaExcerpt.quotation}”</Text>
-              <Text style={styles.sourceName}>
-                {appearance.mediaExcerpt.sourceInfo.name}{" "}
-              </Text>
-              <Tooltip title={url}>
-                <Text style={styles.hostname}>{hostname}</Text>
-              </Tooltip>
-              <Button
-                onPress={() => void focusMediaExcerpt(appearance.mediaExcerpt)}
-              >
-                Go
-              </Button>
+            <View key={appearance.id} style={styles.row}>
+              <View>
+                <Text>
+                  “{appearance.mediaExcerpt.quotation}”
+                  <Button
+                    onPress={() =>
+                      void focusMediaExcerpt(appearance.mediaExcerpt)
+                    }
+                  >
+                    Go
+                  </Button>
+                </Text>
+                <Text style={styles.sourceName}>
+                  {appearance.mediaExcerpt.sourceInfo.name}{" "}
+                </Text>
+                <Tooltip title={url}>
+                  <Text style={styles.hostname}>{hostname}</Text>
+                </Tooltip>
+              </View>
+              <View>
+                <Button
+                  accessibilityLabel="delete appearance"
+                  onPress={() => dispatch(deleteEntity(appearance.id))}
+                >
+                  <Icon name="delete" size={18} />
+                </Button>
+              </View>
             </View>
           );
         })}
@@ -56,6 +77,12 @@ const styles = StyleSheet.create({
   },
   hostname: {
     fontWeight: "bold",
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
   },
 });
 
