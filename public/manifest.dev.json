@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Sophistree (Dev)",
-  "version": "1.0",
-  "description": "A browser extension for mapping arguments",
+  "version": "0.1.0",
+  "description": "A browser extension for mapping arguments appearing in web pages",
   "permissions": [
     "contextMenus",
     "management",

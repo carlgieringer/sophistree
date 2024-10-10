@@ -1,7 +1,7 @@
 {
   "name": "sophistree-extension",
-  "version": "1.0.0",
-  "description": "",
+  "version": "0.1.0",
+  "description": "A browser extension for mapping arguments appearing in web pages",
   "main": "index.js",
   "repository": {
     "type": "git",
