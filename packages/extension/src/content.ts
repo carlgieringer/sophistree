@@ -1,14 +1,9 @@
 import { v4 as uuidv4 } from "uuid";
+import { DomAnchorHighlightManager, DomAnchor } from "tapestry-highlights";
+import "tapestry-highlights-byo-anchor/rotation-colors.scss";
+import "./highlights/outcome-colors.scss";
 
 import { AddMediaExcerptData, MediaExcerpt } from "./store/entitiesSlice";
-import {
-  makeDomAnchorFromSelection,
-  DomAnchor,
-  getRangesFromDomAnchor,
-} from "./anchors";
-import { HighlightManager } from "./highlights";
-import "./highlights/rotation-colors.scss";
-import "./highlights/outcome-colors.scss";
 import type {
   ContentMessage,
   CreateMediaExcerptMessage,
@@ -118,7 +113,7 @@ function focusMediaExcerpt(mediaExcerptId: string) {
 }
 
 async function createMediaExcerpt(message: CreateMediaExcerptMessage) {
-  const id = uuidv4();
+  const mediaExcerptId = uuidv4();
   const quotation = message.selectedText;
   const url = getUrl();
   const canonicalUrl = getCanonicalUrl();
@@ -129,13 +124,22 @@ async function createMediaExcerpt(message: CreateMediaExcerptMessage) {
     return;
   }
 
-  const highlight = highlightCurrentSelection(id);
+  const highlight = highlightManager.createHighlightFromCurrentSelection(
+    {
+      mediaExcerptId,
+    },
+    {
+      onClick: function highlightOnClick() {
+        void selectMediaExcerpt(mediaExcerptId);
+      },
+    },
+  );
   if (!highlight) {
     contentLogger.error(`Failed to highlight current selection.`);
     return;
   }
 
-  if (highlight.data.mediaExcerptId === id) {
+  if (highlight.data.mediaExcerptId === mediaExcerptId) {
     const data: AddMediaExcerptData = {
       id: highlight.data.mediaExcerptId,
       quotation,
@@ -231,30 +235,13 @@ function highlightMediaExcerpts(mediaExcerpts: MediaExcerpt[]) {
   mediaExcerpts.forEach(({ id, domAnchor }) => createHighlight(id, domAnchor));
 }
 
-function highlightCurrentSelection(mediaExcerptId: string) {
-  const selection = window.getSelection();
-  if (!selection || selection.isCollapsed) {
-    contentLogger.error(`Cannot highlight empty selection.`);
-    return undefined;
-  }
-
-  const domAnchor = makeDomAnchorFromSelection(selection);
-  if (!domAnchor) {
-    contentLogger.error(`Cannot createMediaExcerpt for empty domAnchor`);
-    return undefined;
-  }
-  return createHighlight(mediaExcerptId, domAnchor);
-}
-
 interface HighlightData {
   mediaExcerptId: string;
 }
 
-const highlightManager = new HighlightManager<DomAnchor, HighlightData>({
+const highlightManager = new DomAnchorHighlightManager<HighlightData>({
   container: document.body,
   logger: contentLogger,
-  getRangesFromAnchor: (anchor: DomAnchor) =>
-    getRangesFromDomAnchor(document.body, anchor),
   colors: {
     mode: "class-callback",
     // Corresponds to the classes in highlights/colors.scss

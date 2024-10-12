@@ -188,9 +188,7 @@ class HighlightManager<Anchor, Data> {
   createHighlight(
     anchor: Anchor,
     data: Data,
-    handlers?: {
-      onClick: (highlight: Highlight<Anchor, Data>) => void;
-    },
+    handlers?: HighlightHandlers<Anchor, Data>,
   ): Highlight<Anchor, Data> {
     const ranges = this.options.getRangesFromAnchor(anchor);
     const coextensiveHighlight = this.getCoextensiveHighlight(ranges);
@@ -574,6 +572,10 @@ class HighlightManager<Anchor, Data> {
     this.highlights.splice(0, this.highlights.length);
     this.sortedHighlightElements = [];
   }
+}
+
+export interface HighlightHandlers<Anchor, Data> {
+  onClick: (highlight: Highlight<Anchor, Data>) => void;
 }
 
 export { HighlightManager };

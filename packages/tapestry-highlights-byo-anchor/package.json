@@ -1,0 +1,54 @@
+{
+  "name": "tapestry-highlights-byo-anchor",
+  "version": "0.1.0",
+  "description": "A web page highlighting library supporting overlapping highlights (user-provided anchors).",
+  "main": "index.js",
+  "exports": {
+    ".": "./src/index.ts",
+    "./rotation-colors.scss": "./src/rotation-colors.scss"
+  },
+  "types": "./types/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/carlgieringer/sophistree.git"
+  },
+  "scripts": {
+    "build-prod": "NODE_ENV=production node esbuild.config.mjs",
+    "test": "jest",
+    "test-watch": "jest --watch",
+    "test-debug": "node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand --watch",
+    "type-check": "tsc",
+    "lint": "eslint src/ --ext .js,.jsx,.ts,.tsx",
+    "lint-fix": "eslint src/ --ext .js,.jsx,.ts,.tsx  --fix",
+    "format-fix": "prettier --write --ignore-path .gitignore .",
+    "format-check": "prettier --check --ignore-path .gitignore .",
+    "check-all": "time (npm run type-check && npm run lint && npm run format-check && npm test) || { echo 'Checks failed'; exit 1; }"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@babel/preset-env": "^7.25.4",
+    "@babel/preset-typescript": "^7.24.7",
+    "@types/jest": "^29.5.13",
+    "@types/node": "^22.5.4",
+    "@types/uuid": "^10.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.8.0",
+    "@typescript-eslint/parser": "^8.8.0",
+    "babel-jest": "^29.7.0",
+    "esbuild": "^0.23.1",
+    "esbuild-plugin-clean": "^1.0.1",
+    "esbuild-plugin-copy": "^2.1.1",
+    "esbuild-sass-plugin": "^3.3.1",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.3.3",
+    "type-fest": "^4.26.1",
+    "typescript": "^5.6.2"
+  }
+}

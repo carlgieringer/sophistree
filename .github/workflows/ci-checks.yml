@@ -22,19 +22,19 @@ jobs:
         run: npm ci
 
       - name: Type check
-        run: npm run type-check
+        run: npm run type-check-all
 
       - name: Lint
-        run: npm run lint
+        run: npm run lint-all
 
       - name: Format check
-        run: npm run format-check
-
-      - name: Build Dev
-        run: npm run build-dev
-
-      - name: Build Prod
-        run: npm run build-prod
+        run: npm run format-check-all
 
       - name: Test
-        run: npm test
+        run: npm run test-all
+
+      - name: Build Dev
+        run: npm run build-dev --workspace extension
+
+      - name: Build Prod
+        run: npm run build-prod --workspace extension
