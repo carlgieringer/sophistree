@@ -233,7 +233,7 @@ test.describe("HighlightManager", () => {
       return highlight.elements.length;
     });
 
-    expect(elementCount).toBeLessThanOrEqual(2);
+    expect(elementCount).toBe(1);
   });
 
   test("should not create coextensive highlights", async () => {

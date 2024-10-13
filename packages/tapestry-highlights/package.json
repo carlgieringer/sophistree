@@ -24,7 +24,7 @@
     "lint-fix": "eslint src/ --ext .js,.jsx,.ts,.tsx  --fix",
     "test": "playwright test",
     "test-debug": "playwright test --debug",
-    "test-update-snapshots": "playwright test --update-snapshots",
+    "test-update-snapshots": "docker build -t playwright-screenshots -f playwright-screenshots.dockerfile . && docker run --rm -v $(pwd)/e2e:/tapestry-highlights/e2e playwright-screenshots",
     "type-check": "tsc"
   },
   "keywords": [],
