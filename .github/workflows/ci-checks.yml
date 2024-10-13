@@ -25,14 +25,14 @@ jobs:
         run: npm run format-check-all
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
+      - name: Test
+        run: npm run test-all
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
           name: tapestry-highlights-playwright-report
           path: packages/tapestry-highlights/playwright-report/
           retention-days: 30
-      - name: Test
-        run: npm run test-all
       - name: Build Dev
         run: npm run build-dev --workspace extension
       - name: Build Prod
