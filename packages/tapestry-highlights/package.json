@@ -1,55 +1,57 @@
 {
-  "name": "tapestry-highlights",
+  "name": "tapestry-highlights-byo-anchor",
   "version": "0.1.0",
-  "description": "A web page highlighting library supporting overlapping highlights.",
-  "main": "index.js",
+  "description": "A web page highlighting library supporting overlapping highlights (user-provided anchors).",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./types/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./rotation-colors.scss": "./src/rotation-colors.scss"
   },
-  "types": "./types/index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/carlgieringer/sophistree.git"
   },
   "scripts": {
-    "build-prod": "NODE_ENV=production node esbuild.config.mjs",
-    "test": "jest",
-    "test-watch": "jest --watch",
-    "test-debug": "node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand --watch",
-    "type-check": "tsc",
-    "lint": "eslint src/ --ext .js,.jsx,.ts,.tsx",
-    "lint-fix": "eslint src/ --ext .js,.jsx,.ts,.tsx  --fix",
+    "build": "node esbuild.config.mjs",
+    "build-and-serve": "npm run build && npm run dev-server",
+    "check-all": "time (npm run type-check && npm run lint && npm run format-check && npm test) || { echo 'Checks failed'; exit 1; }",
+    "dev-server": "http-server dist/e2e -p 3000 --cors",
     "format-fix": "prettier --write --ignore-path .gitignore .",
     "format-check": "prettier --check --ignore-path .gitignore .",
-    "check-all": "time (npm run type-check && npm run lint && npm run format-check && npm test) || { echo 'Checks failed'; exit 1; }"
+    "lint": "eslint src/ --ext .js,.jsx,.ts,.tsx",
+    "lint-fix": "eslint src/ --ext .js,.jsx,.ts,.tsx  --fix",
+    "test": "playwright test",
+    "type-check": "tsc"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "dom-anchor-text-position": "^5.0.0",
     "dom-anchor-text-quote": "^4.0.2",
-    "tapestry-highlights-byo-anchor": "file:../tapestry-highlights-byo-anchor",
-    "text-fragments-polyfill": "^5.7.0",
     "uuid": "^10.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@babel/preset-env": "^7.25.4",
     "@babel/preset-typescript": "^7.24.7",
+    "@playwright/test": "^1.48.0",
     "@types/jest": "^29.5.13",
     "@types/node": "^22.5.4",
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^8.8.0",
     "@typescript-eslint/parser": "^8.8.0",
     "babel-jest": "^29.7.0",
-    "esbuild": "^0.23.1",
+    "esbuild": "0.23.1",
     "esbuild-plugin-clean": "^1.0.1",
     "esbuild-plugin-copy": "^2.1.1",
     "esbuild-sass-plugin": "^3.3.1",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^9.1.0",
+    "http-server": "^14.1.1",
     "jest": "^29.7.0",
+    "playwright": "^1.48.0",
     "prettier": "^3.3.3",
     "type-fest": "^4.26.1",
     "typescript": "^5.6.2"

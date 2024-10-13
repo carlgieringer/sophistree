@@ -1,7 +1,8 @@
 # tapestry-highlights-byo-anchor
 
-npx playwright test
-Runs the end-to-end tests.
+```sh
+npm run test
+```
 
 npx playwright test --ui
 Starts the interactive UI mode.

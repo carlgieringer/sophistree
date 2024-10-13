@@ -8,7 +8,6 @@
   "license": "ISC",
   "private": true,
   "workspaces": [
-    "packages/tapestry-highlights-byo-anchor",
     "packages/tapestry-highlights",
     "packages/extension"
   ],

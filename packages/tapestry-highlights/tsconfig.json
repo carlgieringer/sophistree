@@ -10,13 +10,13 @@
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
-    "moduleResolution": "Bundler",
+    "moduleResolution": "Node",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "composite": true,
     "emitDeclarationOnly": true,
     "declarationDir": "types"
   },
-  "include": ["src"],
-  "references": [{ "path": "../tapestry-highlights-byo-anchor" }]
+  "include": ["src", "e2e"],
+  "files": ["playwright.config.ts"]
 }

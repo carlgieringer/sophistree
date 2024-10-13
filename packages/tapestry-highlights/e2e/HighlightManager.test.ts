@@ -294,7 +294,7 @@ test.describe("HighlightManager (mode=class-callback)", () => {
     `);
 
     await page.evaluate(() => {
-      // The same as initializeHighlightManager but we can't pass getColorClass from the test.
+      // The same as initializeHighlightManager but we can't pass the function getColorClass from the test.
       const container = document.body;
 
       const getRangesFromAnchor = (
