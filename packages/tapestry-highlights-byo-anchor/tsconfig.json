@@ -17,5 +17,6 @@
     "emitDeclarationOnly": true,
     "declarationDir": "types"
   },
-  "include": ["src"]
+  "include": ["src", "e2d"],
+  "files": ["playwright.config.ts"]
 }
