@@ -28,3 +28,6 @@ Requires docker so that the snapshots are from Linux and match our Github CI:
 ```sh
 npm run test-update-snapshots
 ```
+
+The CI Github action uploads the Playwright report (you must navigate to the workflow run from
+Actions, not from the PR) where you can see failure explanations e.g. screenshot diffs.

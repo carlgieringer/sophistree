@@ -6,19 +6,20 @@
   "scripts": {
     "build-dev": "NODE_ENV=development node esbuild.config.mjs",
     "build-dev-watch": "NODE_ENV=development node esbuild.config.mjs --watch",
-    "extension:build-dev-watch": "npm run build-dev-watch",
     "build-prod": "NODE_ENV=production node esbuild.config.mjs",
-    "zip-extension": "node bin/zip-extension.js",
+    "check-all": "time (npm run type-check && npm run lint && npm run format-check && npm test) || { echo 'Checks failed'; exit 1; }",
+    "extension:build-dev-watch": "npm run build-dev-watch",
+    "format-fix": "prettier --write --ignore-path .gitignore .",
+    "format-check": "prettier --check --ignore-path .gitignore .",
+    "lint": "eslint src/ --ext .js,.jsx,.ts,.tsx",
+    "lint-fix": "eslint src/ --ext .js,.jsx,.ts,.tsx  --fix",
     "package-extension": "npm run build-prod && npm run zip-extension",
     "test": "jest",
+    "test-ci": "npm run test",
     "test-watch": "jest --watch",
     "test-debug": "node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand --watch",
     "type-check": "tsc --noEmit",
-    "lint": "eslint src/ --ext .js,.jsx,.ts,.tsx",
-    "lint-fix": "eslint src/ --ext .js,.jsx,.ts,.tsx  --fix",
-    "format-fix": "prettier --write --ignore-path .gitignore .",
-    "format-check": "prettier --check --ignore-path .gitignore .",
-    "check-all": "time (npm run type-check && npm run lint && npm run format-check && npm test) || { echo 'Checks failed'; exit 1; }"
+    "zip-extension": "node bin/zip-extension.js"
   },
   "keywords": [],
   "dependencies": {

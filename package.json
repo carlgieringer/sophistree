@@ -17,6 +17,7 @@
     "format-check-all": "npm run format-check --workspaces --if-present",
     "lint-all": "npm run lint --workspaces --if-present",
     "test-all": "npm run test --workspaces --if-present",
+    "test-ci-all": "npm run test-ci --workspaces --if-present",
     "type-check-all": "npm run type-check --workspaces --if-present"
   }
 }

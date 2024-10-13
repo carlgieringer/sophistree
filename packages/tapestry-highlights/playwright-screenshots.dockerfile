@@ -1,3 +1,4 @@
+# Should match tapestry-highlights-snapshot-tests.yml
 FROM mcr.microsoft.com/playwright:v1.48.0-noble
 
 WORKDIR /tapestry-highlights

@@ -1,4 +1,4 @@
-name: CI checks
+name: tapestry-highlights snaphot tests
 
 on:
   push:
@@ -8,7 +8,8 @@ on:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    # Should match playwright-screenshots.dockerfile
+    runs-on: mcr.microsoft.com/playwright:v1.48.0-noble
 
     steps:
       - uses: actions/checkout@v4
@@ -17,21 +18,11 @@ jobs:
           node-version: lts/*
       - name: Install dependencies
         run: npm ci
-      - name: Type check
-        run: npm run type-check-all
-      - name: Lint
-        run: npm run lint-all
-      - name: Format check
-        run: npm run format-check-all
-      - name: Test
-        run: npm run test-ci-all
+      - name: Test including snapshots
+        run: npm run test --workspace tapestry-highlights
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
           name: tapestry-highlights-playwright-report
           path: packages/tapestry-highlights/playwright-report/
           retention-days: 30
-      - name: Build Dev
-        run: npm run build-dev --workspace extension
-      - name: Build Prod
-        run: npm run build-prod --workspace extension
