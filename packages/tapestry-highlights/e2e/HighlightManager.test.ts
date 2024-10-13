@@ -91,20 +91,20 @@ test.describe("HighlightManager", () => {
     // Simulate mousemove just within highlight2
     await page.mouse.move(x + 1, y + 1);
 
-    const hoverClassCount = await page.evaluate(() => {
-      return document.querySelectorAll(".highlight-hover").length;
-    });
-
-    expect(hoverClassCount).toBe(1);
-
-    const hoverHighlightIndex = await page.evaluate(() => {
-      const hoveredElement = document.querySelector(
-        ".highlight-hover",
-      ) as HTMLElement;
-      return hoveredElement ? hoveredElement.dataset.highlightIndex : undefined;
-    });
-
+    const { hoveredElementCount, hoverHighlightIndex } = await page.evaluate(
+      () => {
+        const hoveredElements = document.querySelectorAll(".highlight-hover");
+        const hoveredElementCount = hoveredElements.length;
+        const hoverHighlightIndex =
+          hoveredElements.length === 1
+            ? (hoveredElements[0] as HTMLElement).dataset.highlightIndex
+            : undefined;
+        return { hoveredElementCount, hoverHighlightIndex };
+      },
+    );
+    expect(hoveredElementCount).toBe(1);
     expect(hoverHighlightIndex).toBe("1");
+    await expect(page).toHaveScreenshot();
   });
 
   test("should remove highlights by selector", async () => {

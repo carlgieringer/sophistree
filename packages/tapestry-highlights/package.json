@@ -29,7 +29,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "dom-anchor-text-quote": "^4.0.2",
+    "dom-anchor-text-position": "^5.0.0",
+    "text-fragments-polyfill": "^6.1.0",
     "uuid": "^10.0.0"
   },
   "devDependencies": {
@@ -43,6 +44,7 @@
     "@typescript-eslint/eslint-plugin": "^8.8.0",
     "@typescript-eslint/parser": "^8.8.0",
     "babel-jest": "^29.7.0",
+    "dom-anchor-text-quote": "^4.0.2",
     "esbuild": "0.23.1",
     "esbuild-plugin-clean": "^1.0.1",
     "esbuild-plugin-copy": "^2.1.1",
