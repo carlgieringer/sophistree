@@ -34,7 +34,7 @@ export default function PropositionAppearanceDialog({
           const hostname = new URL(url).hostname;
           return (
             <View key={appearance.id} style={styles.row}>
-              <View>
+              <View style={styles.quotationCell}>
                 <Text>
                   “{appearance.mediaExcerpt.quotation}”
                   <Button
@@ -52,7 +52,7 @@ export default function PropositionAppearanceDialog({
                   <Text style={styles.hostname}>{hostname}</Text>
                 </Tooltip>
               </View>
-              <View>
+              <View style={styles.deleteButtonCell}>
                 <Button
                   accessibilityLabel="delete appearance"
                   onPress={() => dispatch(deleteEntity(appearance.id))}
@@ -83,6 +83,13 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 10,
+  },
+  quotationCell: {
+    flex: 1,
+  },
+  deleteButtonCell: {
+    flexShrink: 0,
+    marginLeft: 10,
   },
 });
 
