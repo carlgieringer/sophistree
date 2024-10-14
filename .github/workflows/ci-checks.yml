@@ -17,8 +17,6 @@ jobs:
           node-version: lts/*
       - name: Install dependencies
         run: npm ci
-      - name: Install Playwright deps
-        run: npx playwright install --with-deps
       - name: Type check
         run: npm run type-check-all
       - name: Lint
@@ -26,7 +24,7 @@ jobs:
       - name: Format check
         run: npm run format-check-all
       - name: Test
-        run: npm run test-all
+        run: npm run test-ci-all
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
@@ -34,10 +32,10 @@ jobs:
           path: packages/tapestry-highlights/playwright-report/
           retention-days: 30
       - name: Build Dev
-        run: npm run build-dev --workspace=packages/extension
+        run: npm run build-dev --workspace=packages/browser-extension
       - name: Build Prod
-        run: npm run build-prod --workspace=packages/extension
-  playwright-snapshot-tests:
+        run: npm run build-prod --workspace=packages/browser-extension
+  playwright:
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v1.48.0-noble

@@ -2,9 +2,9 @@
 
 Sophistree is a Chrome extension for mapping arguments.
 
-![screenshot](https://github.com/carlgieringer/sophistree/blob/main/docs/screenshot.png?raw=true)
+![screenshot](https://github.com/carlgieringer/sophistree/blob/main/packages/browser-extension/docs/screenshot.png?raw=true)
 
-See [Features.md](https://github.com/carlgieringer/sophistree/blob/main/docs/Features.md) for a list
+See [Features.md](https://github.com/carlgieringer/sophistree/blob/main/packages/browser-extension/docs/Features.md) for a list
 of CUJs.
 
 ## Development Setup
@@ -93,7 +93,7 @@ npm run check-all
 Due to an apparent limitation of Chrome extension sidebars, pinch-to-zoom does not work on the
 graph. Use command-/control- scroll to zoom.
 
-See [Features.md](https://github.com/carlgieringer/sophistree/blob/main/docs/Features.md) for a list
+See [Features.md](https://github.com/carlgieringer/sophistree/blob/main/packages/browser-extension/docs/Features.md) for a list
 of CUJs.
 
 The model is the same as Howdju, and is explained here with a graph:
@@ -114,3 +114,14 @@ This section briefly describes why the extensions requires certain scripts and p
   - The content script manages highlights and interacts with the sidebar to create excerpts and to
     emphasize focused exerpts.
   - `<all_urls>` so that Sophistree works on all pages
+
+## Publishing to Chrome Web Store
+
+Ensure the version in `package.json` is up-to-date.
+
+```sh
+npm run build-prod
+npm run zip-extension
+```
+
+Upload the zip file.

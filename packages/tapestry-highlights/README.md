@@ -1,4 +1,6 @@
-# tapestry-highlights
+# `tapestry-highlights`
+
+`tapestry-highlights` is a browser highlighting library that supports overlapping highlights.
 
 ## Running tests
 
@@ -6,7 +8,7 @@
 # Run all tests
 npm run test
 # Run specific tests
-npm run test -- e2e/HighlightManager.spec.ts -g "should create a highlight" --project=chromium
+npm run test -- e2e/HighlightManager.spec.ts -g "should create a highlight"
 # Run specific browsers
 npm run test -- --project=chromium
 ```
@@ -27,7 +29,7 @@ By default `npm run test` ignores snapshots because developers local machines ma
 screenshots. But in the CI check we run the snapshot tests against Linux. If you make changes that
 affect the snapshot tests, you should update them (and confirm the changes look good.)
 
-Running and updateing the snapshot tests requires docker so that the snapshots are from Linux and
+Running and updating the snapshot tests requires docker so that the snapshots are from Linux and
 match our Github CI.
 
 Test the snapshots:

@@ -1,6 +1,7 @@
 import * as textPosition from "dom-anchor-text-position";
 import * as textQuote from "dom-anchor-text-quote";
-import { TextFragment, GenerateFragmentStatus } from "./textFragments";
+import { GenerateFragmentStatus } from "text-fragments-polyfill/dist/fragment-generation-utils.js";
+import type { TextFragment } from "text-fragments-polyfill/dist/fragment-generation-utils.js";
 import { processTextFragmentDirective } from "text-fragments-polyfill/text-fragment-utils";
 import { generateFragmentFromRange } from "text-fragments-polyfill/dist/fragment-generation-utils.js";
 

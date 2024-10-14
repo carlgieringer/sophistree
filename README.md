@@ -2,9 +2,17 @@
 
 Sophistree is a Chrome extension for mapping arguments.
 
-![screenshot](https://github.com/carlgieringer/sophistree/blob/main/docs/screenshot.png?raw=true)
+![screenshot](https://github.com/carlgieringer/sophistree/blob/main/packages/browser-extension/docs/screenshot.png?raw=true)
 
 This repository is a monorepo containing code for the Sophistree browser extension and the
 `tapestry-highlights` npm package which Sophistree uses.
 
-See the respective subdirectories under `packages` for details.
+See the READMEs in the respective subdirectories under `packages` for details:
+
+- [Sophistree extension README](https://github.com/carlgieringer/sophistree/blob/main/packages/browser-extension/README.md)
+- [tapestry-highlights README](https://github.com/carlgieringer/sophistree/blob/main/packages/tapestry-highlights/README.md)
+
+## Scripts
+
+- `npm run check-all`: run all checks except for snapshot tests.
+- `npm run test-snapshots --workspace=packages/tapestry-highlights`: run snapshot tests.

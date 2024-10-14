@@ -1,5 +1,5 @@
 {
-  "name": "sophistree-extension",
+  "name": "sophistree-browser-extension",
   "version": "0.1.0",
   "description": "A browser extension for mapping arguments appearing in web pages",
   "main": "index.js",
@@ -15,12 +15,15 @@
     "lint-fix": "eslint src/ --ext .js,.jsx,.ts,.tsx  --fix",
     "package-extension": "npm run build-prod && npm run zip-extension",
     "test": "jest",
+    "test-ci": "npm run test",
     "test-watch": "jest --watch",
     "test-debug": "node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand --watch",
     "type-check": "tsc --noEmit",
     "zip-extension": "node bin/zip-extension.js"
   },
-  "keywords": [],
+  "keywords": [
+    "argument mapping"
+  ],
   "dependencies": {
     "@reduxjs/toolkit": "^2.2.7",
     "@sentry/browser": "^8.33.1",
