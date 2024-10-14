@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { v4 as uuidv4 } from "uuid";
+import { DomAnchor } from "tapestry-highlights";
 
-import { DomAnchor } from "../anchors";
 import * as appLogger from "../logging/appLogging";
 import { notifyTabsOfDeletedMediaExcerpt } from "../extension/messages";
 

@@ -18,9 +18,9 @@ declare module "text-fragments-polyfill/dist/fragment-generation-utils.js" {
 
   interface TextFragment {
     textStart: string;
-    textEnd: string;
-    prefix: string;
-    suffix: string;
+    textEnd?: string;
+    prefix?: string;
+    suffix?: string;
   }
 
   function setTimeout(timeout: number | null): void;

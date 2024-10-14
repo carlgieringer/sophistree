@@ -13,8 +13,10 @@
     "moduleResolution": "Node",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx"
+    "composite": true,
+    "emitDeclarationOnly": true,
+    "declarationDir": "types"
   },
-  "include": ["src"]
+  "include": ["src", "e2e"],
+  "files": ["playwright.config.ts"]
 }

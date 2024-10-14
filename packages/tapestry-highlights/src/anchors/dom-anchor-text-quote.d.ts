@@ -2,9 +2,9 @@ declare module "dom-anchor-text-quote" {
   import { TextPositionAnchor } from "dom-anchor-text-position";
 
   interface TextQuoteAnchor {
-    prefix: string;
+    prefix?: string;
     exact: string;
-    suffix: string;
+    suffix?: string;
   }
 
   interface Options {

@@ -1,4 +1,4 @@
-name: CI Checks
+name: CI checks
 
 on:
   push:
@@ -7,34 +7,55 @@ on:
     branches: [main]
 
 jobs:
-  check:
+  checks:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Use Node.js
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: "18"
-
+          node-version: lts/*
       - name: Install dependencies
         run: npm ci
-
       - name: Type check
-        run: npm run type-check
-
+        run: npm run type-check-all
       - name: Lint
-        run: npm run lint
-
+        run: npm run lint-all
       - name: Format check
-        run: npm run format-check
-
-      - name: Build Dev
-        run: npm run build-dev
-
-      - name: Build Prod
-        run: npm run build-prod
-
+        run: npm run format-check-all
       - name: Test
-        run: npm test
+        run: npm run test-ci-all
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: tapestry-highlights-playwright-report
+          path: packages/tapestry-highlights/playwright-report/
+          retention-days: 30
+      - name: Build Dev
+        run: npm run build-dev --workspace=packages/browser-extension
+      - name: Build Prod
+        run: npm run build-prod --workspace=packages/browser-extension
+  playwright:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.48.0-noble
+      options: --user 1001
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright deps
+        run: npx playwright install
+      - name: Run snapshot tests
+        run: |
+          cd packages/tapestry-highlights
+          npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: tapestry-highlights-playwright-snapshots-report
+          path: packages/tapestry-highlights/playwright-report/
+          retention-days: 30

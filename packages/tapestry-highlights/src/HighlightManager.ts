@@ -1,7 +1,7 @@
 import debounce from "lodash.debounce";
 import { v4 as uuidv4 } from "uuid";
 
-interface Highlight<Anchor, Data> {
+export interface Highlight<Anchor, Data> {
   /** The object that anchors the highlight to the document */
   anchor: Anchor;
   /** Arbitrary data to associate with the highlight. Can be used to activate the highlight later. */
@@ -21,19 +21,20 @@ export type HighlightManagerOptions<Anchor, Data> = {
   container: HTMLElement;
   getRangesFromAnchor: GetRangesFromAnchorFunction<Anchor>;
   highlightClass?: string;
-  colors:
-    | {
-        mode: "rotate";
-        count: number;
-        colorIndexClassFormat?: string;
-      }
-    | {
-        mode: "class-callback";
-        getColorClass: (data: Data) => string;
-      };
+  colors: HighlightManagerColorOptions<Data>;
   hoverClass?: string;
   logger?: Logger;
 };
+export type HighlightManagerColorOptions<Data> =
+  | {
+      mode: "rotate";
+      count: number;
+      colorIndexClassFormat?: string;
+    }
+  | {
+      mode: "class-callback";
+      getColorClass: (data: Data) => string;
+    };
 type MergedHighlightManagerOptions<Anchor, Data> = {
   container: HTMLElement;
   logger: Logger;
@@ -188,9 +189,7 @@ class HighlightManager<Anchor, Data> {
   createHighlight(
     anchor: Anchor,
     data: Data,
-    handlers?: {
-      onClick: (highlight: Highlight<Anchor, Data>) => void;
-    },
+    handlers?: HighlightHandlers<Anchor, Data>,
   ): Highlight<Anchor, Data> {
     const ranges = this.options.getRangesFromAnchor(anchor);
     const coextensiveHighlight = this.getCoextensiveHighlight(ranges);
@@ -388,19 +387,33 @@ class HighlightManager<Anchor, Data> {
     }
   }
 
+  private document() {
+    return this.options.container.ownerDocument;
+  }
+
+  private window() {
+    const view = this.document().defaultView;
+    if (!view) {
+      throw new Error(
+        "Could not get window because document's defaultView was empty.",
+      );
+    }
+    return view;
+  }
+
   private getHighestHighlightElementAtPoint(
     x: number,
     y: number,
   ): HTMLElement | undefined {
     // elementsFromPoint ignores pointer-events: none, so temporarily enable them
-    const highlightElements = document.querySelectorAll(
+    const highlightElements = this.document().querySelectorAll(
       `.${this.options.highlightClass}`,
     );
     highlightElements.forEach((el) => {
       (el as HTMLElement).style.pointerEvents = "auto";
     });
     // elementsFromPoint returns the elements topmost to bottomost, so the first is the highest
-    const highestHighlite = document
+    const highestHighlite = this.document()
       .elementsFromPoint(x, y)
       .find((el) => el.classList.contains(this.options.highlightClass)) as
       | HTMLElement
@@ -453,8 +466,8 @@ class HighlightManager<Anchor, Data> {
           newElements.push(element);
         }
 
-        const left = rect.left + window.scrollX;
-        const top = rect.top + window.scrollY;
+        const left = rect.left + this.window().scrollX;
+        const top = rect.top + this.window().scrollY;
         const width = rect.width;
         const height = rect.height;
 
@@ -489,7 +502,7 @@ class HighlightManager<Anchor, Data> {
   private createElementForHighlight(
     highlight: Highlight<Anchor, Data>,
   ): HTMLElement {
-    const element = document.createElement("div");
+    const element = this.document().createElement("div");
     element.style.position = "absolute";
     element.style.pointerEvents = "none";
     element.style.mixBlendMode = "multiply"; // This helps with color blending
@@ -576,5 +589,8 @@ class HighlightManager<Anchor, Data> {
   }
 }
 
+export interface HighlightHandlers<Anchor, Data> {
+  onClick: (highlight: Highlight<Anchor, Data>) => void;
+}
+
 export { HighlightManager };
-export type { Highlight };
