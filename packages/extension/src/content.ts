@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import { DomAnchorHighlightManager, DomAnchor } from "tapestry-highlights";
-import "tapestry-highlights-byo-anchor/rotation-colors.scss";
+import "tapestry-highlights/rotation-colors.scss";
 import "./highlights/outcome-colors.scss";
 
 import { AddMediaExcerptData, MediaExcerpt } from "./store/entitiesSlice";

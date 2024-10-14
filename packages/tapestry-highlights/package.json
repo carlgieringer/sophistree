@@ -1,11 +1,12 @@
 {
-  "name": "tapestry-highlights-byo-anchor",
+  "name": "tapestry-highlights",
   "version": "0.1.0",
-  "description": "A web page highlighting library supporting overlapping highlights (user-provided anchors).",
+  "description": "A web page highlighting library supporting overlapping highlights.",
   "exports": {
     ".": {
       "types": "./types/src/index.d.ts",
-      "default": "./dist/src/index.js"
+      "require": "./dist/src/index.js",
+      "default": "./src/index.ts"
     },
     "./rotation-colors.scss": "./src/rotation-colors.scss"
   },

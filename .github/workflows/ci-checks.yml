@@ -34,13 +34,15 @@ jobs:
           path: packages/tapestry-highlights/playwright-report/
           retention-days: 30
       - name: Build Dev
-        run: npm run build-dev --workspace extension
+        run: npm run build-dev --workspace=packages/extension
       - name: Build Prod
-        run: npm run build-prod --workspace extension
+        run: npm run build-prod --workspace=packages/extension
   playwright-snapshot-tests:
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v1.48.0-noble
+      env:
+        HOME: /root
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

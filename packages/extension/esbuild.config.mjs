@@ -92,4 +92,9 @@ if (watch) {
 } else {
   let result = await build(options);
   console.log(result);
+  if (result.errors.length) {
+    throw new Error("build had errors");
+  } else if (result.warnings.length) {
+    throw new Error("build had warnings");
+  }
 }

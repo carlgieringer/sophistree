@@ -30,7 +30,6 @@
     "cytoscape-elk": "^2.2.0",
     "esbuild-plugin-flow": "github:dalcib/esbuild-plugin-flow",
     "tapestry-highlights": "file:../tapestry-highlights",
-    "tapestry-highlights-byo-anchor": "file:../tapestry-highlights-byo-anchor",
     "immer": "^10.1.1",
     "lodash.debounce": "^4.0.8",
     "react": "^18.3.1",
