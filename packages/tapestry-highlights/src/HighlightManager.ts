@@ -1,25 +1,7 @@
 import debounce from "lodash.debounce";
 import { v4 as uuidv4 } from "uuid";
 
-export interface Highlight<Anchor, Data> {
-  /** The object that anchors the highlight to the document */
-  anchor: Anchor;
-  /** Arbitrary data to associate with the highlight. Can be used to activate the highlight later. */
-  data: Data;
-  ranges: Range[];
-  elements: HTMLElement[];
-  onClick?: (highlight: Highlight<Anchor, Data>) => void;
-  /** The class names applied to the highlight. */
-  classNames: string[];
-}
-
 export type Logger = Pick<typeof console, "error" | "warn">;
-
-type GetRangesFromAnchorFunction<Anchor> = (anchor: Anchor) => Range[];
-type GetHighlightClassNamesFunction<Data> = (
-  highlightData: Data,
-  index: number,
-) => string[];
 
 export type HighlightManagerOptions<Anchor, Data> = {
   container: HTMLElement;
@@ -29,26 +11,11 @@ export type HighlightManagerOptions<Anchor, Data> = {
   hoverClass?: string;
   logger?: Logger;
 };
-type MergedHighlightManagerOptions<Anchor, Data> = {
-  container: HTMLElement;
-  logger: Logger;
-  getRangesFromAnchor: GetRangesFromAnchorFunction<Anchor>;
-  highlightClass: string;
-  getHighlightClassNames: GetHighlightClassNamesFunction<Data>;
-  hoverClass: string;
-};
-
-export const classNameIndexPlaceholder = "{index}";
-const defaultRotationColorCount = 5;
-const defaultOptions = {
-  highlightClass: "highlight",
-  getHighlightClassNames: (highlightData: unknown, index: number) => [
-    `highlight-color-${index % defaultRotationColorCount}`,
-  ],
-  hoverClass: "highlight-hover",
-};
-
-type HighlightSelector<Data> = (highlightData: Data) => boolean;
+type GetRangesFromAnchorFunction<Anchor> = (anchor: Anchor) => Range[];
+type GetHighlightClassNamesFunction<Data> = (
+  highlightData: Data,
+  index: number,
+) => string[];
 
 class HighlightManager<Anchor, Data> {
   private readonly options: MergedHighlightManagerOptions<Anchor, Data>;
@@ -151,7 +118,7 @@ class HighlightManager<Anchor, Data> {
   createHighlight(
     anchor: Anchor,
     data: Data,
-    handlers?: HighlightHandlers<Anchor, Data>,
+    handlers?: HighlightHandlers<Data>,
   ): Highlight<Anchor, Data> {
     const ranges = this.options.getRangesFromAnchor(anchor);
     const coextensiveHighlight = this.getCoextensiveHighlight(ranges);
@@ -351,7 +318,7 @@ class HighlightManager<Anchor, Data> {
       !highlightElement.contains(event.target as Node)
     ) {
       if (highlight?.onClick) {
-        highlight.onClick(highlight);
+        highlight.onClick(highlight.data);
       }
     }
   }
@@ -558,8 +525,48 @@ class HighlightManager<Anchor, Data> {
   }
 }
 
-export interface HighlightHandlers<Anchor, Data> {
-  onClick: (highlight: Highlight<Anchor, Data>) => void;
+export interface HighlightHandlers<Data> {
+  onClick: (highlightData: Data) => void;
 }
 
 export { HighlightManager };
+
+/**
+ * The data stored with a highlight. Users must never access or modify this data directly. The manager
+ * provides access to the data via callbacks.
+ */
+export interface Highlight<Anchor, Data> {
+  /** The object that anchors the highlight to the document */
+  anchor: Anchor;
+  /** Arbitrary data to associate with the highlight. Can be used to identify the highlight via callbacks. */
+  data: Data;
+  /** The highlight's ranges. */
+  ranges: Range[];
+  /** The highlight's elemens. */
+  elements: HTMLElement[];
+  /** The onClick handler. */
+  onClick?: (highlightData: Data) => void;
+  /** The class names applied to the highlight. */
+  classNames: string[];
+}
+
+type MergedHighlightManagerOptions<Anchor, Data> = {
+  container: HTMLElement;
+  logger: Logger;
+  getRangesFromAnchor: GetRangesFromAnchorFunction<Anchor>;
+  highlightClass: string;
+  getHighlightClassNames: GetHighlightClassNamesFunction<Data>;
+  hoverClass: string;
+};
+
+export const classNameIndexPlaceholder = "{index}";
+const defaultRotationColorCount = 5;
+const defaultOptions = {
+  highlightClass: "highlight",
+  getHighlightClassNames: (highlightData: unknown, index: number) => [
+    `highlight-color-${index % defaultRotationColorCount}`,
+  ],
+  hoverClass: "highlight-hover",
+};
+
+type HighlightSelector<Data> = (highlightData: Data) => boolean;

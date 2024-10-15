@@ -163,10 +163,8 @@ test.describe("HighlightManager", () => {
   test("should handle click events", async () => {
     const { x, y } = await page.evaluate(() => {
       window.clickedHighlightIds = [];
-      function onClick(
-        highlight: Highlight<textQuote.TextQuoteAnchor, TestData>,
-      ) {
-        window.clickedHighlightIds.push(highlight.data.id);
+      function onClick({ id }: TestData) {
+        window.clickedHighlightIds.push(id);
       }
       window.manager.createHighlight(
         { exact: "This is some sample text" },
