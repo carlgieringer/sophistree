@@ -22,10 +22,11 @@ test.describe("HighlightManager", () => {
         <head>
           <style>
             .highlight { position: absolute; pointer-events: none; }
-            .highlight-color-0 { background-color: yellow; }
-            .highlight-color-1 { background-color: lightgreen; }
-            .highlight-color-2 { background-color: lightblue; }
+            .highlight-color-0 { background-color: aqua; opacity: 50%; }
+            .highlight-color-1 { background-color: fuchsia;  opacity: 50%; }
+            .highlight-color-2 { background-color: lime;  opacity: 50%; }
             .highlight-hover { outline: 2px solid red; }
+            .highlight-focus { outline: 2px solid yellow; }
           </style>
         </head>
         <body>
@@ -153,11 +154,12 @@ test.describe("HighlightManager", () => {
 
       window.manager.focusHighlight(({ id }) => id === 2);
 
-      const element = document.querySelector(".highlight-hover") as HTMLElement;
+      const element = document.querySelector(".highlight-focus") as HTMLElement;
       return element?.dataset.highlightIndex;
     });
 
     expect(highlightIndex).toBe("1");
+    await expect(page).toHaveScreenshot();
   });
 
   test("should handle click events", async () => {
@@ -288,10 +290,11 @@ test.describe("HighlightManager with mutable classes", () => {
         <head>
           <style>
             .highlight { position: absolute; pointer-events: none; }
-            .highlight-color-0 { background-color: yellow; }
-            .highlight-color-1 { background-color: lightgreen; }
-            .highlight-color-2 { background-color: lightblue; }
+            .highlight-color-0 { background-color: aqua; opacity: 50%; }
+            .highlight-color-1 { background-color: fuchsia;  opacity: 50%; }
+            .highlight-color-2 { background-color: lime;  opacity: 50%; }
             .highlight-hover { outline: 2px solid red; }
+            .highlight-focus { outline: 2px solid yellow; }
           </style>
         </head>
         <body>

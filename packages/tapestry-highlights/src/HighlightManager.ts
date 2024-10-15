@@ -49,10 +49,11 @@ class HighlightManager<Anchor, Data> {
       container: options.container,
       logger: options.logger ?? console,
       getRangesFromAnchor: options.getRangesFromAnchor,
-      highlightClass: options.highlightClass ?? defaultOptions.highlightClass,
       getHighlightClassNames:
         options.getHighlightClassNames ?? defaultOptions.getHighlightClassNames,
+      highlightClass: options.highlightClass ?? defaultOptions.highlightClass,
       hoverClass: options.hoverClass ?? defaultOptions.hoverClass,
+      focusClass: options.focusClass ?? defaultOptions.focusClass,
     };
 
     this.addEventListeners();
@@ -631,11 +632,12 @@ export interface Highlight<Anchor, Data> {
 
 type MergedHighlightManagerOptions<Anchor, Data> = {
   container: HTMLElement;
-  logger: Logger;
   getRangesFromAnchor: GetRangesFromAnchorFunction<Anchor>;
-  highlightClass: string;
   getHighlightClassNames: GetHighlightClassNamesFunction<Data>;
+  highlightClass: string;
   hoverClass: string;
+  focusClass: string;
+  logger: Logger;
 };
 
 export const classNameIndexPlaceholder = "{index}";
@@ -646,6 +648,7 @@ const defaultOptions = {
     `highlight-color-${index % defaultRotationColorCount}`,
   ],
   hoverClass: "highlight-hover",
+  focusClass: "highlight-focus",
 };
 
 type HighlightSelector<Data> = (highlightData: Data) => boolean;
