@@ -8,7 +8,7 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./rotation-colors.scss": "./dist/rotation-colors.scss"
+    "./rotation-colors.css": "./dist/rotation-colors.css"
   },
   "repository": {
     "type": "git",

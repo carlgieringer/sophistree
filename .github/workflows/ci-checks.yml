@@ -31,6 +31,8 @@ jobs:
           name: tapestry-highlights-playwright-report
           path: packages/tapestry-highlights/playwright-report/
           retention-days: 30
+      - name: Package tapestry-highlights
+        run: npm run package --workspace=packages/tapestry-highlights
       - name: Build Dev
         run: npm run build-dev --workspace=packages/browser-extension
       - name: Build Prod
