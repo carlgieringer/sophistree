@@ -1,7 +1,7 @@
 import * as textQuote from "dom-anchor-text-quote";
 
-import { DomAnchorHighlightManager } from "../src/DomAnchorHighlightManager";
-import { HighlightManager } from "../src/HighlightManager";
+import { DomAnchorHighlightManager } from "../src/DomAnchorHighlightManager.js";
+import { HighlightManager } from "../src/HighlightManager.js";
 
 // Put test dependenies on the window
 

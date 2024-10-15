@@ -1,7 +1,7 @@
-import { test, expect, Page } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import * as textQuote from "dom-anchor-text-quote";
 
-import { HighlightManager, Highlight } from "../src/HighlightManager";
+import { HighlightManager, type Highlight } from "../src/HighlightManager.js";
 
 let page: Page;
 
@@ -49,7 +49,7 @@ test.describe("HighlightManager", () => {
       window.manager = new window.HighlightManager({
         container,
         getRangesFromAnchor,
-        getHighlightClassNames: (data, index) => [
+        getHighlightClassNames: (_data, index) => [
           `highlight-color-${index % 3}`,
         ],
       });
@@ -77,7 +77,7 @@ test.describe("HighlightManager", () => {
   });
 
   test("should handle overlapping highlights correctly", async () => {
-    const [{ x, y }] = await page.evaluate(() => {
+    const [rect] = await page.evaluate(() => {
       window.manager.createHighlight(
         { exact: "This is some sample text" },
         {
@@ -98,6 +98,10 @@ test.describe("HighlightManager", () => {
       );
       return window.manager.getElementBoundingClientRects(highlight2);
     });
+    if (!rect) {
+      throw new Error("Failed to get rect");
+    }
+    const { x, y } = rect;
 
     // Simulate mousemove just within highlight2
     await page.mouse.move(x + 1, y + 1);
@@ -108,7 +112,7 @@ test.describe("HighlightManager", () => {
         const hoveredElementCount = hoveredElements.length;
         const hoverHighlightIndex =
           hoveredElements.length === 1
-            ? (hoveredElements[0] as HTMLElement).dataset.highlightIndex
+            ? (hoveredElements[0] as HTMLElement).dataset["highlightIndex"]
             : undefined;
         return { hoveredElementCount, hoverHighlightIndex };
       },
@@ -155,7 +159,7 @@ test.describe("HighlightManager", () => {
       window.manager.focusHighlight(({ id }) => id === 2);
 
       const element = document.querySelector(".highlight-focus") as HTMLElement;
-      return element?.dataset.highlightIndex;
+      return element?.dataset["highlightIndex"];
     });
 
     expect(highlightIndex).toBe("1");
@@ -163,7 +167,7 @@ test.describe("HighlightManager", () => {
   });
 
   test("should handle click events", async () => {
-    const [{ x, y }] = await page.evaluate(() => {
+    const [rect] = await page.evaluate(() => {
       window.clickedHighlightIds = [];
       function onClick({ id }: TestData) {
         window.clickedHighlightIds.push(id);
@@ -191,6 +195,10 @@ test.describe("HighlightManager", () => {
       );
       return window.manager.getElementBoundingClientRects(highlight2);
     });
+    if (!rect) {
+      throw new Error("Failed to get rect");
+    }
+    const { x, y } = rect;
 
     // Simulate click just within highlight2
     await page.mouse.click(x + 1, y + 1);

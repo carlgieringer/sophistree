@@ -284,9 +284,9 @@ class HighlightManager<Anchor, Data> {
         return rect1.right > rect2.right;
       }
       // return whether rect1's highlight ends before rect2's highlight ends
-      const range1 = item.highlight.ranges[item.highlight.ranges.length - 1];
+      const range1 = item.highlight.ranges[item.highlight.ranges.length - 1]!;
       const range2 =
-        existing.highlight.ranges[existing.highlight.ranges.length - 1];
+        existing.highlight.ranges[existing.highlight.ranges.length - 1]!;
       const comparison = range1.compareBoundaryPoints(Range.END_TO_END, range2);
       if (comparison !== 0) {
         return comparison > 0;
@@ -427,7 +427,7 @@ class HighlightManager<Anchor, Data> {
     let elementIndex = 0;
 
     if (highlight.ranges.every((r) => r.collapsed)) {
-      // If all ranges are collapsed, we need to recreate the ranges.
+      // If all ranges are collapsed, we need to reanchor the ranges.
       highlight.elements.forEach((element) => {
         element.remove();
         this.removeSortedElement(element);
@@ -464,7 +464,7 @@ class HighlightManager<Anchor, Data> {
 
     // Hide any extra elements
     for (let i = elementIndex; i < highlight.elements.length; i++) {
-      highlight.elements[i].style.display = "none";
+      highlight.elements[i]!.style.display = "none";
     }
 
     // Allow the elements rects to update before sorting them
@@ -510,10 +510,10 @@ class HighlightManager<Anchor, Data> {
     );
 
     const combinedRects: DOMRect[] = [];
-    let currentRect = sortedRects[0];
+    let currentRect = sortedRects[0]!;
 
     for (let i = 1; i < sortedRects.length; i++) {
-      const nextRect = sortedRects[i];
+      const nextRect = sortedRects[i]!;
 
       // If the rects have the same top and height and are adjacent or overlapping
       if (
@@ -549,7 +549,7 @@ class HighlightManager<Anchor, Data> {
     }
 
     const [removedHighlight] = this.highlights.splice(index, 1);
-    removedHighlight.elements.forEach((element) => {
+    removedHighlight?.elements.forEach((element) => {
       element.remove();
       this.removeSortedElement(element);
     });
@@ -645,7 +645,7 @@ export const classNameIndexPlaceholder = "{index}";
 const defaultRotationColorCount = 5;
 const defaultOptions = {
   highlightClass: "highlight",
-  getHighlightClassNames: (highlightData: unknown, index: number) => [
+  getHighlightClassNames: (_highlightData: unknown, index: number) => [
     `highlight-color-${index % defaultRotationColorCount}`,
   ],
   hoverClass: "highlight-hover",

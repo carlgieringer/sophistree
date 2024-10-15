@@ -1,7 +1,8 @@
-/types/
 /dist/
+/dist-e2e/
 /node_modules/
 /test-results/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+/tapestry-highlights-*.tgz

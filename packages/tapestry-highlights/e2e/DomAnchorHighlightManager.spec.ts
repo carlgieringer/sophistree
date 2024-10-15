@@ -1,6 +1,6 @@
-import { test, expect, Page } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
-import { DomAnchorHighlightManager } from "../src/DomAnchorHighlightManager";
+import { DomAnchorHighlightManager } from "../src/DomAnchorHighlightManager.js";
 
 let page: Page;
 
@@ -37,7 +37,9 @@ test.beforeEach(async () => {
   await page.evaluate(() => {
     window.domAnchorManager = new window.DomAnchorHighlightManager({
       container: document.body,
-      getHighlightClassNames: (data, index) => [`highlight-color-${index % 3}`],
+      getHighlightClassNames: (_data, index) => [
+        `highlight-color-${index % 3}`,
+      ],
     });
   });
 });

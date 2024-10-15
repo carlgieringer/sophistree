@@ -17,5 +17,5 @@
     "jsx": "react-jsx"
   },
   "include": ["src"],
-  "references": [{ "path": "../tapestry-highlights" }]
+  "references": [{ "path": "../tapestry-highlights/tsconfig-dist.json" }]
 }
