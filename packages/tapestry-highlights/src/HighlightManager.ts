@@ -427,7 +427,7 @@ class HighlightManager<Anchor, Data> {
     let elementIndex = 0;
 
     if (highlight.ranges.every((r) => r.collapsed)) {
-      // If all ranges are collapsed, we need to recreate the ranges.
+      // If all ranges are collapsed, we need to reanchor the ranges.
       highlight.elements.forEach((element) => {
         element.remove();
         this.removeSortedElement(element);
@@ -549,7 +549,7 @@ class HighlightManager<Anchor, Data> {
     }
 
     const [removedHighlight] = this.highlights.splice(index, 1);
-    removedHighlight.elements.forEach((element) => {
+    removedHighlight?.elements.forEach((element) => {
       element.remove();
       this.removeSortedElement(element);
     });
@@ -645,7 +645,7 @@ export const classNameIndexPlaceholder = "{index}";
 const defaultRotationColorCount = 5;
 const defaultOptions = {
   highlightClass: "highlight",
-  getHighlightClassNames: (highlightData: unknown, index: number) => [
+  getHighlightClassNames: (_highlightData: unknown, index: number) => [
     `highlight-color-${index % defaultRotationColorCount}`,
   ],
   hoverClass: "highlight-hover",

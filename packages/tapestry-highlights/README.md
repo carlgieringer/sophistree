@@ -35,25 +35,20 @@ Here's a basic example of how to use the `DomAnchorHighlightManager`:
 
 ```ts
 import { DomAnchorHighlightManager } from "tapestry-highlights";
-// If using built-in colors
 import "tapestry-highlights/rotation-colors.css";
 
+// App-specific data; not introspected by taptestry-highlights
 interface MyData {
   someId: string;
   someOtherData: string;
 }
 
-// Create a new highlight manager
 const highlightManager = new DomAnchorHighlightManager<MyData>({
   container: document.body,
-  colors: {
-    mode: "rotate",
-    count: 5,
-  },
 });
 
-// Create a highlight from the window's current selection
 const highlight = highlightManager.createHighlightFromCurrentSelection(
+  // This data is opaque to tapestry-highlights
   {
     someId: "app-specific-id-1",
     someOtherData: "Some associated data",
@@ -65,8 +60,10 @@ const highlight = highlightManager.createHighlightFromCurrentSelection(
     },
   },
 );
+const { data, anchor } = highlight;
 
-// Create a highlight from a specific range
+saveMyAnchorUsingMyData(data, anchor);
+
 const range: Range = getSomeRange();
 const rangeHighlight = highlightManager.createHighlightFromRange(range, {
   someId: "app-specific-id-2",
@@ -74,6 +71,7 @@ const rangeHighlight = highlightManager.createHighlightFromRange(range, {
 });
 
 // Create a highlight based on a persisted anchor
+const { data, anchor } = readTheDataAndAnchorBack();
 highlightManager.createHighlight(anchor, data);
 
 // Remove a highlight
@@ -89,25 +87,34 @@ can select the highlights in callbacks you pass to other manager methods.
 
 ### Advanced Usage
 
-#### Callback-based highlight classes
+#### Custom highlight classes
 
-`HighlightManager` can add classes to highlights based on a callback you provide:
+By default, `HighlightManager` adds a class to highlights to color them using
+the provided `rotation-colors.css`.
 
 ```ts
 const highlightManager = new DomAnchorHighlightManager({
   container: document.body,
-  colors: {
-    mode: "class-callback",
-    getHighlightClass: (data) => {
-      // Return a class based on the highlight data
-      return `highlight-color-${data.type}`;
-    },
+  getHighlightClassNames: (data, index) => {
+    // Return a class based on the highlight data
+    return [`highlight-color-${index % 5}`];
   },
 });
 ```
 
-This is useful for providing custom colors and logic, but technically you
-can use it however you want.
+You can override `getHighlightClassNames`
+to provide additional class names or to customize your coloring according to
+your data.
+
+```ts
+const highlightManager = new DomAnchorHighlightManager({
+  container: document.body,
+  getHighlightClassNames: (data, index) => {
+    // Return a class based on the highlight data
+    return getClassesForTheHightlight(data);
+  },
+});
+```
 
 #### Updating highlight classes
 
@@ -116,7 +123,7 @@ You must notify the manager to update the color of existing highlights:
 ```ts
 // Some code providing idNeedingUpdate ...
 
-highlightManager.updateHighlightClassesMatching((highlight) => {
+highlightManager.updateHighlightClassNames((highlight) => {
   // Update highlights that match a certain condition
   return highlight.data["someId"] === idNeedingUpdate;
 });
@@ -124,32 +131,12 @@ highlightManager.updateHighlightClassesMatching((highlight) => {
 
 #### Focusing a Highlight
 
-To scroll to and focus a specific highlight:
+Focus a specific highlight (scroll and apply a focus class):
 
 ```ts
 highlightManager.focusHighlight(
   (highlight) => highlight.data["id"] === "unique-id-1",
 );
-```
-
-### Custom colors
-
-Instead of importing `rotation-colors.css` you can provide your own. Provide
-classes for `.highlight-color-x` where `x` is the 0-based number of highlights
-you will pass to the constructor's `count`.
-
-```css
-.highlight-color-0 {
-  background-color: rgba(255, 245, 180, 0.4);
-  border-color: rgba(255, 218, 151, 0.6);
-}
-
-.highlight-color-0.highlight-hover {
-  background-color: rgba(255, 215, 0, 0.5);
-  border-color: rgba(255, 215, 0, 0.5);
-}
-
-...
 ```
 
 ### Custom anchor types
@@ -183,22 +170,41 @@ But applications may use different anchoring technology. In that case you can us
 // Create a new highlight manager
 const highlightManager = new HighlightManager<MyAnchor, MyData>({
   container: document.body,
-  getRangesFromAnchor: (anchor: DomAnchor) => {
+  getRangesFromAnchor: (anchor: MyAnchor) => {
     // ... custom logic returning ranges
   },
-  colors: {
-    mode: "rotate",
-    count: 5,
-  },
 });
-
-// Create a highlight based on an anchor
-highlightManager.createHighlight(anchor, data);
 ```
 
-## Design overview
+## Implementation overview
 
-TODO
+Here are some key implementation details:
+
+1. Highlight Representation:
+
+   - Each highlight is associated with one or more `Range`s and one or more
+     `HTMLElement`s necessary to cover the nodes appearing in the ranges.
+
+2. Element Creation and Positioning:
+
+   - These elements are positioned absolutely to match the bounding client rects of the nodes inside
+     their ranges.
+   - The manager updates these elements' positions when necessary (e.g., on window resize) to ensure
+     they always cover the correct text.
+   - The manager also reanchors a highlight on window resize in case the nodes
+     in a range were removed from the page.
+
+3. Layering and Z-Index:
+
+   - Highlights are layered using z-index to handle overlapping highlights correctly.
+   - The manager maintains a sorted list of highlight elements to determine the correct z-index for each element.
+
+4. Event Handling:
+
+   - Highlight elements are `pointer-events: none` by default to allow clicking on elements under
+     the highlight.
+   - The manager temporary applies `pointer-events: auto` during `mousemove` and `click` to
+     determine whether a highlight is affected.
 
 ## Development
 

@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import * as textQuote from "dom-anchor-text-quote";
 
-import { HighlightManager, Highlight } from "../src/HighlightManager";
+import { HighlightManager, type Highlight } from "../src/HighlightManager.js";
 
 let page: Page;
 
@@ -49,7 +49,7 @@ test.describe("HighlightManager", () => {
       window.manager = new window.HighlightManager({
         container,
         getRangesFromAnchor,
-        getHighlightClassNames: (data, index) => [
+        getHighlightClassNames: (_data, index) => [
           `highlight-color-${index % 3}`,
         ],
       });
@@ -77,7 +77,7 @@ test.describe("HighlightManager", () => {
   });
 
   test("should handle overlapping highlights correctly", async () => {
-    const [{ x, y }] = await page.evaluate(() => {
+    const [rect] = await page.evaluate(() => {
       window.manager.createHighlight(
         { exact: "This is some sample text" },
         {
@@ -167,7 +167,7 @@ test.describe("HighlightManager", () => {
   });
 
   test("should handle click events", async () => {
-    const [{ x, y }] = await page.evaluate(() => {
+    const [rect] = await page.evaluate(() => {
       window.clickedHighlightIds = [];
       function onClick({ id }: TestData) {
         window.clickedHighlightIds.push(id);
