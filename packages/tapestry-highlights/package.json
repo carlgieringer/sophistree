@@ -8,12 +8,17 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./rotation-colors.scss": "./src/rotation-colors.scss"
+    "./rotation-colors.scss": "./dist/rotation-colors.scss"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/carlgieringer/sophistree.git"
   },
+  "files": [
+    "/dist",
+    "/README.md",
+    "/LICENSE"
+  ],
   "scripts": {
     "build": "tsc --project tsconfig-dist.json",
     "build-e2e": "node esbuild-e2e.config.mjs",
@@ -24,6 +29,7 @@
     "format-check": "prettier --check --ignore-path .gitignore .",
     "lint": "eslint src/",
     "lint-fix": "eslint src/  --fix",
+    "package": "npm run build && cp src/rotation-colors.scss dist && npm pack",
     "test": "playwright test --ignore-snapshots",
     "test-ci": "echo Playwright tests are run separately from the CI checks job",
     "test-debug": "playwright test --debug",

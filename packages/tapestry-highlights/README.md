@@ -49,3 +49,25 @@ Be sure to manually inspect them.
 If your PR fails during the CI checks Github action, you can check the uploaded Playwright report
 (you must navigate to the workflow run from Actions, not from the PR) where you can see failure
 explanations e.g. screenshot diffs.
+
+## Publishing
+
+```sh
+npm run package
+```
+
+### Test it works
+
+Install the archive directly in the extension:
+
+```sh
+npm install tapestry-highlights-*.tgz --workspace=../browser-extension
+```
+
+Then try running the extension.
+
+(Undo the install like:)
+
+```sh
+npm install . --workspace=../browser-extension
+```
