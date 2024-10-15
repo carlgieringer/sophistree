@@ -1,6 +1,6 @@
-import { test, expect, Page } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
-import { DomAnchorHighlightManager } from "../src/DomAnchorHighlightManager";
+import { DomAnchorHighlightManager } from "../src/DomAnchorHighlightManager.js";
 
 let page: Page;
 

@@ -1,12 +1,12 @@
 export {
   HighlightManager,
   classNameIndexPlaceholder,
-} from "./HighlightManager";
+} from "./HighlightManager.js";
 export type {
   Logger,
   HighlightManagerOptions,
   HighlightHandlers,
   Highlight,
-} from "./HighlightManager";
-export type { DomAnchor } from "./anchors";
-export * from "./DomAnchorHighlightManager";
+} from "./HighlightManager.js";
+export type { DomAnchor } from "./anchors/index.js";
+export * from "./DomAnchorHighlightManager.js";

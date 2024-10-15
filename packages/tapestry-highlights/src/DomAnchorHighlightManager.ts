@@ -1,16 +1,16 @@
 import {
   HighlightManager,
-  HighlightManagerOptions,
-  HighlightHandlers,
-  Highlight,
-} from "./HighlightManager";
+  type HighlightManagerOptions,
+  type HighlightHandlers,
+  type Highlight,
+} from "./HighlightManager.js";
 
 import {
-  DomAnchor,
+  type DomAnchor,
   makeDomAnchorFromRange,
   makeDomAnchorFromSelection,
   getRangesFromDomAnchor,
-} from "./anchors";
+} from "./anchors/index.js";
 
 export type DomAnchorHighlightManagerOptions<Data> = Omit<
   HighlightManagerOptions<DomAnchor, Data>,

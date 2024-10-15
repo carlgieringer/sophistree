@@ -16,3 +16,13 @@ See the READMEs in the respective subdirectories under `packages` for details:
 
 - `npm run check-all`: run all checks except for snapshot tests.
 - `npm run test-snapshots --workspace=packages/tapestry-highlights`: run snapshot tests.
+
+## Browser extension quick quick start
+
+```sh
+npm install
+npm run watch-extension
+```
+
+Then load the extension unpacked from the
+[packages/browser-extension/dist/dev/](packages/browser-extension/dist/dev/) folder.

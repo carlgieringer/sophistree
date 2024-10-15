@@ -2,11 +2,11 @@
   "name": "tapestry-highlights",
   "version": "0.1.0",
   "description": "A web page highlighting library supporting overlapping highlights.",
+  "type": "module",
   "exports": {
     ".": {
-      "types": "./types/src/index.d.ts",
-      "require": "./dist/src/index.js",
-      "default": "./src/index.ts"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     },
     "./rotation-colors.scss": "./src/rotation-colors.scss"
   },
@@ -15,20 +15,21 @@
     "url": "https://github.com/carlgieringer/sophistree.git"
   },
   "scripts": {
-    "build": "node esbuild.config.mjs",
-    "build-and-serve": "npm run build && npm run dev-server",
+    "build": "tsc --project tsconfig-dist.json",
+    "build-e2e": "node esbuild-e2e.config.mjs",
+    "build-e2e-and-serve": "npm run build-e2e && npm run dev-server",
     "check-all": "time (npm run type-check && npm run lint && npm run format-check && npm test) || { echo 'Checks failed'; exit 1; }",
-    "dev-server": "http-server dist/e2e -p 3000 --cors",
+    "dev-server": "http-server dist-e2e -p 3000 --cors",
     "format-fix": "prettier --write --ignore-path .gitignore .",
     "format-check": "prettier --check --ignore-path .gitignore .",
-    "lint": "eslint src/ --ext .js,.jsx,.ts,.tsx",
-    "lint-fix": "eslint src/ --ext .js,.jsx,.ts,.tsx  --fix",
+    "lint": "eslint src/",
+    "lint-fix": "eslint src/  --fix",
     "test": "playwright test --ignore-snapshots",
     "test-ci": "echo Playwright tests are run separately from the CI checks job",
     "test-debug": "playwright test --debug",
     "test-snapshots": "time (docker build -t playwright-screenshots -f playwright-screenshots.dockerfile . && docker run --rm -v $(pwd)/e2e:/tapestry-highlights/e2e playwright-screenshots)",
     "test-update-snapshots": "docker build -t playwright-screenshots -f playwright-screenshots.dockerfile . && docker run --rm -v $(pwd)/e2e:/tapestry-highlights/e2e playwright-screenshots npx playwright test --update-snapshots",
-    "type-check": "tsc"
+    "type-check": "tsc && npm run build"
   },
   "keywords": [
     "highlights",
@@ -45,7 +46,9 @@
     "@babel/core": "^7.25.2",
     "@babel/preset-env": "^7.25.4",
     "@babel/preset-typescript": "^7.24.7",
+    "@eslint/js": "^9.12.0",
     "@playwright/test": "^1.48.0",
+    "@types/eslint__js": "^8.42.3",
     "@types/jest": "^29.5.13",
     "@types/node": "^22.5.4",
     "@types/uuid": "^10.0.0",
@@ -64,6 +67,7 @@
     "playwright": "^1.48.0",
     "prettier": "^3.3.3",
     "type-fest": "^4.26.1",
-    "typescript": "^5.6.2"
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.9.0"
   }
 }

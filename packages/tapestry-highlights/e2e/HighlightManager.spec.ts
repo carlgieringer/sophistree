@@ -1,4 +1,4 @@
-import { test, expect, Page } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import * as textQuote from "dom-anchor-text-quote";
 
 import { HighlightManager, Highlight } from "../src/HighlightManager";
@@ -98,6 +98,10 @@ test.describe("HighlightManager", () => {
       );
       return window.manager.getElementBoundingClientRects(highlight2);
     });
+    if (!rect) {
+      throw new Error("Failed to get rect");
+    }
+    const { x, y } = rect;
 
     // Simulate mousemove just within highlight2
     await page.mouse.move(x + 1, y + 1);
@@ -108,7 +112,7 @@ test.describe("HighlightManager", () => {
         const hoveredElementCount = hoveredElements.length;
         const hoverHighlightIndex =
           hoveredElements.length === 1
-            ? (hoveredElements[0] as HTMLElement).dataset.highlightIndex
+            ? (hoveredElements[0] as HTMLElement).dataset["highlightIndex"]
             : undefined;
         return { hoveredElementCount, hoverHighlightIndex };
       },
@@ -155,7 +159,7 @@ test.describe("HighlightManager", () => {
       window.manager.focusHighlight(({ id }) => id === 2);
 
       const element = document.querySelector(".highlight-focus") as HTMLElement;
-      return element?.dataset.highlightIndex;
+      return element?.dataset["highlightIndex"];
     });
 
     expect(highlightIndex).toBe("1");
@@ -191,6 +195,10 @@ test.describe("HighlightManager", () => {
       );
       return window.manager.getElementBoundingClientRects(highlight2);
     });
+    if (!rect) {
+      throw new Error("Failed to get rect");
+    }
+    const { x, y } = rect;
 
     // Simulate click just within highlight2
     await page.mouse.click(x + 1, y + 1);
