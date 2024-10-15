@@ -32,7 +32,7 @@ export class DomAnchorHighlightManager<Data> extends HighlightManager<
 
   createHighlightFromCurrentSelection(
     data: Data,
-    handlers?: HighlightHandlers<DomAnchor, Data>,
+    handlers?: HighlightHandlers<Data>,
   ): Highlight<DomAnchor, Data> {
     const selection = window.getSelection();
     if (!selection) {
@@ -46,7 +46,7 @@ export class DomAnchorHighlightManager<Data> extends HighlightManager<
   createHighlightFromSelection(
     selection: Selection,
     data: Data,
-    handlers?: HighlightHandlers<DomAnchor, Data>,
+    handlers?: HighlightHandlers<Data>,
   ): Highlight<DomAnchor, Data> {
     if (!selection || selection.isCollapsed) {
       throw new Error("Cannot highlight empty selection.");
@@ -58,7 +58,7 @@ export class DomAnchorHighlightManager<Data> extends HighlightManager<
   createHighlightFromRange(
     range: Range,
     data: Data,
-    handlers?: HighlightHandlers<DomAnchor, Data>,
+    handlers?: HighlightHandlers<Data>,
   ): Highlight<DomAnchor, Data> {
     const domAnchor = makeDomAnchorFromRange(range);
     return this.createHighlight(domAnchor, data, handlers);

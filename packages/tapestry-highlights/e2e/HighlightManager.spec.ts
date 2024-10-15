@@ -76,7 +76,7 @@ test.describe("HighlightManager", () => {
   });
 
   test("should handle overlapping highlights correctly", async () => {
-    const { x, y } = await page.evaluate(() => {
+    const [{ x, y }] = await page.evaluate(() => {
       window.manager.createHighlight(
         { exact: "This is some sample text" },
         {
@@ -95,7 +95,7 @@ test.describe("HighlightManager", () => {
           id: 3,
         },
       );
-      return highlight2.elements[0].getBoundingClientRect();
+      return window.manager.getElementBoundingClientRects(highlight2);
     });
 
     // Simulate mousemove just within highlight2
@@ -161,7 +161,7 @@ test.describe("HighlightManager", () => {
   });
 
   test("should handle click events", async () => {
-    const { x, y } = await page.evaluate(() => {
+    const [{ x, y }] = await page.evaluate(() => {
       window.clickedHighlightIds = [];
       function onClick({ id }: TestData) {
         window.clickedHighlightIds.push(id);
@@ -187,7 +187,7 @@ test.describe("HighlightManager", () => {
         },
         { onClick },
       );
-      return highlight2.elements[0].getBoundingClientRect();
+      return window.manager.getElementBoundingClientRects(highlight2);
     });
 
     // Simulate click just within highlight2
@@ -238,7 +238,7 @@ test.describe("HighlightManager", () => {
         { exact: "use for our highlighting tests." },
         { id: 1 },
       );
-      return highlight.elements.length;
+      return window.manager.getElementCount(highlight);
     });
 
     expect(elementCount).toBe(1);
@@ -254,7 +254,7 @@ test.describe("HighlightManager", () => {
         { exact: "This is some" },
         { id: 2 },
       );
-      return highlight1 === highlight2;
+      return highlight1.id === highlight2.id;
     });
 
     expect(areSame).toBe(true);
@@ -279,7 +279,7 @@ test.describe("HighlightManager", () => {
   });
 });
 
-test.describe("HighlightManager (mode=class-callback)", () => {
+test.describe("HighlightManager with mutable classes", () => {
   test.beforeEach(async () => {
     await page.goto("about:blank");
     await page.setContent(`
@@ -325,17 +325,16 @@ test.describe("HighlightManager (mode=class-callback)", () => {
   test("should update highlight color class", async () => {
     const initialClasses = await page.evaluate(() => {
       window.classNamesById = new Map([[1, "initial-class"]]);
-      window.highlightToUpdate = window.manager.createHighlight(
+      const { classNames } = window.manager.createHighlight(
         { exact: "This is some" },
         { id: 1 },
       );
-      return window.highlightToUpdate.classNames;
+      return classNames;
     });
 
-    const newClasses = await page.evaluate(() => {
+    const [newClasses] = await page.evaluate(() => {
       window.classNamesById.set(1, "new-class");
-      window.manager.updateHighlightsClassNames(({ id }) => id === 1);
-      return window.highlightToUpdate.classNames;
+      return window.manager.updateHighlightsClassNames(({ id }) => id === 1);
     });
 
     expect(initialClasses).toStrictEqual(["initial-class"]);

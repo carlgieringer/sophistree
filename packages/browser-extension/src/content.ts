@@ -134,10 +134,6 @@ async function createMediaExcerpt(message: CreateMediaExcerptMessage) {
       },
     },
   );
-  if (!highlight) {
-    contentLogger.error(`Failed to highlight current selection.`);
-    return;
-  }
 
   if (highlight.data.mediaExcerptId === mediaExcerptId) {
     const data: AddMediaExcerptData = {

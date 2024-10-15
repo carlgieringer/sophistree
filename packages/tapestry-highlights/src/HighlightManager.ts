@@ -4,11 +4,25 @@ import { v4 as uuidv4 } from "uuid";
 export type Logger = Pick<typeof console, "error" | "warn">;
 
 export type HighlightManagerOptions<Anchor, Data> = {
+  /** The container to which the manager will add highlight elements. */
   container: HTMLElement;
+  /** A function transforming an anchor into one or more Ranges. */
   getRangesFromAnchor: GetRangesFromAnchorFunction<Anchor>;
-  highlightClass?: string;
+  /** A function returning one or more extra class names to apply to a highlight's
+   * elements. Called initially to get a highlight's classNames. After creating a highlight, call
+   * updateHighlightsClassNames to refresh class names based on this callback.
+   *
+   * If omitted, a class name is added based on the highlight's index and the default number of
+   * hightlight colors.
+   */
   getHighlightClassNames?: GetHighlightClassNamesFunction<Data>;
+  /** The class to apply to all highlight elements. If omitted a default value is used. */
+  highlightClass?: string;
+  /** The class to apply to hovered highlights. If omitted a default value is used. */
   hoverClass?: string;
+  /** The class to apply to focused highlights. If omitted a default value is used. */
+  focusClass?: string;
+  /** The logger to use. If omitted, window.console is used. */
   logger?: Logger;
 };
 type GetRangesFromAnchorFunction<Anchor> = (anchor: Anchor) => Range[];
@@ -17,14 +31,15 @@ type GetHighlightClassNamesFunction<Data> = (
   index: number,
 ) => string[];
 
+/** A class that manages a collection of highlights on a page. */
 class HighlightManager<Anchor, Data> {
   private readonly options: MergedHighlightManagerOptions<Anchor, Data>;
 
   /** A unique ID for this highlight manager. Used to determine if a highlight belongs to this manager. */
   private readonly highlightManagerId: string;
-  private readonly highlights: Highlight<Anchor, Data>[] = [];
+  private readonly highlights: HighlightInternal<Anchor, Data>[] = [];
   private sortedHighlightElements: Array<{
-    highlight: Highlight<Anchor, Data>;
+    highlight: HighlightInternal<Anchor, Data>;
     element: HTMLElement;
   }> = [];
 
@@ -43,21 +58,21 @@ class HighlightManager<Anchor, Data> {
     this.addEventListeners();
   }
 
+  /** Notifies the manager that highlights matching the selector must update their classNames. */
   updateHighlightsClassNames(selector: HighlightSelector<Data>) {
     const highlights = this.highlights.filter((h) => selector(h.data));
     if (highlights.length < 1) {
       this.options.logger.warn(
-        `Could not update highlights class names for selector ${selector.name} because no highlights matched.`,
+        `No highlights matched selector to update class names.`,
       );
-      return;
     }
-    highlights.forEach((highlight, index) => {
-      this.updateHighlightClassNames(highlight, index);
-    });
+    return highlights.map((highlight, index) =>
+      this.updateHighlightClassNames(highlight, index),
+    );
   }
 
   private updateHighlightClassNames(
-    highlight: Highlight<Anchor, Data>,
+    highlight: HighlightInternal<Anchor, Data>,
     index: number,
   ) {
     const newClassNames = this.options.getHighlightClassNames(
@@ -73,8 +88,13 @@ class HighlightManager<Anchor, Data> {
       });
     });
     highlight.classNames = newClassNames;
+    return newClassNames;
   }
 
+  /**
+   * Scrolls to the first element of the first highlight matching the selector and
+   * applies the focus style to it.
+   */
   focusHighlight(selector: HighlightSelector<Data>) {
     const highlight = this.highlights.find((h) => selector(h.data));
     if (!highlight) {
@@ -99,14 +119,27 @@ class HighlightManager<Anchor, Data> {
       block: "center",
       inline: "center",
     });
-    this.applyHoverStyle(this.highlights.indexOf(highlight));
+    this.applyFocusStyle(this.highlights.indexOf(highlight));
+  }
+
+  private applyFocusStyle(highlightIndex: number) {
+    const highlight = this.highlights[highlightIndex];
+    if (!highlight) {
+      this.options.logger.error(
+        `Cannot apply focus style because no highlight exists at index ${highlightIndex}`,
+      );
+      return;
+    }
+    highlight.elements.forEach((element) => {
+      element.classList.add(this.options.focusClass);
+    });
   }
 
   private applyHoverStyle(highlightIndex: number) {
     const highlight = this.highlights[highlightIndex];
     if (!highlight) {
       this.options.logger.error(
-        `Cannot apply hover style because no highlit exists at index ${highlightIndex}`,
+        `Cannot apply hover style because no highlight exists at index ${highlightIndex}`,
       );
       return;
     }
@@ -115,6 +148,13 @@ class HighlightManager<Anchor, Data> {
     });
   }
 
+  /**
+   * Creates a new highlight. If the anchor produces ranges that are
+   * co-extensive with an existing highlight, information for that highlight
+   * is returned. Note that this returned object is not guaranteed to be
+   * identical to the one that was returned previously, but they will have the
+   * same `id`.
+   */
   createHighlight(
     anchor: Anchor,
     data: Data,
@@ -123,11 +163,13 @@ class HighlightManager<Anchor, Data> {
     const ranges = this.options.getRangesFromAnchor(anchor);
     const coextensiveHighlight = this.getCoextensiveHighlight(ranges);
     if (coextensiveHighlight) {
-      return coextensiveHighlight;
+      const { id, anchor, classNames, data } = coextensiveHighlight;
+      return { id, anchor, classNames, data };
     }
 
     const elements: HTMLElement[] = [];
-    const highlight: Highlight<Anchor, Data> = {
+    const highlight: HighlightInternal<Anchor, Data> = {
+      id: uuidv4(),
       data,
       anchor,
       ranges,
@@ -152,12 +194,13 @@ class HighlightManager<Anchor, Data> {
       this.updateStyles();
     });
 
-    return highlight;
+    const { id, classNames } = highlight;
+    return { id, anchor, classNames, data };
   }
 
   private getCoextensiveHighlight(
     ranges: Range[],
-  ): Highlight<Anchor, Data> | undefined {
+  ): HighlightInternal<Anchor, Data> | undefined {
     // Check if the new highlight is coextensive with an existing highlight
     // If it is, return the existing highlight
     // Otherwise, return undefined
@@ -222,7 +265,7 @@ class HighlightManager<Anchor, Data> {
   }
 
   private insertSortedElement(item: {
-    highlight: Highlight<Anchor, Data>;
+    highlight: HighlightInternal<Anchor, Data>;
     element: HTMLElement;
   }) {
     const index = this.sortedHighlightElements.findIndex((existing) => {
@@ -376,7 +419,7 @@ class HighlightManager<Anchor, Data> {
    * Updates the highlight's elements to have the right coordinates. Adds
    * new elements as necessary, and hides unnecessary ones.
    */
-  private updateHighlightElements(highlight: Highlight<Anchor, Data>) {
+  private updateHighlightElements(highlight: HighlightInternal<Anchor, Data>) {
     const newElements = [] as HTMLElement[];
 
     let elementIndex = 0;
@@ -436,7 +479,7 @@ class HighlightManager<Anchor, Data> {
   }
 
   private createElementForHighlight(
-    highlight: Highlight<Anchor, Data>,
+    highlight: HighlightInternal<Anchor, Data>,
   ): HTMLElement {
     const element = this.document().createElement("div");
     element.style.position = "absolute";
@@ -496,19 +539,22 @@ class HighlightManager<Anchor, Data> {
     return combinedRects;
   }
 
+  /** Remove the highlight matching `highlight.id`. */
   removeHighlight(highlight: Highlight<Anchor, Data>) {
-    const index = this.highlights.indexOf(highlight);
+    const index = this.highlights.findIndex((h) => h.id === highlight.id);
     if (index < 0) {
       return;
     }
-    this.highlights.splice(index, 1);
-    highlight.elements.forEach((element) => {
+
+    const [removedHighlight] = this.highlights.splice(index, 1);
+    removedHighlight.elements.forEach((element) => {
       element.remove();
       this.removeSortedElement(element);
     });
     this.updateStyles();
   }
 
+  /** Remove highlights matching the selector. */
   removeHighlights(selector: HighlightSelector<Data>) {
     const highlights = this.highlights.filter((h) => selector(h.data));
     for (const highlight of highlights) {
@@ -516,12 +562,31 @@ class HighlightManager<Anchor, Data> {
     }
   }
 
+  /** Remove all highlights. */
   removeAllHighlights() {
     this.highlights.forEach((highlight) => {
       highlight.elements.forEach((element) => element.remove());
     });
     this.highlights.splice(0, this.highlights.length);
     this.sortedHighlightElements = [];
+  }
+
+  /** For testing: returns an array of the highlight's elements' bounding client rects. */
+  getElementBoundingClientRects({ id }: Highlight<Anchor, Data>) {
+    const internal = this.highlights.find((h) => h.id === id);
+    if (!internal) {
+      throw new Error("Highlight was not found.");
+    }
+    return internal.elements.map((e) => e.getBoundingClientRect());
+  }
+
+  /** For testing: returns the count of the highlight's elements. */
+  getElementCount({ id }: Highlight<Anchor, Data>) {
+    const internal = this.highlights.find((h) => h.id === id);
+    if (!internal) {
+      throw new Error("Highlight was not found.");
+    }
+    return internal.elements.length;
   }
 }
 
@@ -535,7 +600,9 @@ export { HighlightManager };
  * The data stored with a highlight. Users must never access or modify this data directly. The manager
  * provides access to the data via callbacks.
  */
-export interface Highlight<Anchor, Data> {
+interface HighlightInternal<Anchor, Data> {
+  /** A unique identifier for the highlight. */
+  id: string;
   /** The object that anchors the highlight to the document */
   anchor: Anchor;
   /** Arbitrary data to associate with the highlight. Can be used to identify the highlight via callbacks. */
@@ -548,6 +615,18 @@ export interface Highlight<Anchor, Data> {
   onClick?: (highlightData: Data) => void;
   /** The class names applied to the highlight. */
   classNames: string[];
+}
+
+/** A datatype exposing readonly Highlight information. */
+export interface Highlight<Anchor, Data> {
+  /** A unique identifier for the highlight. */
+  readonly id: string;
+  /** The object that anchors the highlight to the document */
+  readonly anchor: Readonly<Anchor>;
+  /** Arbitrary data to associate with the highlight. Can be used to identify the highlight via callbacks. */
+  readonly data: Readonly<Data>;
+  /** The class names applied to the highlight. */
+  readonly classNames: ReadonlyArray<string>;
 }
 
 type MergedHighlightManagerOptions<Anchor, Data> = {
