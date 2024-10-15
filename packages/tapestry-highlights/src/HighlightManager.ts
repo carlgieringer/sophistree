@@ -225,6 +225,7 @@ class HighlightManager<Anchor, Data> {
   private updateStyles() {
     this.sortedHighlightElements.forEach(({ highlight, element }, index) => {
       element.classList.remove(this.options.hoverClass);
+      element.classList.remove(this.options.focusClass);
 
       // Set the z-index so that later highlight elements are on top of earlier highlights.
       element.style.zIndex = (index + 1).toString();
