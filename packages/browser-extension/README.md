@@ -1,6 +1,9 @@
 # Sophistree Browser Extension
 
-Sophistree is a Chrome extension for mapping arguments.
+Sophistree is a
+[Chrome
+extension](https://chromewebstore.google.com/detail/sophistree/mjcdfjnpgilfkhnolcjellbknlehekem?pli=1)
+for mapping arguments.
 
 ![screenshot](https://github.com/carlgieringer/sophistree/blob/main/packages/browser-extension/docs/screenshot.png?raw=true)
 
