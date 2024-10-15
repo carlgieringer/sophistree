@@ -61,7 +61,7 @@ function handleMessage(
     }
     case "notifyTabsOfDeletedMediaExcerpts": {
       highlightManager.removeHighlights(
-        (h) => h.data.mediaExcerptId === message.mediaExcerptId,
+        ({ mediaExcerptId }) => mediaExcerptId === message.mediaExcerptId,
       );
     }
   }
@@ -108,7 +108,7 @@ async function getMediaExcerpt(mediaExcerptId: string) {
 
 function focusMediaExcerpt(mediaExcerptId: string) {
   highlightManager.focusHighlight(
-    (h) => h.data.mediaExcerptId === mediaExcerptId,
+    (data) => data.mediaExcerptId === mediaExcerptId,
   );
 }
 
@@ -134,10 +134,6 @@ async function createMediaExcerpt(message: CreateMediaExcerptMessage) {
       },
     },
   );
-  if (!highlight) {
-    contentLogger.error(`Failed to highlight current selection.`);
-    return;
-  }
 
   if (highlight.data.mediaExcerptId === mediaExcerptId) {
     const data: AddMediaExcerptData = {
@@ -242,11 +238,9 @@ interface HighlightData {
 const highlightManager = new DomAnchorHighlightManager<HighlightData>({
   container: document.body,
   logger: contentLogger,
-  colors: {
-    mode: "class-callback",
-    // Corresponds to the classes in highlights/colors.scss
-    getColorClass: (data) => getHighlightColorClass(data.mediaExcerptId),
-  },
+  getHighlightClassNames: ({ mediaExcerptId }) => [
+    getHighlightClass(mediaExcerptId),
+  ],
 });
 
 function updateMediaExcerptOutcomes(
@@ -259,12 +253,12 @@ function updateMediaExcerptOutcomes(
       mediaExcerptOutcomes.delete(mediaExcerptId);
     }
   });
-  highlightManager.updateHighlightsColorClass((highlight) =>
-    updatedOutcomes.has(highlight.data.mediaExcerptId),
+  highlightManager.updateHighlightsClassNames(({ mediaExcerptId }) =>
+    updatedOutcomes.has(mediaExcerptId),
   );
 }
 
-function getHighlightColorClass(mediaExcerptId: string) {
+function getHighlightClass(mediaExcerptId: string) {
   const outcome = mediaExcerptOutcomes.get(mediaExcerptId);
   if (!outcome) {
     return "highlight-color-default";

@@ -6,6 +6,22 @@
     border-color 0.3s ease;
 }
 
+.highlight-focus {
+  animation: focus-highlight 2.25s ease-in-out;
+}
+
+@keyframes focus-highlight {
+  0% {
+    background-color: inherit;
+  }
+  11% {
+    background-color: yellow;
+  }
+  100% {
+    background-color: inherit;
+  }
+}
+
 .highlight-color-0 {
   background-color: rgba(255, 245, 180, 0.4);
   border-color: rgba(255, 218, 151, 0.6);

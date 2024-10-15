@@ -1,11 +1,7 @@
 import { test, expect, Page } from "@playwright/test";
 import * as textQuote from "dom-anchor-text-quote";
 
-import {
-  HighlightManager,
-  Highlight,
-  HighlightManagerColorOptions,
-} from "../src/HighlightManager";
+import { HighlightManager, Highlight } from "../src/HighlightManager";
 
 let page: Page;
 
@@ -26,10 +22,11 @@ test.describe("HighlightManager", () => {
         <head>
           <style>
             .highlight { position: absolute; pointer-events: none; }
-            .highlight-color-0 { background-color: yellow; }
-            .highlight-color-1 { background-color: lightgreen; }
-            .highlight-color-2 { background-color: lightblue; }
+            .highlight-color-0 { background-color: aqua; opacity: 50%; }
+            .highlight-color-1 { background-color: fuchsia;  opacity: 50%; }
+            .highlight-color-2 { background-color: lime;  opacity: 50%; }
             .highlight-hover { outline: 2px solid red; }
+            .highlight-focus { outline: 2px solid yellow; }
           </style>
         </head>
         <body>
@@ -39,9 +36,23 @@ test.describe("HighlightManager", () => {
       </html>
     `);
 
-    await page.evaluate(initializeHighlightManager, {
-      mode: "rotate" as const,
-      count: 3,
+    await page.evaluate(() => {
+      const container = document.body;
+
+      const getRangesFromAnchor = (
+        textQuoteAnchor: textQuote.TextQuoteAnchor,
+      ) => {
+        const range = window.textQuoteToRange(container, textQuoteAnchor);
+        return range ? [range] : [];
+      };
+
+      window.manager = new window.HighlightManager({
+        container,
+        getRangesFromAnchor,
+        getHighlightClassNames: (data, index) => [
+          `highlight-color-${index % 3}`,
+        ],
+      });
     });
   });
 
@@ -66,7 +77,7 @@ test.describe("HighlightManager", () => {
   });
 
   test("should handle overlapping highlights correctly", async () => {
-    const { x, y } = await page.evaluate(() => {
+    const [{ x, y }] = await page.evaluate(() => {
       window.manager.createHighlight(
         { exact: "This is some sample text" },
         {
@@ -85,7 +96,7 @@ test.describe("HighlightManager", () => {
           id: 3,
         },
       );
-      return highlight2.elements[0].getBoundingClientRect();
+      return window.manager.getElementBoundingClientRects(highlight2);
     });
 
     // Simulate mousemove just within highlight2
@@ -111,7 +122,7 @@ test.describe("HighlightManager", () => {
     await page.evaluate(() => {
       window.manager.createHighlight({ exact: "This is some" }, { id: 1 });
       window.manager.createHighlight({ exact: "sample text" }, { id: 2 });
-      window.manager.removeHighlights((h) => h.data.id === 1);
+      window.manager.removeHighlights(({ id }) => id === 1);
     });
 
     const highlightCount = await page.evaluate(() => {
@@ -141,22 +152,21 @@ test.describe("HighlightManager", () => {
       window.manager.createHighlight({ exact: "sample text" }, { id: 2 });
       window.manager.createHighlight({ exact: "that we will use" }, { id: 3 });
 
-      window.manager.focusHighlight((h) => h.data.id === 2);
+      window.manager.focusHighlight(({ id }) => id === 2);
 
-      const element = document.querySelector(".highlight-hover") as HTMLElement;
+      const element = document.querySelector(".highlight-focus") as HTMLElement;
       return element?.dataset.highlightIndex;
     });
 
     expect(highlightIndex).toBe("1");
+    await expect(page).toHaveScreenshot();
   });
 
   test("should handle click events", async () => {
-    const { x, y } = await page.evaluate(() => {
+    const [{ x, y }] = await page.evaluate(() => {
       window.clickedHighlightIds = [];
-      function onClick(
-        highlight: Highlight<textQuote.TextQuoteAnchor, TestData>,
-      ) {
-        window.clickedHighlightIds.push(highlight.data.id);
+      function onClick({ id }: TestData) {
+        window.clickedHighlightIds.push(id);
       }
       window.manager.createHighlight(
         { exact: "This is some sample text" },
@@ -179,7 +189,7 @@ test.describe("HighlightManager", () => {
         },
         { onClick },
       );
-      return highlight2.elements[0].getBoundingClientRect();
+      return window.manager.getElementBoundingClientRects(highlight2);
     });
 
     // Simulate click just within highlight2
@@ -230,7 +240,7 @@ test.describe("HighlightManager", () => {
         { exact: "use for our highlighting tests." },
         { id: 1 },
       );
-      return highlight.elements.length;
+      return window.manager.getElementCount(highlight);
     });
 
     expect(elementCount).toBe(1);
@@ -246,7 +256,7 @@ test.describe("HighlightManager", () => {
         { exact: "This is some" },
         { id: 2 },
       );
-      return highlight1 === highlight2;
+      return highlight1.id === highlight2.id;
     });
 
     expect(areSame).toBe(true);
@@ -261,7 +271,7 @@ test.describe("HighlightManager", () => {
         errorLogged = true;
       };
 
-      window.manager.focusHighlight((h) => h.data.id === 999);
+      window.manager.focusHighlight(({ id }) => id === 999);
 
       console.error = originalConsoleError;
       return errorLogged;
@@ -271,7 +281,7 @@ test.describe("HighlightManager", () => {
   });
 });
 
-test.describe("HighlightManager (mode=class-callback)", () => {
+test.describe("HighlightManager with mutable classes", () => {
   test.beforeEach(async () => {
     await page.goto("about:blank");
     await page.setContent(`
@@ -280,10 +290,11 @@ test.describe("HighlightManager (mode=class-callback)", () => {
         <head>
           <style>
             .highlight { position: absolute; pointer-events: none; }
-            .highlight-color-0 { background-color: yellow; }
-            .highlight-color-1 { background-color: lightgreen; }
-            .highlight-color-2 { background-color: lightblue; }
+            .highlight-color-0 { background-color: aqua; opacity: 50%; }
+            .highlight-color-1 { background-color: fuchsia;  opacity: 50%; }
+            .highlight-color-2 { background-color: lime;  opacity: 50%; }
             .highlight-hover { outline: 2px solid red; }
+            .highlight-focus { outline: 2px solid yellow; }
           </style>
         </head>
         <body>
@@ -307,52 +318,32 @@ test.describe("HighlightManager (mode=class-callback)", () => {
       window.manager = new window.HighlightManager({
         container,
         getRangesFromAnchor,
-        colors: {
-          mode: "class-callback" as const,
-          getColorClass: (data) =>
-            window.colorsById.get(data.id) ?? "missing-class",
-        },
+        getHighlightClassNames: ({ id }) => [
+          window.classNamesById.get(id) ?? "missing-class",
+        ],
       });
     });
   });
 
   test("should update highlight color class", async () => {
-    const initialClass = await page.evaluate(() => {
-      window.colorsById = new Map([[1, "initial-class"]]);
-      window.highlightToUpdate = window.manager.createHighlight(
+    const initialClasses = await page.evaluate(() => {
+      window.classNamesById = new Map([[1, "initial-class"]]);
+      const { classNames } = window.manager.createHighlight(
         { exact: "This is some" },
         { id: 1 },
       );
-      return window.highlightToUpdate.colorClass;
+      return classNames;
     });
 
-    const newClass = await page.evaluate(() => {
-      window.colorsById.set(1, "new-class");
-      window.manager.updateHighlightsColorClass((h) => h.data.id === 1);
-      return window.highlightToUpdate.colorClass;
+    const [newClasses] = await page.evaluate(() => {
+      window.classNamesById.set(1, "new-class");
+      return window.manager.updateHighlightsClassNames(({ id }) => id === 1);
     });
 
-    expect(newClass).toBe("new-class");
-    expect(initialClass).toBe("initial-class");
+    expect(initialClasses).toStrictEqual(["initial-class"]);
+    expect(newClasses).toStrictEqual(["new-class"]);
   });
 });
-
-function initializeHighlightManager(
-  colors: HighlightManagerColorOptions<TestData>,
-) {
-  const container = document.body;
-
-  const getRangesFromAnchor = (textQuoteAnchor: textQuote.TextQuoteAnchor) => {
-    const range = window.textQuoteToRange(container, textQuoteAnchor);
-    return range ? [range] : [];
-  };
-
-  window.manager = new window.HighlightManager({
-    container,
-    getRangesFromAnchor,
-    colors,
-  });
-}
 
 interface TestData {
   id: number;
@@ -371,7 +362,7 @@ declare global {
     HighlightManager: typeof HighlightManager;
     textQuoteToRange: typeof textQuote.toRange;
     clickedHighlightIds: number[];
-    colorsById: Map<number, string>;
+    classNamesById: Map<number, string>;
     highlightToUpdate: TestHighlight;
   }
 }

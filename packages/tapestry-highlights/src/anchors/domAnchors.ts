@@ -6,9 +6,9 @@ import { processTextFragmentDirective } from "text-fragments-polyfill/text-fragm
 import { generateFragmentFromRange } from "text-fragments-polyfill/dist/fragment-generation-utils.js";
 
 export interface DomAnchor {
+  fragment?: TextFragment;
   text: textQuote.TextQuoteAnchor;
   position: textPosition.TextPositionAnchor;
-  fragment?: TextFragment;
 }
 
 export function getRangesFromDomAnchor(
