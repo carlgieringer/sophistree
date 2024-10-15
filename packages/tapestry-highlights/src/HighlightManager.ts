@@ -9,72 +9,46 @@ export interface Highlight<Anchor, Data> {
   ranges: Range[];
   elements: HTMLElement[];
   onClick?: (highlight: Highlight<Anchor, Data>) => void;
-  /** The color class applied to the highlight, if any. */
-  colorClass?: string;
+  /** The class names applied to the highlight. */
+  classNames: string[];
 }
 
 export type Logger = Pick<typeof console, "error" | "warn">;
 
 type GetRangesFromAnchorFunction<Anchor> = (anchor: Anchor) => Range[];
+type GetHighlightClassNamesFunction<Data> = (
+  highlightData: Data,
+  index: number,
+) => string[];
 
 export type HighlightManagerOptions<Anchor, Data> = {
   container: HTMLElement;
   getRangesFromAnchor: GetRangesFromAnchorFunction<Anchor>;
   highlightClass?: string;
-  colors: HighlightManagerColorOptions<Data>;
+  getHighlightClassNames?: GetHighlightClassNamesFunction<Data>;
   hoverClass?: string;
   logger?: Logger;
 };
-export type HighlightManagerColorOptions<Data> =
-  | {
-      mode: "rotate";
-      count: number;
-      colorIndexClassFormat?: string;
-    }
-  | {
-      mode: "class-callback";
-      getColorClass: (data: Data) => string;
-    };
 type MergedHighlightManagerOptions<Anchor, Data> = {
   container: HTMLElement;
   logger: Logger;
   getRangesFromAnchor: GetRangesFromAnchorFunction<Anchor>;
   highlightClass: string;
-  colors:
-    | {
-        mode: "rotate";
-        count: number;
-        colorIndexClassFormat: string;
-      }
-    | {
-        mode: "class-callback";
-        getColorClass: (data: Data) => string;
-      };
+  getHighlightClassNames: GetHighlightClassNamesFunction<Data>;
   hoverClass: string;
 };
 
 export const classNameIndexPlaceholder = "{index}";
+const defaultRotationColorCount = 5;
 const defaultOptions = {
   highlightClass: "highlight",
-  colors: {
-    mode: "rotate",
-    colorIndexClassFormat: `highlight-color-${classNameIndexPlaceholder}`,
-  },
+  getHighlightClassNames: (highlightData: unknown, index: number) => [
+    `highlight-color-${index % defaultRotationColorCount}`,
+  ],
   hoverClass: "highlight-hover",
 };
 
-type ColorsOptions<Anchor, Data> = HighlightManagerOptions<
-  Anchor,
-  Data
->["colors"];
-type MergedColorsOptions<Anchor, Data> = MergedHighlightManagerOptions<
-  Anchor,
-  Data
->["colors"];
-
-type HighlightSelector<Anchor, Data> = (
-  highlight: Highlight<Anchor, Data>,
-) => boolean;
+type HighlightSelector<Data> = (highlightData: Data) => boolean;
 
 class HighlightManager<Anchor, Data> {
   private readonly options: MergedHighlightManagerOptions<Anchor, Data>;
@@ -94,73 +68,48 @@ class HighlightManager<Anchor, Data> {
       logger: options.logger ?? console,
       getRangesFromAnchor: options.getRangesFromAnchor,
       highlightClass: options.highlightClass ?? defaultOptions.highlightClass,
-      colors: this.mergeColors(options.colors),
+      getHighlightClassNames:
+        options.getHighlightClassNames ?? defaultOptions.getHighlightClassNames,
       hoverClass: options.hoverClass ?? defaultOptions.hoverClass,
     };
 
     this.addEventListeners();
   }
 
-  private mergeColors(
-    colors: ColorsOptions<Anchor, Data>,
-  ): MergedColorsOptions<Anchor, Data> {
-    switch (colors.mode) {
-      case "rotate":
-        return {
-          mode: colors.mode,
-          colorIndexClassFormat:
-            colors.colorIndexClassFormat ??
-            defaultOptions.colors.colorIndexClassFormat,
-          count: colors.count,
-        };
-      case "class-callback":
-        return colors;
-    }
-  }
-
-  updateHighlightsColorClass(selector: HighlightSelector<Anchor, Data>) {
-    const highlights = this.highlights.filter(selector);
+  updateHighlightsClassNames(selector: HighlightSelector<Data>) {
+    const highlights = this.highlights.filter((h) => selector(h.data));
     if (highlights.length < 1) {
       this.options.logger.warn(
-        `Could not update highlights color class for selector ${selector.name} because no highlights matched.`,
+        `Could not update highlights class names for selector ${selector.name} because no highlights matched.`,
       );
       return;
     }
-    highlights.forEach((highlight) => {
-      this.updateHighlightColorClass(highlight);
+    highlights.forEach((highlight, index) => {
+      this.updateHighlightClassNames(highlight, index);
     });
   }
 
-  private updateHighlightColorClass(highlight: Highlight<Anchor, Data>) {
-    const newColorClass = this.getColorClass(highlight);
+  private updateHighlightClassNames(
+    highlight: Highlight<Anchor, Data>,
+    index: number,
+  ) {
+    const newClassNames = this.options.getHighlightClassNames(
+      highlight.data,
+      index,
+    );
     highlight.elements.forEach((element) => {
-      if (highlight.colorClass) {
-        element.classList.remove(highlight.colorClass);
-      }
-      element.classList.add(newColorClass);
+      highlight.classNames.forEach((className) => {
+        element.classList.remove(className);
+      });
+      newClassNames.forEach((className) => {
+        element.classList.add(className);
+      });
     });
-    highlight.colorClass = newColorClass;
+    highlight.classNames = newClassNames;
   }
 
-  private getColorClass(highlight: Highlight<Anchor, Data>) {
-    switch (this.options.colors.mode) {
-      case "rotate": {
-        const highlightColorIndex =
-          this.highlights.indexOf(highlight) % this.options.colors.count;
-
-        return this.options.colors.colorIndexClassFormat.replace(
-          classNameIndexPlaceholder,
-          highlightColorIndex.toString(),
-        );
-      }
-      case "class-callback": {
-        return this.options.colors.getColorClass(highlight.data);
-      }
-    }
-  }
-
-  focusHighlight(selector: HighlightSelector<Anchor, Data>) {
-    const highlight = this.highlights.find(selector);
+  focusHighlight(selector: HighlightSelector<Data>) {
+    const highlight = this.highlights.find((h) => selector(h.data));
     if (!highlight) {
       this.options.logger.error(
         `Could not focus highlight for selector ${selector.name} because the highlight wasn't found.`,
@@ -171,7 +120,14 @@ class HighlightManager<Anchor, Data> {
     // Reset styles to their default state
     this.updateStyles();
 
-    highlight.elements[0].scrollIntoView({
+    const element = highlight.elements[0];
+    if (!element) {
+      this.options.logger.error(
+        "Cannot focus highlight because it has no elements.",
+      );
+      return;
+    }
+    element.scrollIntoView({
       behavior: "smooth",
       block: "center",
       inline: "center",
@@ -181,6 +137,12 @@ class HighlightManager<Anchor, Data> {
 
   private applyHoverStyle(highlightIndex: number) {
     const highlight = this.highlights[highlightIndex];
+    if (!highlight) {
+      this.options.logger.error(
+        `Cannot apply hover style because no highlit exists at index ${highlightIndex}`,
+      );
+      return;
+    }
     highlight.elements.forEach((element) => {
       element.classList.add(this.options.hoverClass);
     });
@@ -204,11 +166,15 @@ class HighlightManager<Anchor, Data> {
       ranges,
       elements,
       onClick: handlers?.onClick,
+      classNames: [],
     };
 
     this.highlights.push(highlight);
     // Must come after adding to highlights for rotation (index-based) coloring.
-    highlight.colorClass = this.getColorClass(highlight);
+    highlight.classNames = this.options.getHighlightClassNames(
+      highlight.data,
+      this.highlights.length - 1,
+    );
 
     const newElements = this.updateHighlightElements(highlight);
     this.options.container.append(...newElements);
@@ -234,6 +200,9 @@ class HighlightManager<Anchor, Data> {
       }
       return highlight.ranges.every((range, index) => {
         const newRange = ranges[index];
+        if (!newRange) {
+          return false;
+        }
         return (
           range.compareBoundaryPoints(Range.START_TO_START, newRange) === 0 &&
           range.compareBoundaryPoints(Range.END_TO_END, newRange) === 0
@@ -342,10 +311,10 @@ class HighlightManager<Anchor, Data> {
     );
     const dataset = highlightElement?.dataset;
     if (
-      dataset?.highlightManagerId === this.highlightManagerId &&
-      dataset?.highlightIndex
+      dataset?.["highlightManagerId"] === this.highlightManagerId &&
+      dataset?.["highlightIndex"]
     ) {
-      const highlightIndex = parseInt(dataset.highlightIndex);
+      const highlightIndex = parseInt(dataset["highlightIndex"]);
       this.applyHoverStyle(highlightIndex);
     }
   }
@@ -361,11 +330,11 @@ class HighlightManager<Anchor, Data> {
     }
 
     if (
-      highlightElement.dataset.highlightManagerId !== this.highlightManagerId
+      highlightElement.dataset["highlightManagerId"] !== this.highlightManagerId
     ) {
       return;
     }
-    const highlightIndex = highlightElement.dataset.highlightIndex;
+    const highlightIndex = highlightElement.dataset["highlightIndex"];
     if (!highlightIndex) {
       this.options.logger.error(
         `highlight element was missing a highlight index.`,
@@ -381,7 +350,7 @@ class HighlightManager<Anchor, Data> {
       event.target === highlightElement ||
       !highlightElement.contains(event.target as Node)
     ) {
-      if (highlight.onClick) {
+      if (highlight?.onClick) {
         highlight.onClick(highlight);
       }
     }
@@ -508,12 +477,12 @@ class HighlightManager<Anchor, Data> {
     element.style.mixBlendMode = "multiply"; // This helps with color blending
 
     element.classList.add(this.options.highlightClass);
-    if (highlight.colorClass) {
-      element.classList.add(highlight.colorClass);
-    }
+    highlight.classNames.forEach((className) => {
+      element.classList.add(className);
+    });
 
-    element.dataset.highlightManagerId = this.highlightManagerId;
-    element.dataset.highlightIndex = this.highlights
+    element.dataset["highlightManagerId"] = this.highlightManagerId;
+    element.dataset["highlightIndex"] = this.highlights
       .indexOf(highlight)
       .toString();
     highlight.elements.push(element);
@@ -573,8 +542,8 @@ class HighlightManager<Anchor, Data> {
     this.updateStyles();
   }
 
-  removeHighlights(selector: HighlightSelector<Anchor, Data>) {
-    const highlights = this.highlights.filter(selector);
+  removeHighlights(selector: HighlightSelector<Data>) {
+    const highlights = this.highlights.filter((h) => selector(h.data));
     for (const highlight of highlights) {
       this.removeHighlight(highlight);
     }

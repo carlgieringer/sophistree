@@ -36,10 +36,7 @@ test.beforeEach(async () => {
   await page.evaluate(() => {
     window.domAnchorManager = new window.DomAnchorHighlightManager({
       container: document.body,
-      colors: {
-        mode: "rotate" as const,
-        count: 3,
-      },
+      getHighlightClassNames: (data, index) => [`highlight-color-${index % 3}`],
     });
   });
 });
