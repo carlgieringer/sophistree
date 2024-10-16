@@ -1,8 +1,8 @@
 # `tapestry-highlights`
 
-`tapestry-highlights` is a browser highlighting library that supports overlapping highlights. It
-is currently used in the [Sophistree Chrome
-extension](https://chromewebstore.google.com/detail/sophistree/mjcdfjnpgilfkhnolcjellbknlehekem).
+`tapestry-highlights` ([npm](https://www.npmjs.com/package/tapestry-highlights)) is a browser
+highlighting library that supports overlapping highlights. It is currently used in the [Sophistree
+Chrome extension](https://chromewebstore.google.com/detail/sophistree/mjcdfjnpgilfkhnolcjellbknlehekem).
 
 As a library, the intentions are to be:
 
@@ -278,4 +278,11 @@ Then try running the extension.
 
 ```sh
 npm install . --workspace=../browser-extension
+```
+
+#### Publish to npmjs
+
+```sh
+npm login
+npm publish tapestry-highlights-x.y.z.tgz
 ```
