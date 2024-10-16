@@ -1,6 +1,6 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
-import { Dialog, Button, Text, Tooltip } from "react-native-paper";
+import { Dialog, Button, Text, Tooltip, Divider } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 import {
@@ -29,38 +29,39 @@ export default function PropositionAppearanceDialog({
     <Dialog visible={visible} onDismiss={onDismiss}>
       <Dialog.Title>Appearances for “{data.entity.text}”</Dialog.Title>
       <Dialog.Content>
-        {data.appearances?.map((appearance) => {
+        {data.appearances?.map((appearance, i) => {
           const url = preferredUrl(appearance.mediaExcerpt.urlInfo);
           const hostname = new URL(url).hostname;
           return (
-            <View key={appearance.id} style={styles.row}>
-              <View style={styles.quotationCell}>
-                <Text>
-                  “{appearance.mediaExcerpt.quotation}”
-                  <Button
-                    onPress={() =>
-                      void focusMediaExcerpt(appearance.mediaExcerpt)
-                    }
-                  >
-                    Go
-                  </Button>
-                </Text>
+            <>
+              {i > 0 ? <Divider style={styles.divider} /> : null}
+              <View>
+                <Text>“{appearance.mediaExcerpt.quotation}”</Text>
                 <Text style={styles.sourceName}>
                   {appearance.mediaExcerpt.sourceInfo.name}{" "}
                 </Text>
                 <Tooltip title={url}>
                   <Text style={styles.hostname}>{hostname}</Text>
                 </Tooltip>
+                <View key={appearance.id} style={styles.row}>
+                  <Button
+                    style={styles.goButtonCell}
+                    onPress={() =>
+                      void focusMediaExcerpt(appearance.mediaExcerpt)
+                    }
+                  >
+                    Go
+                  </Button>
+                  <Button
+                    style={styles.deleteButtonCell}
+                    accessibilityLabel="delete appearance"
+                    onPress={() => dispatch(deleteEntity(appearance.id))}
+                  >
+                    <Icon name="delete" size={18} />
+                  </Button>
+                </View>
               </View>
-              <View style={styles.deleteButtonCell}>
-                <Button
-                  accessibilityLabel="delete appearance"
-                  onPress={() => dispatch(deleteEntity(appearance.id))}
-                >
-                  <Icon name="delete" size={18} />
-                </Button>
-              </View>
-            </View>
+            </>
           );
         })}
       </Dialog.Content>
@@ -84,12 +85,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 10,
   },
-  quotationCell: {
+  goButtonCell: {
     flex: 1,
   },
   deleteButtonCell: {
     flexShrink: 0,
     marginLeft: 10,
+  },
+  divider: {
+    marginBottom: 20,
   },
 });
 
