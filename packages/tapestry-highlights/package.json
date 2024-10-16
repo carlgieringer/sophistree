@@ -21,6 +21,7 @@
   ],
   "scripts": {
     "build": "tsc --project tsconfig-dist.json",
+    "build-watch": "tsc --project tsconfig-dist.json --watch",
     "build-e2e": "node esbuild-e2e.config.mjs",
     "build-e2e-and-serve": "npm run build-e2e && npm run dev-server",
     "build-styles": "sass src/rotation-colors.scss dist/rotation-colors.css",

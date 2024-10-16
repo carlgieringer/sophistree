@@ -26,7 +26,7 @@ export class DomAnchorHighlightManager<Data> extends HighlightManager<
     super({
       ...options,
       getRangesFromAnchor: (anchor: DomAnchor) =>
-        getRangesFromDomAnchor(options.container, anchor),
+        getRangesFromDomAnchor(options.container, anchor, options.logger),
     });
   }
 

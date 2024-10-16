@@ -1,7 +1,6 @@
 import debounce from "lodash.debounce";
 import { v4 as uuidv4 } from "uuid";
-
-export type Logger = Pick<typeof console, "error" | "warn">;
+import type { Logger } from "./logger.js";
 
 export type HighlightManagerOptions<Anchor, Data> = {
   /** The container to which the manager will add highlight elements. */

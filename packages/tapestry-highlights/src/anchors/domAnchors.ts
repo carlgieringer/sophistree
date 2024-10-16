@@ -4,6 +4,7 @@ import { GenerateFragmentStatus } from "text-fragments-polyfill/dist/fragment-ge
 import type { TextFragment } from "text-fragments-polyfill/dist/fragment-generation-utils.js";
 import { processTextFragmentDirective } from "text-fragments-polyfill/text-fragment-utils";
 import { generateFragmentFromRange } from "text-fragments-polyfill/dist/fragment-generation-utils.js";
+import type { Logger } from "../logger.js";
 
 export interface DomAnchor {
   fragment?: TextFragment;
@@ -14,9 +15,18 @@ export interface DomAnchor {
 export function getRangesFromDomAnchor(
   root: HTMLElement,
   domAnchor: DomAnchor,
+  logger: Logger = console,
 ): Range[] {
   if (domAnchor.fragment) {
-    return processTextFragmentDirective(domAnchor.fragment);
+    const ranges = processTextFragmentDirective(domAnchor.fragment);
+    // processTextFragmentDirective returns an empty array when it fails
+    if (ranges.length) {
+      return ranges;
+    } else {
+      logger.warn(
+        `Failed to get ranges from text fragment: ${JSON.stringify(domAnchor.fragment)}`,
+      );
+    }
   }
   const range =
     textQuote.toRange(root, domAnchor.text) ??

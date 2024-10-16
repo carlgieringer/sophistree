@@ -20,9 +20,15 @@ chrome.runtime.onMessage.addListener(handleMessage);
 
 function getMediaExcerptsWhenSidebarConnects(port: chrome.runtime.Port) {
   if (port.name === sidepanelKeepalivePortName) {
-    void getMediaExcerpts();
+    const promise = getMediaExcerpts().catch((error) =>
+      contentLogger.error("Failed to get media excerpts", error),
+    );
     port.onDisconnect.addListener(() => {
-      highlightManager.removeAllHighlights();
+      void promise
+        .then(() => highlightManager.removeAllHighlights())
+        .catch((error) =>
+          contentLogger.error("Failed to remove all highlights", error),
+        );
     });
   }
 }
