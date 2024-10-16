@@ -66,6 +66,84 @@ function HeaderBar({ id }: { id?: string }) {
     />
   );
 
+  const menuItemGroups = [
+    [
+      <Menu.Item
+        title="Rename map…"
+        leadingIcon="pencil"
+        key="rename-map"
+        onPress={() => {
+          setRenameMapDialogVisible(true);
+          hideMenu();
+        }}
+        disabled={!activeMapId}
+      />,
+      <Menu.Item
+        key="delete-map"
+        onPress={() => {
+          setDeleteDialogOpen(true);
+          hideMenu();
+        }}
+        leadingIcon="delete"
+        title={`Delete ${activeMapName}`}
+        disabled={!activeMapId}
+      />,
+    ],
+    [
+      <Menu.Item
+        title="Open map…"
+        leadingIcon="folder-open"
+        key="open-map"
+        onPress={() => {
+          setActivateMapDialogVisible(true);
+          hideMenu();
+        }}
+      />,
+      <Menu.Item
+        title="Create new map…"
+        leadingIcon="plus"
+        key="create-new-map"
+        onPress={() => {
+          dispatch(showNewMapDialog());
+          hideMenu();
+        }}
+      />,
+    ],
+    [
+      <Menu.Item
+        title="Download maps…"
+        leadingIcon="download"
+        key="download-maps"
+        onPress={() => {
+          setDownloadMapsDialogVisible(true);
+          hideMenu();
+        }}
+      />,
+      <Menu.Item
+        title="Import maps"
+        leadingIcon="upload"
+        key="import-maps"
+        onPress={() => {
+          setUploadMapsDialogVisible(true);
+          hideMenu();
+        }}
+      />,
+    ],
+  ];
+  if (process.env.NODE_ENV === "development") {
+    menuItemGroups.push([
+      <Menu.Item
+        key="reload-extension"
+        onPress={handleReload}
+        title="Reload extension"
+      />,
+    ]);
+  }
+  const menuItems = menuItemGroups.flatMap((group, index) => [
+    ...(index > 0 ? [<Divider key={`divider-${index}`} />] : []),
+    ...group,
+  ]);
+
   return (
     <>
       <Appbar.Header id={id}>
@@ -75,66 +153,7 @@ function HeaderBar({ id }: { id?: string }) {
           visible={isMenuVisible}
           anchor={<Appbar.Action icon="dots-vertical" onPress={showMenu} />}
         >
-          <Menu.Item
-            title="Rename map…"
-            leadingIcon="pencil"
-            key="rename-map"
-            onPress={() => {
-              setRenameMapDialogVisible(true);
-              hideMenu();
-            }}
-            disabled={!activeMapId}
-          />
-          <Menu.Item
-            key="delete-map"
-            onPress={() => {
-              setDeleteDialogOpen(true);
-              hideMenu();
-            }}
-            leadingIcon="delete"
-            title={`Delete ${activeMapName}`}
-            disabled={!activeMapId}
-          />
-          <Divider />
-          <Menu.Item
-            title="Open map…"
-            leadingIcon="folder-open"
-            key="open-map"
-            onPress={() => {
-              setActivateMapDialogVisible(true);
-              hideMenu();
-            }}
-          />
-          <Menu.Item
-            title="Create new map…"
-            leadingIcon="plus"
-            key="create-new-map"
-            onPress={() => {
-              dispatch(showNewMapDialog());
-              hideMenu();
-            }}
-          />
-          <Divider />
-          <Menu.Item
-            title="Download maps…"
-            leadingIcon="download"
-            key="download-maps"
-            onPress={() => {
-              setDownloadMapsDialogVisible(true);
-              hideMenu();
-            }}
-          />
-          <Menu.Item
-            title="Import maps"
-            leadingIcon="upload"
-            key="import-maps"
-            onPress={() => {
-              setUploadMapsDialogVisible(true);
-              hideMenu();
-            }}
-          />
-          <Divider />
-          <Menu.Item onPress={handleReload} title="Reload extension" />
+          {menuItems}
         </Menu>
       </Appbar.Header>
       <Portal>
