@@ -16,7 +16,24 @@ export default function register(cs: typeof cytoscape) {
   cs("core", "reactNodes", reactNodes);
 }
 
-const defaultOptions = {
+interface ReactNodesOptions {
+  nodes: ReactNodeOptions[];
+  layoutOptions: cytoscape.LayoutOptions;
+  layoutDelay?: number;
+}
+
+export interface ReactNodeOptions {
+  query: string;
+  template: (data: cytoscape.NodeDataDefinition) => JSX.Element;
+  mode?: "replace";
+  /** CSS classes to copy from the node to the HTML container */
+  syncClasses?: string[];
+  containerCSS?: Partial<CSSStyleDeclaration>;
+  selectedStyle?: Partial<CSSStyleDeclaration>;
+  unselectedStyle?: Partial<CSSStyleDeclaration>;
+}
+
+const defaultOptions: Partial<ReactNodesOptions> = {
   layoutDelay: 100,
 };
 
@@ -33,35 +50,19 @@ const defaultReactNodeOptions: ReactNodeOptions = {
     borderRadius: "10px",
     border: "1px solid #ccc",
   },
+  selectedStyle: { border: `5px solid ${sunflower}` },
+  unselectedStyle: { border: "none" },
 };
 
-export interface ReactNodeOptions {
-  query: string;
-  template: (data: cytoscape.NodeDataDefinition) => JSX.Element;
-  mode?: "replace";
-  /** CSS classes to copy from the node to the HTML container */
-  syncClasses?: string[];
-  containerCSS?: Partial<CSSStyleDeclaration>;
-}
-
-interface ReactNodesOptions {
-  nodes: ReactNodeOptions[];
-  layout: cytoscape.LayoutOptions;
-  layoutDelay?: number;
-}
-
 function reactNodes(this: cytoscape.Core, options: ReactNodesOptions) {
-  const layout = () => {
-    this.layout(options.layout).run();
-  };
-
   // debounce layout function to avoid layout thrashing
-  const debouncedLayout = debounce(
-    layout,
-    options.layoutDelay ?? defaultOptions.layoutDelay,
-  );
+  const layout = debounce(() => {
+    this.layout(options.layoutOptions).run();
+  }, options.layoutDelay ?? defaultOptions.layoutDelay);
 
-  options.nodes.forEach((o) => makeReactNode(this, o, debouncedLayout));
+  options.nodes.forEach((nodeOptions) =>
+    makeReactNode(this, nodeOptions, layout),
+  );
 
   return this; // for chaining
 }
@@ -82,6 +83,14 @@ function makeReactNode(
 ) {
   options = Object.assign({}, defaultReactNodeOptions, options);
 
+  // Apply HTML to matching nodes
+  cy.nodes(options.query).forEach(createHtmlNode);
+
+  // Apply HTML to new nodes that match the query
+  cy.on("add", options.query, function (event: EventObjectNode) {
+    createHtmlNode(event.target);
+  });
+
   function createHtmlNode(node: cytoscape.NodeSingular) {
     switch (options.mode) {
       case "replace":
@@ -92,21 +101,47 @@ function makeReactNode(
     }
 
     const htmlElement = document.createElement("div");
-    const jsxElement = options.template(node.data() as NodeDataDefinition);
-    const root = ReactDOM.createRoot(htmlElement);
-    root.render(jsxElement);
-    Object.assign(htmlElement.style, options.containerCSS);
-
-    htmlElement.style.position = "absolute";
-
-    options.syncClasses?.forEach((className) => {
-      if (node.hasClass(className)) {
-        htmlElement.classList.add(className);
-      }
+    Object.assign(htmlElement.style, options.containerCSS, {
+      position: "absolute",
     });
+    if (options.syncClasses) {
+      syncNodeClasses();
+    }
+
+    const reactRoot = ReactDOM.createRoot(htmlElement);
+    renderJsxElement(reactRoot);
+
     const container = cy.container();
     if (!container) throw new Error("Cytoscape container not found");
     container.appendChild(htmlElement);
+
+    // Give the react node a chance to layout to get a real height
+    setTimeout(updateInitialLayout, 0);
+
+    window.addEventListener("resize", updateNodeHeightToSurroundHtmlWithLayout);
+    cy.on("pan zoom resize", updatePosition);
+    node.on("position", updatePositionWithLayout);
+    node.on("remove", function removeHtmlElement() {
+      htmlElement.remove();
+      window.removeEventListener(
+        "resize",
+        updateNodeHeightToSurroundHtmlWithLayout,
+      );
+      cy.off("pan zoom resize", updatePosition);
+    });
+    node.on("select unselect", function onNodeSelectUnselect() {
+      if (node.selected()) {
+        Object.assign((htmlElement.style, options.selectedStyle ?? {}));
+      } else {
+        Object.assign((htmlElement.style, options.unselectedStyle ?? {}));
+      }
+    });
+    node.on("data", function renderReactNode() {
+      renderJsxElement(reactRoot);
+    });
+    if (options.syncClasses) {
+      node.on("style", syncNodeClasses);
+    }
 
     /** Returns true if the graph requires layout. */
     function updatePosition() {
@@ -119,10 +154,10 @@ function makeReactNode(
 
       const left = pan.x + pos.x * zoom - (nodeWidth * zoom) / 2;
       const top = pan.y + pos.y * zoom - (nodeHeight * zoom) / 2;
+      const oldWidth = htmlElement.style.width;
+      const widthStyle = elementWidth + "px";
       htmlElement.style.left = left + "px";
       htmlElement.style.top = top + "px";
-      const widthStyle = elementWidth + "px";
-      const oldWidth = htmlElement.style.width;
       htmlElement.style.width = widthStyle;
       htmlElement.style.transform = `scale(${zoom})`;
       htmlElement.style.transformOrigin = "top left";
@@ -135,9 +170,6 @@ function makeReactNode(
       node.data("height", height);
       return oldHeight !== height;
     }
-
-    // Give the react node a chance to layout to get a real height
-    setTimeout(updateInitialLayout, 0);
 
     function updateInitialLayout() {
       let isLayoutRequired = updatePosition();
@@ -159,43 +191,21 @@ function makeReactNode(
       }
     }
 
-    window.addEventListener("resize", updateNodeHeightToSurroundHtmlWithLayout);
-    node.on("position", updatePositionWithLayout);
-    node.on("remove", function () {
-      htmlElement.remove();
-    });
-    node.on("select unselect", function () {
-      if (node.selected()) {
-        htmlElement.style.border = `5px solid ${sunflower}`;
-      } else {
-        htmlElement.style.border = "";
-      }
-    });
-    node.on("data", function () {
+    function renderJsxElement(root: ReactDOM.Root) {
       const jsxElement = options.template(node.data() as NodeDataDefinition);
       root.render(jsxElement);
-    });
-    if (options.syncClasses) {
-      node.on("style", function () {
-        options.syncClasses?.forEach((className) => {
-          if (node.hasClass(className)) {
-            htmlElement.classList.add(className);
-          } else {
-            htmlElement.classList.remove(className);
-          }
-        });
+    }
+
+    function syncNodeClasses() {
+      options.syncClasses?.forEach((className) => {
+        if (node.hasClass(className)) {
+          htmlElement.classList.add(className);
+        } else {
+          htmlElement.classList.remove(className);
+        }
       });
     }
-    cy.on("pan zoom resize", updatePosition);
   }
-
-  // Apply HTML to matching nodes
-  cy.nodes(options.query).forEach(createHtmlNode);
-
-  // Apply HTML to new nodes that match the query
-  cy.on("add", options.query, function (event: EventObjectNode) {
-    createHtmlNode(event.target);
-  });
 }
 
 function getInnerHorizontalSpacing(element: HTMLElement) {

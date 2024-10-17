@@ -393,7 +393,7 @@ function useReactNodes(
       const cy = cyRef.current;
 
       cy.reactNodes({
-        layout: getLayout(false),
+        layoutOptions: getLayout(false),
         nodes: reactNodesConfig,
       });
     }
