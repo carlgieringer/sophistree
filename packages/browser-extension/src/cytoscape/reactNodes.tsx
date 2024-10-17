@@ -19,7 +19,11 @@ export default function register(cs: typeof cytoscape) {
 interface ReactNodesOptions {
   nodes: ReactNodeOptions[];
   layoutOptions: cytoscape.LayoutOptions;
-  layoutDelay?: number;
+  // The duration of the graph's layout animation. reactNodes will wait at least
+  // this long before updating its HTML elements after a graph layout.
+  layoutAnimationDuration?: number;
+  // The debounce delay before reactNodes applies a layout when one is necessary.
+  layoutDebounceDelay?: number;
 }
 
 export interface ReactNodeOptions {
@@ -33,8 +37,11 @@ export interface ReactNodeOptions {
   unselectedStyle?: Partial<CSSStyleDeclaration>;
 }
 
-const defaultOptions: Partial<ReactNodesOptions> = {
-  layoutDelay: 100,
+const defaultOptions: Required<
+  Pick<ReactNodesOptions, "layoutDebounceDelay" | "layoutAnimationDuration">
+> = {
+  layoutDebounceDelay: 100,
+  layoutAnimationDuration: 0,
 };
 
 const defaultReactNodeOptions: ReactNodeOptions = {
@@ -54,14 +61,20 @@ const defaultReactNodeOptions: ReactNodeOptions = {
   unselectedStyle: { border: "none" },
 };
 
+/** A cytoscape extension that renders React elements over nodes. */
 function reactNodes(this: cytoscape.Core, options: ReactNodesOptions) {
   // debounce layout function to avoid layout thrashing
   const layout = debounce(() => {
     this.layout(options.layoutOptions).run();
-  }, options.layoutDelay ?? defaultOptions.layoutDelay);
+  }, options.layoutDebounceDelay ?? defaultOptions.layoutDebounceDelay);
 
   options.nodes.forEach((nodeOptions) =>
-    makeReactNode(this, nodeOptions, layout),
+    makeReactNode(
+      this,
+      nodeOptions,
+      layout,
+      options.layoutAnimationDuration ?? defaultOptions.layoutAnimationDuration,
+    ),
   );
 
   return this; // for chaining
@@ -80,6 +93,7 @@ function makeReactNode(
   cy: cytoscape.Core,
   options: ReactNodeOptions,
   layout: () => void,
+  layoutAnimationDuration: number,
 ) {
   options = Object.assign({}, defaultReactNodeOptions, options);
 
@@ -116,10 +130,25 @@ function makeReactNode(
     container.appendChild(htmlElement);
 
     // Give the react node a chance to layout to get a real height
-    setTimeout(updateInitialLayout, 0);
+    setTimeout(updateAfterLayout, layoutAnimationDuration + 1);
+
+    let isLayingOut = false;
 
     window.addEventListener("resize", updateNodeHeightToSurroundHtmlWithLayout);
     cy.on("pan zoom resize", updatePosition);
+    cy.on("layout", function onLayout() {
+      // Don't infinitely recurse on layouts the extension triggered.
+      if (!isLayingOut) {
+        isLayingOut = true;
+        setTimeout(() => {
+          try {
+            updateAfterLayout();
+          } finally {
+            isLayingOut = true;
+          }
+        }, layoutAnimationDuration + 1);
+      }
+    });
     node.on("position", updatePositionWithLayout);
     node.on("remove", function removeHtmlElement() {
       htmlElement.remove();
@@ -171,7 +200,7 @@ function makeReactNode(
       return oldHeight !== height;
     }
 
-    function updateInitialLayout() {
+    function updateAfterLayout() {
       let isLayoutRequired = updatePosition();
       isLayoutRequired = updateNodeHeightToSurroundHtml() || isLayoutRequired;
       if (isLayoutRequired) {

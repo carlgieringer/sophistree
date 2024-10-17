@@ -77,6 +77,7 @@ cytoscape.use(reactNodes);
 const zoomFactor = 0.03;
 const zoomInFactor = 1 + zoomFactor;
 const zoomOutFactor = 1 - zoomFactor;
+const layoutAnimationDuration = 250;
 
 interface GraphViewProps {
   id?: string;
@@ -394,6 +395,7 @@ function useReactNodes(
 
       cy.reactNodes({
         layoutOptions: getLayout(false),
+        layoutAnimationDuration,
         nodes: reactNodesConfig,
       });
     }
@@ -1496,6 +1498,7 @@ function getLayout(fit = false) {
     name: "elk",
     fit,
     animate: true,
+    animationDuration: layoutAnimationDuration,
     // All options are available at http://www.eclipse.org/elk/reference.html
     //
     // 'org.eclipse.' can be dropped from the identifier. The subsequent identifier has to be used as property key in quotes.
