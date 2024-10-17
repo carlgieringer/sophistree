@@ -25,6 +25,7 @@
     "build-e2e": "node esbuild-e2e.config.mjs",
     "build-e2e-and-serve": "npm run build-e2e && npm run dev-server",
     "build-styles": "sass src/rotation-colors.scss dist/rotation-colors.css",
+    "build-styles-watch": "npm run build-styles -- --watch",
     "check-all": "time (npm run type-check && npm run lint && npm run format-check && npm test) || { echo 'Checks failed'; exit 1; }",
     "clean-build": "rm -rf dist/* && rm -f tsconfig-dist.tsbuildinfo",
     "dev-server": "http-server dist-e2e -p 3000 --cors",
@@ -38,7 +39,8 @@
     "test-debug": "playwright test --debug",
     "test-snapshots": "time (docker build -t playwright-screenshots -f playwright-screenshots.dockerfile . && docker run --rm -v $(pwd)/e2e:/tapestry-highlights/e2e playwright-screenshots)",
     "test-update-snapshots": "docker build -t playwright-screenshots -f playwright-screenshots.dockerfile . && docker run --rm -v $(pwd)/e2e:/tapestry-highlights/e2e playwright-screenshots npx playwright test --update-snapshots",
-    "type-check": "tsc && npm run build"
+    "type-check": "tsc && npm run build",
+    "watch-all": "node bin/watchAll.mjs"
   },
   "keywords": [
     "highlights",
@@ -64,6 +66,7 @@
     "@typescript-eslint/eslint-plugin": "^8.8.0",
     "@typescript-eslint/parser": "^8.8.0",
     "babel-jest": "^29.7.0",
+    "concurrently": "^9.0.1",
     "dom-anchor-text-quote": "^4.0.2",
     "esbuild": "0.23.1",
     "esbuild-plugin-clean": "^1.0.1",

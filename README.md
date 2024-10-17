@@ -21,7 +21,7 @@ See the READMEs in the respective subdirectories under `packages` for details:
 
 ```sh
 npm install
-npm run watch-extension
+npm run watch-all
 ```
 
 Then load the extension unpacked from the
