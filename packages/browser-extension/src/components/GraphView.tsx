@@ -1107,7 +1107,80 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
   const visibleEdges = allEdges.filter(
     (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target),
   );
-  return { nodes: visibleNodes, edges: visibleEdges };
+
+  // Sort the nodes so that children will be ordered the same as their parents.
+  const sortedNodes = sortNodesByInverseDfs(visibleNodes, visibleEdges);
+
+  return { nodes: sortedNodes, edges: visibleEdges };
+}
+
+/** Inverse because our edges point from children to parents. */
+function sortNodesByInverseDfs(
+  nodes: EntityNodeDataDefinition[],
+  edges: EntityEdgeDataDefinition[],
+) {
+  // Start with all nodes potentially roots
+  const rootIds = new Set(nodes.map((n) => n.id));
+
+  // Create adjacencies for all the edges
+  const adjacencyList = new Map<string, string[]>();
+  edges.forEach(({ source, target }) => {
+    if (!adjacencyList.has(target)) {
+      adjacencyList.set(target, []);
+    }
+    adjacencyList.get(target)!.push(source);
+
+    rootIds.delete(source);
+  });
+
+  const nodesById = new Map(nodes.map((n) => [n.id, n]));
+
+  // Create adjacencies between PropositionCompounds and their atoms.
+  const nodeIdByParentAndEntityId = new Map(
+    nodes.map((n) => {
+      const parentEntityId = n.parent
+        ? nodesById.get(n.parent)!.entity.id
+        : "noParent";
+      return [`${parentEntityId}-${n.entity.id}`, n.id];
+    }),
+  );
+  nodes.forEach((node) => {
+    if (node.entity.type === "PropositionCompound") {
+      adjacencyList.set(
+        node.id,
+        node.entity.atomIds.map(
+          (id) => nodeIdByParentAndEntityId.get(`${node.entity.id}-${id}`)!,
+        ),
+      );
+    }
+  });
+
+  // Perform DFS to sort nodes
+  const visited = new Set<string>();
+  const sortedNodes: EntityNodeDataDefinition[] = [];
+
+  function dfs(nodeId: string) {
+    if (visited.has(nodeId)) return;
+    visited.add(nodeId);
+
+    const node = nodesById.get(nodeId);
+    if (node) {
+      sortedNodes.push(node);
+    } else {
+      appLogger.error(`Didn't find node ID ${nodeId} during DFS`);
+    }
+
+    const neighbors = adjacencyList.get(nodeId) || [];
+    neighbors.forEach((neighborId) => {
+      dfs(neighborId);
+    });
+  }
+
+  rootIds.forEach((rootId) => {
+    dfs(rootId);
+  });
+
+  return sortedNodes;
 }
 
 function makeEntityNodeId({ type, id }: Entity) {
@@ -1515,6 +1588,19 @@ function getLayout(fit = false) {
       "elk.aspectRatio": "1.5",
       "elk.direction": "UP",
       "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+      "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+      // Make our DFS sorting control the node order.
+      "elk.layered.crossingMinimization.forceNodeModelOrder": "true",
+      "elk.layered.crossingMinimization.greedySwitch.activation": "true",
+      "elk.layered.crossingMinimization.greedySwitch.type": "TWO_SIDED",
+      "elk.layered.crossingMinimization.greedySwitchHierarchical.type":
+        "TWO_SIDED",
+      "elk.layered.crossingMinimization.greedySwitchMaxIterations": "100",
+      // Without this, parents seem to move when you add children to them
+      // I.e. respects forceNodeModelOrder less.
+      "elk.layered.crossingMinimization.semiInteractive": "true",
+      "elk.layered.crossingMinimization.strategy": "LAYER_SWEEP",
+      "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
       "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
       "elk.layered.spacing.nodeNodeBetweenLayers": "100",
       "elk.padding": "[top=50,left=50,bottom=50,right=50]",
