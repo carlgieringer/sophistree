@@ -395,7 +395,6 @@ function useReactNodes(
 
       cy.reactNodes({
         layoutOptions: getLayout(false),
-        layoutAnimationDuration,
         nodes: reactNodesConfig,
       });
     }

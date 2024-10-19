@@ -19,9 +19,6 @@ export default function register(cs: typeof cytoscape) {
 interface ReactNodesOptions {
   nodes: ReactNodeOptions[];
   layoutOptions: cytoscape.LayoutOptions;
-  // The duration of the graph's layout animation. reactNodes will wait at least
-  // this long before updating its HTML elements after a graph layout.
-  layoutAnimationDuration?: number;
   // The debounce delay before reactNodes applies a layout when one is necessary.
   layoutDebounceDelay?: number;
 }
@@ -37,12 +34,10 @@ export interface ReactNodeOptions {
   unselectedStyle?: Partial<CSSStyleDeclaration>;
 }
 
-const defaultOptions: Required<
-  Pick<ReactNodesOptions, "layoutDebounceDelay" | "layoutAnimationDuration">
-> = {
-  layoutDebounceDelay: 100,
-  layoutAnimationDuration: 0,
-};
+const defaultOptions: Required<Pick<ReactNodesOptions, "layoutDebounceDelay">> =
+  {
+    layoutDebounceDelay: 100,
+  };
 
 const defaultReactNodeOptions: ReactNodeOptions = {
   query: "node", // selector for nodes to apply HTML to
@@ -69,12 +64,7 @@ function reactNodes(this: cytoscape.Core, options: ReactNodesOptions) {
   }, options.layoutDebounceDelay ?? defaultOptions.layoutDebounceDelay);
 
   options.nodes.forEach((nodeOptions) =>
-    makeReactNode(
-      this,
-      nodeOptions,
-      layout,
-      options.layoutAnimationDuration ?? defaultOptions.layoutAnimationDuration,
-    ),
+    makeReactNode(this, nodeOptions, layout),
   );
 
   return this; // for chaining
@@ -93,7 +83,6 @@ function makeReactNode(
   cy: cytoscape.Core,
   options: ReactNodeOptions,
   layout: () => void,
-  layoutAnimationDuration: number,
 ) {
   options = Object.assign({}, defaultReactNodeOptions, options);
 
@@ -129,24 +118,19 @@ function makeReactNode(
     if (!container) throw new Error("Cytoscape container not found");
     container.appendChild(htmlElement);
 
-    // Give the react node a chance to layout to get a real height
-    setTimeout(updateAfterLayout, layoutAnimationDuration + 1);
-
     let isLayingOut = false;
 
     window.addEventListener("resize", updateNodeHeightToSurroundHtmlWithLayout);
     cy.on("pan zoom resize", updatePosition);
-    cy.on("layout", function onLayout() {
+    cy.on("layoutstop", function onLayout() {
       // Don't infinitely recurse on layouts the extension triggered.
       if (!isLayingOut) {
         isLayingOut = true;
-        setTimeout(() => {
-          try {
-            updateAfterLayout();
-          } finally {
-            isLayingOut = true;
-          }
-        }, layoutAnimationDuration + 1);
+        try {
+          updateAfterLayout();
+        } finally {
+          isLayingOut = true;
+        }
       }
     });
     node.on("position", updatePositionWithLayout);
