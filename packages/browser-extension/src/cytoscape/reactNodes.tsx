@@ -160,9 +160,9 @@ function makeReactNode(
     });
     node.on("select unselect", function onNodeSelectUnselect() {
       if (node.selected()) {
-        Object.assign((htmlElement.style, options.selectedStyle ?? {}));
+        Object.assign(htmlElement.style, options.selectedStyle ?? {});
       } else {
-        Object.assign((htmlElement.style, options.unselectedStyle ?? {}));
+        Object.assign(htmlElement.style, options.unselectedStyle ?? {});
       }
     });
     node.on("data", function renderReactNode() {

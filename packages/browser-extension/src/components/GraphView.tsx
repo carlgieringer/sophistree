@@ -1512,13 +1512,13 @@ function getLayout(fit = false) {
     // Example (downwards layered layout):
     elk: {
       algorithm: "layered",
-      "elk.direction": "UP",
-      "elk.spacing.nodeNode": "50",
-      "elk.layered.spacing.nodeNodeBetweenLayers": "100",
-      "elk.hierarchyHandling": "INCLUDE_CHILDREN",
       "elk.aspectRatio": "1.5",
-      "elk.padding": "[top=50,left=50,bottom=50,right=50]",
+      "elk.direction": "UP",
+      "elk.hierarchyHandling": "INCLUDE_CHILDREN",
       "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
+      "elk.layered.spacing.nodeNodeBetweenLayers": "100",
+      "elk.padding": "[top=50,left=50,bottom=50,right=50]",
+      "elk.spacing.nodeNode": "50",
     },
   };
 }
