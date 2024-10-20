@@ -17,7 +17,7 @@
     "test": "jest",
     "test-ci": "npm run test",
     "test-watch": "jest --watch",
-    "test-debug": "node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand --watch",
+    "test-debug": "node --inspect-brk ../../node_modules/jest/bin/jest.js --runInBand --watch",
     "type-check": "tsc --noEmit",
     "watch-all": "npm run build-dev-watch",
     "zip-extension": "node bin/zip-extension.js"
@@ -32,6 +32,7 @@
     "cytoscape": "^3.30.2",
     "cytoscape-context-menus": "^4.2.1",
     "cytoscape-elk": "^2.2.0",
+    "deep-equal": "^2.2.3",
     "esbuild-plugin-flow": "github:dalcib/esbuild-plugin-flow",
     "immer": "^10.1.1",
     "lodash.debounce": "^4.0.8",
@@ -54,6 +55,7 @@
     "@babel/preset-typescript": "^7.24.7",
     "@types/chrome": "^0.0.270",
     "@types/cytoscape-context-menus": "^4.1.4",
+    "@types/deep-equal": "^1.0.4",
     "@types/jest": "^29.5.13",
     "@types/lodash.debounce": "^4.0.9",
     "@types/node": "^22.5.4",
@@ -74,6 +76,7 @@
     "eslint-plugin-react": "^7.37.0",
     "eslint-plugin-react-hooks": "^4.6.2",
     "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
     "prettier": "^3.3.3",
     "type-fest": "^4.26.1",
     "typescript": "^5.6.2"

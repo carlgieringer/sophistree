@@ -65,6 +65,10 @@ function handleMessage(
       highlightNewMediaExcerptIfOnPage(message.data);
       break;
     }
+    case "notifyTabOfExtantMediaExcerpt": {
+      highlightNewMediaExcerptIfOnPage(message.data);
+      break;
+    }
     case "notifyTabsOfDeletedMediaExcerpts": {
       highlightManager.removeHighlights(
         ({ mediaExcerptId }) => mediaExcerptId === message.mediaExcerptId,
