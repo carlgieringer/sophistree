@@ -4,10 +4,7 @@ import { DomAnchor } from "tapestry-highlights";
 import deepEqual from "deep-equal";
 
 import * as appLogger from "../logging/appLogging";
-import {
-  notifyTabsOfDeletedMediaExcerpt,
-  notifyTabsOfExtantMediaExcerpt,
-} from "../extension/messages";
+import { notifyTabsOfDeletedMediaExcerpt } from "../extension/messages";
 
 interface BaseEntity {
   id: string;
@@ -177,17 +174,11 @@ export const entitiesSlice = createSlice({
       }
       const { quotation, url, canonicalUrl, sourceName, domAnchor, id } =
         action.payload;
-      const extantMediaExcerpt = activeMap.entities.find(
-        (e) =>
-          e.type === "MediaExcerpt" &&
-          e.urlInfo.canonicalUrl === canonicalUrl &&
-          e.urlInfo.url === url &&
-          deepEqual(e.domAnchor, domAnchor),
+      const extantMediaExcerpt = activeMap.entities.find((e) =>
+        isEquivalentMediaExcerpt(e, { url, canonicalUrl, domAnchor }),
       );
       if (extantMediaExcerpt) {
         appLogger.warn("Declining to create a duplicative MediaExcerpt.");
-        // TODO: #3 - remove this side effect. Maybe detect the removal via useState in a component?
-        void notifyTabsOfExtantMediaExcerpt(action.payload);
         return;
       }
       const newNode: MediaExcerpt = {
@@ -749,6 +740,26 @@ function getNextNewPropositionNumber(map: ArgumentMap) {
     }
     return Math.max(maxNum, groupInt);
   }, 1);
+}
+
+export function isEquivalentMediaExcerpt(
+  e: Entity,
+  {
+    url,
+    canonicalUrl,
+    domAnchor,
+  }: {
+    url: string;
+    canonicalUrl: string | undefined;
+    domAnchor: DomAnchor;
+  },
+) {
+  return (
+    e.type === "MediaExcerpt" &&
+    e.urlInfo.canonicalUrl === canonicalUrl &&
+    e.urlInfo.url === url &&
+    deepEqual(e.domAnchor, domAnchor)
+  );
 }
 
 export const {

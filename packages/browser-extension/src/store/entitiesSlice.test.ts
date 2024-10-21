@@ -151,14 +151,6 @@ describe("entitiesSlice", () => {
           domAnchor,
         });
 
-        window.chrome = {
-          ...window.chrome,
-          tabs: {
-            ...window.chrome?.tabs,
-            query: jest.fn(() => Promise.resolve([])),
-          },
-        };
-
         const newState = entitiesReducer(initialState, action);
 
         // Check that no new entity was added

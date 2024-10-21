@@ -19,7 +19,6 @@ describe("determineOutcomes", () => {
     sourceInfo: { name: "" },
     domAnchor: {
       text: { prefix: "prefix", exact: "exact", suffix: "suffix" },
-      position: { start: 0, end: 0 },
     },
     ...defaultProps,
   });

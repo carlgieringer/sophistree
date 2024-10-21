@@ -10,3 +10,4 @@ export type {
 export type { DomAnchor } from "./anchors/index.js";
 export type { Logger } from "./logger.js";
 export * from "./DomAnchorHighlightManager.js";
+export { makeDomAnchorFromSelection } from "./anchors/index.js";

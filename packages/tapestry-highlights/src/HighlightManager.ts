@@ -1,5 +1,7 @@
 import debounce from "lodash.debounce";
 import { v4 as uuidv4 } from "uuid";
+import deepEqual from "deep-equal";
+
 import type { Logger } from "./logger.js";
 
 export type HighlightManagerOptions<Anchor, Data> = {
@@ -7,6 +9,7 @@ export type HighlightManagerOptions<Anchor, Data> = {
   container: HTMLElement;
   /** A function transforming an anchor into one or more Ranges. */
   getRangesFromAnchor: GetRangesFromAnchorFunction<Anchor>;
+  isEquivalentHighlight?: IsEquivalentHighlightFunction<Anchor, Data>;
   /** A function returning one or more extra class names to apply to a highlight's
    * elements. Called initially to get a highlight's classNames. After creating a highlight, call
    * updateHighlightsClassNames to refresh class names based on this callback.
@@ -25,6 +28,14 @@ export type HighlightManagerOptions<Anchor, Data> = {
   logger?: Logger;
 };
 type GetRangesFromAnchorFunction<Anchor> = (anchor: Anchor) => Range[];
+type IsEquivalentHighlightFunction<Anchor, Data> = (
+  input1: EquivalentHighlightInput<Anchor, Data>,
+  input2: EquivalentHighlightInput<Anchor, Data>,
+) => boolean;
+interface EquivalentHighlightInput<Anchor, Data> {
+  anchor: Anchor;
+  data: Data;
+}
 type GetHighlightClassNamesFunction<Data> = (
   highlightData: Data,
   index: number,
@@ -48,6 +59,8 @@ class HighlightManager<Anchor, Data> {
       container: options.container,
       logger: options.logger ?? console,
       getRangesFromAnchor: options.getRangesFromAnchor,
+      isEquivalentHighlight:
+        options.isEquivalentHighlight ?? defaultOptions.isEquivalentHighlight,
       getHighlightClassNames:
         options.getHighlightClassNames ?? defaultOptions.getHighlightClassNames,
       highlightClass: options.highlightClass ?? defaultOptions.highlightClass,
@@ -160,8 +173,16 @@ class HighlightManager<Anchor, Data> {
     data: Data,
     handlers?: HighlightHandlers<Data>,
   ): Highlight<Anchor, Data> {
+    const equivalentHighlight = this.getEquivalentHighlight(anchor, data);
+    if (equivalentHighlight) {
+      const { id, anchor, classNames, data } = equivalentHighlight;
+      return { id, anchor, classNames, data };
+    }
+
     const ranges = this.options.getRangesFromAnchor(anchor);
-    const coextensiveHighlight = this.getCoextensiveHighlight(ranges);
+
+    const coextensiveHighlight =
+      ranges.length && this.getCoextensiveHighlight(ranges);
     if (coextensiveHighlight) {
       const { id, anchor, classNames, data } = coextensiveHighlight;
       return { id, anchor, classNames, data };
@@ -196,6 +217,17 @@ class HighlightManager<Anchor, Data> {
 
     const { id, classNames } = highlight;
     return { id, anchor, classNames, data };
+  }
+
+  private getEquivalentHighlight(anchor: Anchor, data: Data) {
+    return this.highlights.find(
+      (h) =>
+        deepEqual(h.anchor, anchor) ||
+        this.options.isEquivalentHighlight?.(
+          { anchor: h.anchor, data: h.data },
+          { anchor, data },
+        ),
+    );
   }
 
   private getCoextensiveHighlight(
@@ -633,6 +665,7 @@ export interface Highlight<Anchor, Data> {
 type MergedHighlightManagerOptions<Anchor, Data> = {
   container: HTMLElement;
   getRangesFromAnchor: GetRangesFromAnchorFunction<Anchor>;
+  isEquivalentHighlight?: IsEquivalentHighlightFunction<Anchor, Data>;
   getHighlightClassNames: GetHighlightClassNamesFunction<Data>;
   highlightClass: string;
   hoverClass: string;
@@ -643,10 +676,20 @@ type MergedHighlightManagerOptions<Anchor, Data> = {
 export const classNameIndexPlaceholder = "{index}";
 const defaultRotationColorCount = 5;
 const defaultOptions = {
-  highlightClass: "highlight",
+  isEquivalentHighlight: (
+    {
+      anchor: anchor1,
+      data: data1,
+    }: EquivalentHighlightInput<unknown, unknown>,
+    {
+      anchor: anchor2,
+      data: data2,
+    }: EquivalentHighlightInput<unknown, unknown>,
+  ) => deepEqual(anchor1, anchor2) || deepEqual(data1, data2),
   getHighlightClassNames: (_highlightData: unknown, index: number) => [
     `highlight-color-${index % defaultRotationColorCount}`,
   ],
+  highlightClass: "highlight",
   hoverClass: "highlight-hover",
   focusClass: "highlight-focus",
 };

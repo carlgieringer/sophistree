@@ -35,11 +35,6 @@ export interface NotifyTabOfNewMediaExcerptMessage {
   data: AddMediaExcerptData;
 }
 
-export interface NotifyTabOfExtantMediaExcerptMessage {
-  action: "notifyTabOfExtantMediaExcerpt";
-  data: AddMediaExcerptData;
-}
-
 export interface NotifyTabsOfDeletedMediaExcerptsMessage {
   action: "notifyTabsOfDeletedMediaExcerpts";
   mediaExcerptId: string;
@@ -52,7 +47,6 @@ export type ContentMessage =
   | UpdateMediaExcerptOutcomesMessage
   | RefreshMediaExcerptsMessage
   | NotifyTabOfNewMediaExcerptMessage
-  | NotifyTabOfExtantMediaExcerptMessage
   | NotifyTabsOfDeletedMediaExcerptsMessage;
 
 export function getTabUrl(tabId: number): Promise<string> {
@@ -116,38 +110,6 @@ async function getCompleteTabs() {
   } catch (error) {
     appLogger.error("Error querying tabs:", error);
     return [];
-  }
-}
-
-export async function notifyTabsOfExtantMediaExcerpt(
-  data: AddMediaExcerptData,
-) {
-  const message: NotifyTabOfExtantMediaExcerptMessage = {
-    action: "notifyTabOfExtantMediaExcerpt",
-    data,
-  };
-
-  try {
-    const tabs = await chrome.tabs.query({ url: data.url });
-
-    return Promise.all(
-      tabs.map(async (tab) => {
-        if (!tab.id) {
-          appLogger.warn(
-            "Cannot notifyTabOfExtantMediaExcerpt because tab id is undefined",
-          );
-          return;
-        }
-
-        try {
-          await chrome.tabs.sendMessage(tab.id, message);
-        } catch (error) {
-          appLogger.warn(`Error sending message to tab ${tab.id}:`, error);
-        }
-      }),
-    );
-  } catch (error) {
-    appLogger.error("Error querying tabs:", error);
   }
 }
 

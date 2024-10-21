@@ -49,7 +49,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "dom-anchor-text-position": "^5.0.0",
+    "deep-equal": "^2.2.3",
     "text-fragments-polyfill": "^5.7.0",
     "uuid": "^10.0.0"
   },

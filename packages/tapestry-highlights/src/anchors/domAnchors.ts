@@ -1,4 +1,3 @@
-import * as textPosition from "dom-anchor-text-position";
 import * as textQuote from "dom-anchor-text-quote";
 import { GenerateFragmentStatus } from "text-fragments-polyfill/dist/fragment-generation-utils.js";
 import type { TextFragment } from "text-fragments-polyfill/dist/fragment-generation-utils.js";
@@ -9,7 +8,6 @@ import type { Logger } from "../logger.js";
 export interface DomAnchor {
   fragment?: TextFragment;
   text: textQuote.TextQuoteAnchor;
-  position: textPosition.TextPositionAnchor;
 }
 
 export function getRangesFromDomAnchor(
@@ -28,9 +26,7 @@ export function getRangesFromDomAnchor(
       );
     }
   }
-  const range =
-    textQuote.toRange(root, domAnchor.text) ??
-    textPosition.toRange(root, domAnchor.position);
+  const range = textQuote.toRange(root, domAnchor.text);
   return range ? [range] : [];
 }
 
@@ -41,7 +37,6 @@ export function makeDomAnchorFromSelection(selection: Selection): DomAnchor {
 
 export function makeDomAnchorFromRange(range: Range): DomAnchor {
   const text = textQuote.fromRange(window.document.body, range);
-  const position = textPosition.fromRange(window.document.body, range);
   const result = generateFragmentFromRange(range);
   const fragment =
     result.status === GenerateFragmentStatus.SUCCESS
@@ -49,7 +44,6 @@ export function makeDomAnchorFromRange(range: Range): DomAnchor {
       : undefined;
   return {
     text,
-    position,
     fragment,
   };
 }

@@ -1,6 +1,4 @@
 declare module "dom-anchor-text-quote" {
-  import { TextPositionAnchor } from "dom-anchor-text-position";
-
   interface TextQuoteAnchor {
     prefix?: string;
     exact: string;
@@ -25,15 +23,4 @@ declare module "dom-anchor-text-quote" {
     selector: Selector,
     options: Options = {},
   ): Range | null;
-
-  function fromTextPosition(
-    root: HTMLElement,
-    selector: TextPositionAnchor,
-  ): TextQuoteAnchor;
-
-  function toTextPosition(
-    root: HTMLElement,
-    selector: Selector,
-    options: Options = {},
-  ): TextPositionAnchor | null;
 }
