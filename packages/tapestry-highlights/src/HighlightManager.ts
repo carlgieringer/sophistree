@@ -69,6 +69,7 @@ class HighlightManager<Anchor, Data> {
     };
 
     this.addEventListeners();
+    this.createMutationObserver();
   }
 
   /** Notifies the manager that highlights matching the selector must update their classNames. */
@@ -294,6 +295,66 @@ class HighlightManager<Anchor, Data> {
     window.addEventListener(
       "resize",
       debounce(this.handleResize.bind(this), 300),
+    );
+  }
+
+  private createMutationObserver() {
+    const observer = new MutationObserver((mutations) => {
+      let needsUpdate = false;
+
+      for (const mutation of mutations) {
+        if (mutation.type === "childList") {
+          if (mutation.addedNodes.length > 0) {
+            this.handleAddedNodes();
+            needsUpdate = true;
+          }
+          if (mutation.removedNodes.length > 0) {
+            this.handleRemovedNodes();
+            needsUpdate = true;
+          }
+        }
+      }
+
+      if (needsUpdate) {
+        this.updateAllHighlightElements();
+      }
+    });
+
+    observer.observe(this.options.container, {
+      childList: true,
+      subtree: true,
+    });
+  }
+
+  private handleAddedNodes() {
+    const unanchoredHighlights = this.highlights.filter((h) =>
+      h.ranges.every((r) => r.collapsed),
+    );
+
+    for (const highlight of unanchoredHighlights) {
+      const newRanges = this.options.getRangesFromAnchor(highlight.anchor);
+      if (newRanges.length > 0 && newRanges.every((r) => !r.collapsed)) {
+        highlight.ranges = newRanges;
+      }
+    }
+  }
+
+  private handleRemovedNodes() {
+    for (const highlight of this.highlights) {
+      const invalidRanges = highlight.ranges.filter(
+        (range) => !this.isRangeValid(range),
+      );
+
+      if (invalidRanges.length > 0) {
+        highlight.ranges = this.options.getRangesFromAnchor(highlight.anchor);
+      }
+    }
+  }
+
+  private isRangeValid(range: Range): boolean {
+    return (
+      this.options.container.contains(range.startContainer) &&
+      this.options.container.contains(range.endContainer)
     );
   }
 
@@ -611,15 +672,6 @@ class HighlightManager<Anchor, Data> {
       throw new Error("Highlight was not found.");
     }
     return internal.elements.map((e) => e.getBoundingClientRect());
-  }
-
-  /** For testing: returns the count of the highlight's elements. */
-  getElementCount({ id }: Highlight<Anchor, Data>) {
-    const internal = this.highlights.find((h) => h.id === id);
-    if (!internal) {
-      throw new Error("Highlight was not found.");
-    }
-    return internal.elements.length;
   }
 }
 
