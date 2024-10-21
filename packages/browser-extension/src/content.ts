@@ -42,7 +42,7 @@ function handleMessage(
 ) {
   switch (message.action) {
     case "createMediaExcerpt": {
-      void createMediaExcerptFromCurrentSelectionWithChecks(message);
+      void createMediaExcerptFromCurrentSelection(message);
       break;
     }
     case "focusMediaExcerpt":
@@ -89,15 +89,7 @@ function highlightNewMediaExcerptIfOnPage(data: AddMediaExcerptData) {
   createHighlight(data.id, data.domAnchor);
 }
 
-/**
- * Creates a MediaExcerpt from the current selection; first checks if a DomAnchor
- * from the current selection would be equivalent to an existing MediaExcerpt. If so,
- * highlights that MediaExcerpt and returns. After creating the MediaExcerpt, it
- * double-checks that the creation was successful in the extension. If not, it
- * deletes the highlight.
- * @param message
- */
-async function createMediaExcerptFromCurrentSelectionWithChecks(
+async function createMediaExcerptFromCurrentSelection(
   message: CreateMediaExcerptMessage,
 ) {
   const highlight = await createMediaExcerptAndHighlight(message);
