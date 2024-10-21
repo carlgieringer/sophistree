@@ -4,9 +4,11 @@ import * as textQuote from "dom-anchor-text-quote";
 import { HighlightManager, type Highlight } from "../src/HighlightManager.js";
 
 let page: Page;
+let originalViewportSize: { width: number; height: number };
 
 test.beforeAll(async ({ browser }) => {
   page = await browser.newPage();
+  originalViewportSize = page.viewportSize() ?? { height: 500, width: 500 };
 });
 
 test.afterAll(async () => {
@@ -16,6 +18,7 @@ test.afterAll(async () => {
 test.describe("HighlightManager", () => {
   test.beforeEach(async () => {
     await page.goto("about:blank");
+    await page.setViewportSize(originalViewportSize);
     await page.setContent(`
       <!DOCTYPE html>
       <html>
@@ -71,6 +74,55 @@ test.describe("HighlightManager", () => {
       return document.querySelectorAll(".highlight").length;
     });
     expect(highlightCount).toBe(1);
+  });
+
+  test("should highlight added nodes", async () => {
+    const initialHighlightCount = await page.evaluate(() => {
+      window.manager.createHighlight(
+        { exact: "This is some new content" },
+        { id: 1 },
+      );
+      return document.querySelectorAll(".highlight").length;
+    });
+
+    expect(initialHighlightCount).toBe(0);
+
+    await page.evaluate(() => {
+      const newParagraph = document.createElement("p");
+      newParagraph.textContent =
+        "This is some new content that we're adding to the page.";
+      document.body.appendChild(newParagraph);
+    });
+
+    await expect(async () => {
+      const finalHighlightCount = await page.evaluate(() => {
+        return document.querySelectorAll(".highlight").length;
+      });
+      expect(finalHighlightCount).toBe(1);
+    }).toPass({ timeout: 500 });
+  });
+
+  test("should unhighlight removed nodes", async () => {
+    const initialHighlightCount = await page.evaluate(() => {
+      window.manager.createHighlight(
+        { exact: "text that we will use" },
+        { id: 1 },
+      );
+      return document.querySelectorAll(".highlight").length;
+    });
+
+    expect(initialHighlightCount).toBe(1);
+
+    await page.evaluate(() => {
+      document.querySelectorAll("p").forEach((el) => el.remove());
+    });
+
+    await expect(async () => {
+      const finalHighlightCount = await page.evaluate(() => {
+        return document.querySelectorAll(".highlight").length;
+      });
+      expect(finalHighlightCount).toBe(0);
+    }).toPass({ timeout: 500 });
   });
 
   test("should remove a highlight", async () => {
@@ -251,13 +303,12 @@ test.describe("HighlightManager", () => {
 
   test("should combine adjacent rectangles", async () => {
     const elementCount = await page.evaluate(() => {
-      // Encompasses hyperlink
-      const highlight = window.manager.createHighlight(
+      window.manager.createHighlight(
         // includes a hyperlink which creates multiple rectangles before combination
         { exact: "use for our highlighting tests." },
         { id: 1 },
       );
-      return window.manager.getElementCount(highlight);
+      return document.querySelectorAll(".highlight").length;
     });
 
     expect(elementCount).toBe(1);
