@@ -142,24 +142,21 @@ highlightManager.focusHighlight(
 ### Custom anchor types
 
 `DomAnchorHighlightManager<Data>` is a subclass of `HighlightManager<Anchor, Data>` where
-`Anchor` is `DomAnchor`. `DomAnchor` is an anchor type that conservatively contains three
+`Anchor` is `DomAnchor`. `DomAnchor` is an anchor type that conservatively contains two
 different methods for selecting ranges:
 
 - [text-fragments-polyfill](https://www.npmjs.com/package/text-fragments-polyfill)
-- [dom-anchor-text-position](https://www.npmjs.com/package/dom-anchor-text-position)
 - [dom-anchor-text-quote](https://www.npmjs.com/package/dom-anchor-text-quote)
 
 In TypeScript this is like:
 
 ```ts
-import * as textPosition from "dom-anchor-text-position";
 import * as textQuote from "dom-anchor-text-quote";
 import type { TextFragment } from "text-fragments-polyfill/dist/fragment-generation-utils.js";
 
 export interface DomAnchor {
   fragment?: TextFragment;
   text: textQuote.TextQuoteAnchor;
-  position: textPosition.TextPositionAnchor;
 }
 ```
 

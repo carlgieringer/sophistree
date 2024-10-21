@@ -42,7 +42,7 @@ function handleMessage(
 ) {
   switch (message.action) {
     case "createMediaExcerpt": {
-      void createMediaExcerptAndCheckItExists(message);
+      void createMediaExcerptFromCurrentSelection(message);
       break;
     }
     case "focusMediaExcerpt":
@@ -89,10 +89,12 @@ function highlightNewMediaExcerptIfOnPage(data: AddMediaExcerptData) {
   createHighlight(data.id, data.domAnchor);
 }
 
-async function createMediaExcerptAndCheckItExists(
+async function createMediaExcerptFromCurrentSelection(
   message: CreateMediaExcerptMessage,
 ) {
-  const highlight = await createMediaExcerpt(message);
+  const highlight = await createMediaExcerptAndHighlight(message);
+  // If the highlight failed to be created in the extension for whatever reason,
+  // remove it here.
   if (highlight && !(await getMediaExcerpt(highlight.data.mediaExcerptId))) {
     highlightManager.removeHighlight(highlight);
   }
@@ -118,7 +120,9 @@ function focusMediaExcerpt(mediaExcerptId: string) {
   );
 }
 
-async function createMediaExcerpt(message: CreateMediaExcerptMessage) {
+async function createMediaExcerptAndHighlight(
+  message: CreateMediaExcerptMessage,
+) {
   const mediaExcerptId = uuidv4();
   const quotation = message.selectedText;
   const url = getUrl();
@@ -150,31 +154,40 @@ async function createMediaExcerpt(message: CreateMediaExcerptMessage) {
       sourceName,
       domAnchor: highlight.anchor,
     };
-    const message: AddMediaExcerptMessage = {
-      action: "addMediaExcerpt",
-      data,
-    };
-    try {
-      await chrome.runtime.sendMessage(message);
-    } catch (error) {
-      if (
-        error instanceof Error &&
-        error.message.includes(connectionErrorMessage)
-      ) {
-        window.alert("Please open the Sophistree sidebar to add excerpts");
-      } else {
-        contentLogger.error(
-          `Unable to connect to extension to add media excerpt.`,
-          error,
-        );
-      }
+    const success = await createMediaExcerpt(data);
+    if (!success) {
       highlightManager.removeHighlight(highlight);
       return undefined;
     }
   } else {
+    // The highlight manager already had an equivalent highlight
     await selectMediaExcerpt(highlight.data.mediaExcerptId);
   }
   return highlight;
+}
+
+async function createMediaExcerpt(data: AddMediaExcerptData) {
+  const message: AddMediaExcerptMessage = {
+    action: "addMediaExcerpt",
+    data,
+  };
+  try {
+    await chrome.runtime.sendMessage(message);
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes(connectionErrorMessage)
+    ) {
+      window.alert("Please open the Sophistree sidebar to add excerpts");
+    } else {
+      contentLogger.error(
+        `Unable to connect to extension to add media excerpt.`,
+        error,
+      );
+    }
+    return false;
+  }
+  return true;
 }
 
 function getUrl() {
@@ -244,6 +257,8 @@ interface HighlightData {
 const highlightManager = new DomAnchorHighlightManager<HighlightData>({
   container: document.body,
   logger: contentLogger,
+  isEquivalentHighlight: ({ data: data1 }, { data: data2 }) =>
+    data1.mediaExcerptId === data2.mediaExcerptId,
   getHighlightClassNames: ({ mediaExcerptId }) => [
     getHighlightClass(mediaExcerptId),
   ],

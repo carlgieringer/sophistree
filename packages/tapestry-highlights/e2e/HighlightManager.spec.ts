@@ -64,6 +64,15 @@ test.describe("HighlightManager", () => {
     expect(highlightCount).toBe(1);
   });
 
+  test("should not create equivalent highlights", async () => {
+    const highlightCount = await page.evaluate(() => {
+      window.manager.createHighlight({ exact: "This is some" }, { id: 1 });
+      window.manager.createHighlight({ exact: "This is some" }, { id: 2 });
+      return document.querySelectorAll(".highlight").length;
+    });
+    expect(highlightCount).toBe(1);
+  });
+
   test("should remove a highlight", async () => {
     const highlightCount = await page.evaluate(() => {
       const highlight = window.manager.createHighlight(

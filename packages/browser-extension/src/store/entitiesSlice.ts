@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { v4 as uuidv4 } from "uuid";
 import { DomAnchor } from "tapestry-highlights";
+import deepEqual from "deep-equal";
 
 import * as appLogger from "../logging/appLogging";
 import { notifyTabsOfDeletedMediaExcerpt } from "../extension/messages";
@@ -149,13 +150,20 @@ export const entitiesSlice = createSlice({
         activeMap.name = action.payload;
       }
     },
-    addEntity(state, action: PayloadAction<Entity>) {
+    addNewProposition(state) {
       const activeMap = state.maps.find((map) => map.id === state.activeMapId);
       if (!activeMap) {
-        appLogger.error(`Cannot addEntity because there is no activeMap`);
+        appLogger.error(`Cannot addProposition because there is no activeMap`);
         return;
       }
-      activeMap.entities.push(action.payload);
+      const nextNewPropositionNumber = getNextNewPropositionNumber(activeMap);
+      const proposition: Proposition = {
+        id: uuidv4(),
+        type: "Proposition",
+        text: `New Proposition ${nextNewPropositionNumber}`,
+        ...defaultVisibilityProps,
+      };
+      activeMap.entities.push(proposition);
       updateConclusions(activeMap);
     },
     addMediaExcerpt(state, action: PayloadAction<AddMediaExcerptData>) {
@@ -166,6 +174,13 @@ export const entitiesSlice = createSlice({
       }
       const { quotation, url, canonicalUrl, sourceName, domAnchor, id } =
         action.payload;
+      const extantMediaExcerpt = activeMap.entities.find((e) =>
+        isEquivalentMediaExcerpt(e, { url, canonicalUrl, domAnchor }),
+      );
+      if (extantMediaExcerpt) {
+        appLogger.warn("Declining to create a duplicative MediaExcerpt.");
+        return;
+      }
       const newNode: MediaExcerpt = {
         type: "MediaExcerpt",
         ...defaultVisibilityProps,
@@ -192,7 +207,7 @@ export const entitiesSlice = createSlice({
       const index = activeMap.entities.findIndex(
         (entity) => entity.id === action.payload.id,
       );
-      if (index < 1) {
+      if (index < 0) {
         appLogger.error(
           `Cannot updateEntity because there is no entity with id ${action.payload.id}`,
         );
@@ -709,11 +724,49 @@ function updateMediaExcerptAutoVisibility(
   mediaExcerpt.autoVisibility = autoVisibility;
 }
 
+function getNextNewPropositionNumber(map: ArgumentMap) {
+  return map.entities.reduce((maxNum, entity) => {
+    if (entity.type !== "Proposition") {
+      return maxNum;
+    }
+    const match = entity.text.match(/New Proposition (\d+)/);
+    const groupVal = match?.groups?.[0];
+    if (!groupVal) {
+      return maxNum;
+    }
+    const groupInt = parseInt(groupVal, 10);
+    if (isNaN(groupInt)) {
+      return maxNum;
+    }
+    return Math.max(maxNum, groupInt);
+  }, 1);
+}
+
+export function isEquivalentMediaExcerpt(
+  e: Entity,
+  {
+    url,
+    canonicalUrl,
+    domAnchor,
+  }: {
+    url: string;
+    canonicalUrl: string | undefined;
+    domAnchor: DomAnchor;
+  },
+) {
+  return (
+    e.type === "MediaExcerpt" &&
+    e.urlInfo.canonicalUrl === canonicalUrl &&
+    e.urlInfo.url === url &&
+    deepEqual(e.domAnchor, domAnchor)
+  );
+}
+
 export const {
   createMap,
   deleteMap,
   setActiveMap,
-  addEntity,
+  addNewProposition,
   addMediaExcerpt,
   updateEntity,
   updateProposition,

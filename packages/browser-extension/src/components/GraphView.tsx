@@ -29,7 +29,6 @@ import { Portal } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useSelector } from "react-redux";
 import { SetRequired } from "type-fest";
-import { v4 as uuidv4 } from "uuid";
 
 import "cytoscape-context-menus/cytoscape-context-menus.css";
 import {
@@ -41,9 +40,8 @@ import {
 } from "../colors";
 import reactNodes from "../cytoscape/reactNodes";
 import {
-  addEntity,
+  addNewProposition,
   completeDrag,
-  defaultVisibilityProps,
   deleteEntity,
   Entity,
   MediaExcerpt,
@@ -625,13 +623,7 @@ function useDblTapToCreateNode(
 
     const dbltapHandler = (event: EventObject) => {
       if (event.target === cy) {
-        const newNode = {
-          id: uuidv4(),
-          type: "Proposition" as const,
-          text: "New Node",
-          ...defaultVisibilityProps,
-        };
-        dispatch(addEntity(newNode));
+        dispatch(addNewProposition());
       }
     };
     cy.on("dbltap", dbltapHandler);

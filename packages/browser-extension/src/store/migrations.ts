@@ -7,7 +7,7 @@ import {
 } from "./entitiesSlice";
 import { PersistedState } from "redux-persist";
 
-export const persistedStateVersion = 4;
+export const persistedStateVersion = 5;
 
 type MapsState =
   | {
@@ -34,6 +34,12 @@ export const reduxPersistMigrations = {
     const state = s as MapsState;
     state?.maps.forEach((map: ArgumentMap) => {
       mapMigrations[4](map);
+    });
+  }),
+  5: produce((s: PersistedState) => {
+    const state = s as MapsState;
+    state?.maps.forEach((map: ArgumentMap) => {
+      mapMigrations[5](map);
     });
   }),
 };
@@ -74,6 +80,9 @@ const mapMigrations = {
   4: (map: ArgumentMap) => {
     removeDuplicateJustifications(map);
   },
+  5: (map: ArgumentMap) => {
+    removeAnchorTextPosition(map);
+  },
 };
 
 const removeDuplicateJustifications = (map: ArgumentMap) => {
@@ -86,5 +95,13 @@ const removeDuplicateJustifications = (map: ArgumentMap) => {
 
     uniqueJustifications.add(key);
     return true;
+  });
+};
+
+const removeAnchorTextPosition = (map: ArgumentMap) => {
+  map.entities.forEach((entity: Entity) => {
+    if (entity.type !== "MediaExcerpt") return;
+    delete (entity.domAnchor as unknown as { position: unknown }).position;
+    return entity;
   });
 };
