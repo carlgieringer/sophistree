@@ -110,6 +110,9 @@ function makeReactNode(
     if (options.syncClasses) {
       syncNodeClasses();
     }
+    if (node.selected() && options.selectedStyle) {
+      Object.assign(htmlElement.style, options.selectedStyle);
+    }
 
     const reactRoot = ReactDOM.createRoot(htmlElement);
     renderJsxElement(reactRoot);
@@ -143,10 +146,10 @@ function makeReactNode(
       cy.off("pan zoom resize", updatePosition);
     });
     node.on("select unselect", function onNodeSelectUnselect() {
-      if (node.selected()) {
-        Object.assign(htmlElement.style, options.selectedStyle ?? {});
-      } else {
-        Object.assign(htmlElement.style, options.unselectedStyle ?? {});
+      if (node.selected() && options.selectedStyle) {
+        Object.assign(htmlElement.style, options.selectedStyle);
+      } else if (!node.selected() && options.unselectedStyle) {
+        Object.assign(htmlElement.style, options.unselectedStyle);
       }
     });
     node.on("data", function renderReactNode() {
