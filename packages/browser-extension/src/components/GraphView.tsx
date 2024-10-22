@@ -1214,7 +1214,6 @@ const stylesheet: cytoscape.Stylesheet[] = [
       shape: "round-rectangle",
       label: "data(entity.text)",
       width: "label",
-      height: "label",
     },
   },
   {
@@ -1230,7 +1229,6 @@ const stylesheet: cytoscape.Stylesheet[] = [
       shape: "round-rectangle",
       label: "data(entity.quotation)",
       width: "label",
-      height: "label",
     },
   },
   {
