@@ -31,11 +31,10 @@ export const selectedEntityIds = (state: RootState) => {
   return state.entities.selectedEntityIds;
 };
 
-export const selectedEntities = (state: RootState) => {
-  return activeMapEntities(state)?.find((entity) =>
-    selectedEntityIds(state).includes(entity.id),
-  );
-};
+export const selectedEntities = createSelector(
+  [activeMapEntities, selectedEntityIds],
+  (entities, selectedIds) => entities.filter((e) => selectedIds.includes(e.id)),
+);
 
 const selectAllMaps = (state: RootState) => state.entities.maps;
 
