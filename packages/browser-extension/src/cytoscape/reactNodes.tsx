@@ -53,7 +53,7 @@ const defaultReactNodeOptions: ReactNodeOptions = {
     border: "1px solid #ccc",
   },
   selectedStyle: { border: `5px solid ${sunflower}` },
-  unselectedStyle: { border: "none" },
+  unselectedStyle: { border: "" },
 };
 
 /** A cytoscape extension that renders React elements over nodes. */
