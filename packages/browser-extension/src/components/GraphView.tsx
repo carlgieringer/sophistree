@@ -1100,9 +1100,12 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
   );
 
   // Sort the nodes so that children will be ordered the same as their parents.
-  const sortedNodes = sortNodesByInverseDfs(visibleNodes, visibleEdges);
+  const { sortedNodes, sortedEdges } = sortNodesByInverseDfs(
+    visibleNodes,
+    visibleEdges,
+  );
 
-  return { nodes: sortedNodes, edges: visibleEdges };
+  return { nodes: sortedNodes, edges: sortedEdges };
 }
 
 /** Inverse because our edges point from children to parents. */
@@ -1147,9 +1150,16 @@ function sortNodesByInverseDfs(
   });
 
   // Perform DFS to sort nodes
-  const visited = new Set<string>();
-  const sortedNodes: EntityNodeDataDefinition[] = [];
+  const edgeMap = new Map<string, EntityEdgeDataDefinition>();
+  edges.forEach((edge) => {
+    const key = `${edge.source}-${edge.target}`;
+    edgeMap.set(key, edge);
+  });
 
+  const sortedNodes: EntityNodeDataDefinition[] = [];
+  const sortedEdges: EntityEdgeDataDefinition[] = [];
+
+  const visited = new Set<string>();
   function dfs(nodeId: string) {
     if (visited.has(nodeId)) return;
     visited.add(nodeId);
@@ -1163,6 +1173,11 @@ function sortNodesByInverseDfs(
 
     const neighbors = adjacencyList.get(nodeId) || [];
     neighbors.forEach((neighborId) => {
+      // Look up the edge in constant time
+      const edge = edgeMap.get(`${neighborId}-${nodeId}`);
+      if (edge) {
+        sortedEdges.push(edge);
+      }
       dfs(neighborId);
     });
   }
@@ -1171,7 +1186,7 @@ function sortNodesByInverseDfs(
     dfs(rootId);
   });
 
-  return sortedNodes;
+  return { sortedNodes, sortedEdges };
 }
 
 function makeEntityNodeId({ type, id }: Entity) {
