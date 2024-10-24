@@ -14,6 +14,7 @@ As a library, the intentions are to be:
 
 - Scrolling to highlights
 - Durable anchoring that restores highlights after window resizing.
+- Highlights update for dynamic content that is added/removed from the page.
 - Configurable coloring
 
 ## Versioning
@@ -280,6 +281,5 @@ npm install . --workspace=../browser-extension
 #### Publish to npmjs
 
 ```sh
-npm login
 npm publish tapestry-highlights-x.y.z.tgz
 ```
