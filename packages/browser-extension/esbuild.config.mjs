@@ -3,12 +3,20 @@ import { copy } from "esbuild-plugin-copy";
 import { sassPlugin } from "esbuild-sass-plugin";
 import flow from "esbuild-plugin-flow";
 import { clean } from "esbuild-plugin-clean";
+import Handlebars from "handlebars";
+import fs from "fs/promises";
+import path from "path";
 
 const watch = process.argv.includes("--watch");
 const prod = process.env.NODE_ENV === "production";
 
 const options = {
-  entryPoints: ["src/main.tsx", "src/background.ts", "src/content.ts"],
+  entryPoints: [
+    "src/main.tsx",
+    "src/background.ts",
+    "src/content.ts",
+    "./public/manifest.json.hbs",
+  ],
   bundle: true,
   minify: true,
   // React error messages are much more helpful when the Component names are not minimized
@@ -60,12 +68,6 @@ const options = {
     copy({
       assets: [
         {
-          from: [
-            prod ? "./public/manifest.json" : "./public/manifest.dev.json",
-          ],
-          to: ["manifest.json"],
-        },
-        {
           from: ["./public/sidebar.html"],
           to: ["."],
         },
@@ -83,6 +85,57 @@ const options = {
         "/node_modules/react-native/|/node_modules/react-native-vector-icons/.*.js$",
       ),
     ),
+    {
+      name: "manifest Handlebars",
+      setup(build) {
+        const manifestTemplatePath = "./public/manifest.json.hbs";
+
+        const generateManifest = async () => {
+          try {
+            const manifestTemplate = await fs.readFile(
+              manifestTemplatePath,
+              "utf-8",
+            );
+            const template = Handlebars.compile(manifestTemplate);
+
+            const { version } = JSON.parse(
+              await fs.readFile("./package.json", "utf-8"),
+            );
+            const manifestContent = template({
+              version,
+              prod,
+            });
+
+            const outDir = build.initialOptions.outdir;
+            await fs.mkdir(outDir, { recursive: true });
+            await fs.writeFile(
+              path.join(outDir, "manifest.json"),
+              manifestContent,
+            );
+
+            console.log("Manifest file generated successfully");
+          } catch (error) {
+            console.error("Error generating manifest:", error);
+          }
+        };
+
+        // Add the manifest template as a build input
+        build.onLoad({ filter: /manifest\.json\.hbs$/ }, async (args) => {
+          await generateManifest();
+          return { contents: "", loader: "empty" };
+        });
+
+        // Ensure the manifest is generated on the first build
+        build.onStart(() => {
+          build.onResolve({ filter: /manifest\.json\.hbs$/ }, (args) => {
+            return {
+              path: manifestTemplatePath,
+              namespace: "manifest-template",
+            };
+          });
+        });
+      },
+    },
   ],
 };
 
