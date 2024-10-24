@@ -15,7 +15,7 @@ const options = {
     "src/main.tsx",
     "src/background.ts",
     "src/content.ts",
-    "./public/manifest.json.hbs",
+    "public/manifest.json.hbs",
   ],
   bundle: true,
   minify: true,
