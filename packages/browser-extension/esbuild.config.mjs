@@ -1,22 +1,19 @@
+import chokidar from "chokidar";
 import { build, context } from "esbuild";
-import { copy } from "esbuild-plugin-copy";
-import { sassPlugin } from "esbuild-sass-plugin";
-import flow from "esbuild-plugin-flow";
 import { clean } from "esbuild-plugin-clean";
-import Handlebars from "handlebars";
+import { copy } from "esbuild-plugin-copy";
+import flow from "esbuild-plugin-flow";
+import { sassPlugin } from "esbuild-sass-plugin";
 import fs from "fs/promises";
+import Handlebars from "handlebars";
 import path from "path";
 
 const watch = process.argv.includes("--watch");
 const prod = process.env.NODE_ENV === "production";
+const outdir = prod ? "./dist/prod" : "./dist/dev";
 
 const options = {
-  entryPoints: [
-    "src/main.tsx",
-    "src/background.ts",
-    "src/content.ts",
-    "public/manifest.json.hbs",
-  ],
+  entryPoints: ["src/main.tsx", "src/background.ts", "src/content.ts"],
   bundle: true,
   minify: true,
   // React error messages are much more helpful when the Component names are not minimized
@@ -30,7 +27,7 @@ const options = {
   },
   sourcemap: prod ? false : "inline",
   target: ["chrome58", "firefox57"],
-  outdir: prod ? "dist/prod" : "dist/dev",
+  outdir,
   resolveExtensions: [
     ".web.tsx",
     ".tsx",
@@ -63,7 +60,7 @@ const options = {
       },
     },
     clean({
-      patterns: prod ? ["./dist/prod/*"] : ["./dist/dev/*"],
+      patterns: `${outdir}/*`,
     }),
     copy({
       assets: [
@@ -90,7 +87,7 @@ const options = {
       setup(build) {
         const manifestTemplatePath = "./public/manifest.json.hbs";
 
-        const generateManifest = async () => {
+        async function generateManifest() {
           try {
             const manifestTemplate = await fs.readFile(
               manifestTemplatePath,
@@ -107,7 +104,6 @@ const options = {
             });
 
             const outDir = build.initialOptions.outdir;
-            await fs.mkdir(outDir, { recursive: true });
             await fs.writeFile(
               path.join(outDir, "manifest.json"),
               manifestContent,
@@ -117,22 +113,22 @@ const options = {
           } catch (error) {
             console.error("Error generating manifest:", error);
           }
-        };
+        }
 
-        // Add the manifest template as a build input
-        build.onLoad({ filter: /manifest\.json\.hbs$/ }, async (args) => {
-          await generateManifest();
-          return { contents: "", loader: "empty" };
-        });
-
-        // Ensure the manifest is generated on the first build
-        build.onStart(() => {
-          build.onResolve({ filter: /manifest\.json\.hbs$/ }, (args) => {
-            return {
-              path: manifestTemplatePath,
-              namespace: "manifest-template",
-            };
+        if (watch) {
+          const watcher = chokidar.watch(manifestTemplatePath, {
+            persistent: true,
           });
+
+          watcher.on("change", async () => {
+            console.log("Manifest template changed, regenerating...");
+            await generateManifest();
+          });
+        }
+
+        build.onEnd(async (result) => {
+          if (result.errors.length > 0) return;
+          await generateManifest();
         });
       },
     },
