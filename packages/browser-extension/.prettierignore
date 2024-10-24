@@ -1,0 +1,6 @@
+/dist/
+
+# Neither JSON nor Handlebars formats can handle this file.
+# The Handlebars directives violate JSON, and the `<all_urls>`
+# that look like unclosed HTML tags violate Handlebars.
+public/manifest.json.hbs
