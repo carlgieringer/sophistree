@@ -1,8 +1,8 @@
 import { v4 as uuidv4 } from "uuid";
 import { DomAnchorHighlightManager, DomAnchor } from "tapestry-highlights";
 import "tapestry-highlights/rotation-colors.css";
-import "./highlights/outcome-colors.scss";
 
+import "./highlights/outcome-colors.scss";
 import { AddMediaExcerptData, MediaExcerpt } from "./store/entitiesSlice";
 import type {
   ContentMessage,
@@ -263,6 +263,33 @@ const highlightManager = new DomAnchorHighlightManager<HighlightData>({
     getHighlightClass(mediaExcerptId),
   ],
 });
+
+// const highlightManager = makeHighlightManager();
+
+// function makeHighlightManager() {
+//   const pdfIframe = document.querySelector("iframe");
+//   if (pdfIframe && pdfIframe.contentDocument) {
+//     const pdfViewerElement =
+//       pdfIframe.contentDocument.querySelector("#pdf-viewer");
+//     if (pdfViewerElement) {
+//       return new PDFHighlightManager<HighlightData>({
+//         container: pdfViewerElement,
+//         logger: contentLogger,
+//         getHighlightClassNames: ({ mediaExcerptId }) => [
+//           getHighlightClass(mediaExcerptId),
+//         ],
+//       });
+//     }
+//   } else {
+//     return new DomAnchorHighlightManager<HighlightData>({
+//       container: document.body,
+//       logger: contentLogger,
+//       getHighlightClassNames: ({ mediaExcerptId }) => [
+//         getHighlightClass(mediaExcerptId),
+//       ],
+//     });
+//   }
+// }
 
 function updateMediaExcerptOutcomes(
   updatedOutcomes: Map<string, BasisOutcome | undefined>,

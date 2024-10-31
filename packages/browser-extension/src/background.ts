@@ -120,3 +120,18 @@ async function handleContextMenuClick(
     );
   }
 }
+
+chrome.webNavigation.onCommitted.addListener(wrapCallback(handleNavigation));
+
+async function handleNavigation(
+  details: chrome.webNavigation.WebNavigationFramedCallbackDetails,
+) {
+  if (details.frameId !== 0) return; // Only handle main frame navigation
+
+  const url = new URL(details.url);
+  if (url.pathname.toLowerCase().endsWith(".pdf")) {
+    const viewerUrl = chrome.runtime.getURL("pdf-viewer.html");
+    const redirectUrl = `${viewerUrl}?file=${encodeURIComponent(details.url)}`;
+    await chrome.tabs.update(details.tabId, { url: redirectUrl });
+  }
+}

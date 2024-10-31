@@ -38,6 +38,7 @@
     "esbuild-plugin-flow": "github:dalcib/esbuild-plugin-flow",
     "immer": "^10.1.1",
     "lodash.debounce": "^4.0.8",
+    "pdfjs-dist": "^4.7.76",
     "react": "^18.3.1",
     "react-art": "^18.3.1",
     "react-cytoscapejs": "^2.0.0",

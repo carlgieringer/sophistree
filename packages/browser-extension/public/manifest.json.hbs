@@ -8,7 +8,8 @@
     "management",{{/unless}}
     "scripting",
     "sidePanel",
-    "storage"
+    "storage",
+    "webNavigation"
   ],
   "action": {
     "default_title": "Sophistree{{#unless prod}} (Dev){{/unless}}"
@@ -20,10 +21,17 @@
     {
       "matches": ["<all_urls>"],
       "js": ["content.js"],
-      "css": ["content.css"]
+      "css": ["content.css"],
+      "run_at": "document_idle"
     }
   ],
   "host_permissions": ["<all_urls>"],
+  "web_accessible_resources": [
+    {
+      "resources": ["pdf-viewer.html", "pdfjs/*", "pdfViewer.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "side_panel": {
     "default_path": "sidebar.html"
   },
