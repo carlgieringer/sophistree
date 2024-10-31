@@ -91,18 +91,46 @@ function installContextMenus() {
   });
 }
 
+chrome.tabs.onActivated.addListener(function (info) {
+  chrome.tabs.get(info.tabId, function (tab) {
+    if (tab.url?.endsWith(".pdf")) {
+      console.log("adding context menu");
+      chrome.contextMenus.create({
+        id: `addToSophistreePdf-${tab.id}`,
+        title: "Just for PDF Documents",
+        contexts: ["selection"],
+      });
+    } else {
+      console.log("removing context menu");
+      chrome.contextMenus.remove(`addToSophistreePdf-${tab.id}`);
+    }
+  });
+});
+
 async function handleContextMenuClick(
   info: chrome.contextMenus.OnClickData,
   tab?: chrome.tabs.Tab,
 ) {
-  if (info.menuItemId !== addToSophistreeContextMenuId) {
+  if (
+    info.menuItemId !== addToSophistreeContextMenuId &&
+    !info.menuItemId.toString().startsWith("addToSophistreePdf-")
+  ) {
     return;
   }
   if (!info.selectionText) {
     appLogger.info(`info.selectionText was missing`);
     return;
   }
-  if (!tab?.id) {
+  let tabId = tab?.id;
+  if (
+    (!tabId || tabId < 0) &&
+    info.menuItemId.toString().startsWith("addToSophistreePdf-")
+  ) {
+    tabId = parseInt(
+      info.menuItemId.toString().substring("addToSophistreePdf-".length),
+    );
+  }
+  if (!tabId) {
     appLogger.info(`tab.id was missing`);
     return;
   }
@@ -112,10 +140,10 @@ async function handleContextMenuClick(
     selectedText: info.selectionText,
   };
   try {
-    await chrome.tabs.sendMessage(tab.id, message);
+    await chrome.tabs.sendMessage(tabId, message);
   } catch (error) {
     appLogger.error(
-      `Failed to sendMessage createMediaExcerpt to tab ID ${tab.id} URL ${tab.url}. Is the content script loaded?`,
+      `Failed to sendMessage createMediaExcerpt to tab ID ${tabId} URL ${tab?.url}. Is the content script loaded?`,
       error,
     );
   }

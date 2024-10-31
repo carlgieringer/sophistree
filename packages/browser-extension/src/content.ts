@@ -89,9 +89,31 @@ function highlightNewMediaExcerptIfOnPage(data: AddMediaExcerptData) {
   createHighlight(data.id, data.domAnchor);
 }
 
+function handlePdf() {
+  window.addEventListener("message", function onMessage(e) {
+    if (e.data["source"] === "react-devtools-content-script") return;
+    console.log({ e });
+  });
+  const script = document.createElement("script");
+  // https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/resources/pdf/pdf_scripting_api.ts
+  if (chrome.runtime.getManifest().manifest_version > 2) {
+    script.src = chrome.runtime.getURL("query-pdf.js");
+  } else {
+    script.textContent = `(() => {
+      document.querySelector('embed').postMessage({type: 'getSelectedText'}, '*');
+    })()`;
+  }
+  document.body.appendChild(script);
+  script.remove();
+}
+
 async function createMediaExcerptFromCurrentSelection(
   message: CreateMediaExcerptMessage,
 ) {
+  if (window.location.href.endsWith(".pdf")) {
+    handlePdf();
+    return;
+  }
   const highlight = await createMediaExcerptAndHighlight(message);
   // If the highlight failed to be created in the extension for whatever reason,
   // remove it here.

@@ -72,6 +72,10 @@ const options = {
           from: ["./public/logo*.png"],
           to: ["."],
         },
+        {
+          from: ["./public/query-pdf.js"],
+          to: ["."],
+        },
       ],
       verbose: true,
       watch,
