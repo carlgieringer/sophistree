@@ -130,7 +130,7 @@ async function handleNavigation(
 
   const url = new URL(details.url);
   if (url.pathname.toLowerCase().endsWith(".pdf")) {
-    const viewerUrl = chrome.runtime.getURL("pdf-viewer.html");
+    const viewerUrl = chrome.runtime.getURL("pdfjs/web/viewer.html");
     const redirectUrl = `${viewerUrl}?file=${encodeURIComponent(details.url)}`;
     await chrome.tabs.update(details.tabId, { url: redirectUrl });
   }

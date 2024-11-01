@@ -13,12 +13,7 @@ const prod = process.env.NODE_ENV === "production";
 const outdir = prod ? "./dist/prod" : "./dist/dev";
 
 const options = {
-  entryPoints: [
-    "src/main.tsx",
-    "src/background.ts",
-    "src/content.ts",
-    "src/pdfViewer.ts",
-  ],
+  entryPoints: ["src/main.tsx", "src/background.ts", "src/content.ts"],
   bundle: true,
   minify: true,
   // React error messages are much more helpful when the Component names are not minimized
@@ -51,8 +46,6 @@ const options = {
     ".js": "jsx",
     ".ttf": "file",
     ".png": "file",
-    ".gif": "file",
-    ".svg": "file",
   },
   assetNames: "assets/[name]-[hash]",
   define: {
@@ -81,11 +74,7 @@ const options = {
           to: ["."],
         },
         {
-          from: ["./public/pdf-viewer.html"],
-          to: ["."],
-        },
-        {
-          from: ["../../node_modules/pdfjs-dist/**"],
+          from: ["./public/pdfjs-dist/**"],
           to: ["pdfjs"],
         },
       ],
