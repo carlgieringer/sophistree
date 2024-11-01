@@ -92,7 +92,7 @@ declare module "pdfjs-dist/web/pdf_viewer" {
     findController?: PDFFindController;
     enableWebGL?: boolean;
     textLayerMode?: 0 | 1 | 2;
-    renderer?: 'canvas';
+    renderer?: "canvas";
   }
 
   export class DownloadManager {

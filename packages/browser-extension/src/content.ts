@@ -264,33 +264,6 @@ const highlightManager = new DomAnchorHighlightManager<HighlightData>({
   ],
 });
 
-// const highlightManager = makeHighlightManager();
-
-// function makeHighlightManager() {
-//   const pdfIframe = document.querySelector("iframe");
-//   if (pdfIframe && pdfIframe.contentDocument) {
-//     const pdfViewerElement =
-//       pdfIframe.contentDocument.querySelector("#pdf-viewer");
-//     if (pdfViewerElement) {
-//       return new PDFHighlightManager<HighlightData>({
-//         container: pdfViewerElement,
-//         logger: contentLogger,
-//         getHighlightClassNames: ({ mediaExcerptId }) => [
-//           getHighlightClass(mediaExcerptId),
-//         ],
-//       });
-//     }
-//   } else {
-//     return new DomAnchorHighlightManager<HighlightData>({
-//       container: document.body,
-//       logger: contentLogger,
-//       getHighlightClassNames: ({ mediaExcerptId }) => [
-//         getHighlightClass(mediaExcerptId),
-//       ],
-//     });
-//   }
-// }
-
 function updateMediaExcerptOutcomes(
   updatedOutcomes: Map<string, BasisOutcome | undefined>,
 ) {
