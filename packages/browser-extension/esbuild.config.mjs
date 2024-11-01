@@ -79,7 +79,6 @@ const options = {
         },
       ],
       verbose: true,
-      // For some reason watch isn't working.
       watch,
     }),
     sassPlugin(),

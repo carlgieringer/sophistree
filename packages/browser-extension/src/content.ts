@@ -254,15 +254,43 @@ interface HighlightData {
   mediaExcerptId: string;
 }
 
-const highlightManager = new DomAnchorHighlightManager<HighlightData>({
-  container: document.body,
-  logger: contentLogger,
-  isEquivalentHighlight: ({ data: data1 }, { data: data2 }) =>
-    data1.mediaExcerptId === data2.mediaExcerptId,
-  getHighlightClassNames: ({ mediaExcerptId }) => [
-    getHighlightClass(mediaExcerptId),
-  ],
-});
+declare global {
+  interface Window {
+    PDFViewerApplication: {
+      initializedPromise: Promise<void>;
+    };
+  }
+}
+
+let highlightManager: DomAnchorHighlightManager<HighlightData>;
+if (getUrl().endsWith(".pdf")) {
+  document.addEventListener("webviewerloaded", function () {
+    window.PDFViewerApplication.initializedPromise
+      .then(function () {
+        highlightManager = makeManager();
+      })
+      .catch((reason) => {
+        contentLogger.error(
+          "Failed to initialize highlight manager in PDF",
+          reason,
+        );
+      });
+  });
+} else {
+  highlightManager = makeManager();
+}
+
+function makeManager() {
+  return new DomAnchorHighlightManager<HighlightData>({
+    container: document.body,
+    logger: contentLogger,
+    isEquivalentHighlight: ({ data: data1 }, { data: data2 }) =>
+      data1.mediaExcerptId === data2.mediaExcerptId,
+    getHighlightClassNames: ({ mediaExcerptId }) => [
+      getHighlightClass(mediaExcerptId),
+    ],
+  });
+}
 
 function updateMediaExcerptOutcomes(
   updatedOutcomes: Map<string, BasisOutcome | undefined>,

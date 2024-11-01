@@ -30,6 +30,12 @@
     {
       "resources": ["pdfjs/*"],
       "matches": ["<all_urls>"]
+    },
+    {
+      {{!-- TODO make accessible just from our extension since just the PDF viewer page needs to
+      access these. ~--}}
+      "resources": ["content.js", "content.css"],
+      "matches": ["<all_urls>"]
     }
   ],
   "side_panel": {
