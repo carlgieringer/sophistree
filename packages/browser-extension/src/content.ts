@@ -3,7 +3,6 @@ import {
   DomAnchorHighlightManager,
   DomAnchor,
   AsyncDomAnchorHighlightManager,
-  HighlightManagerEventListenerOptions,
 } from "tapestry-highlights";
 import "tapestry-highlights/rotation-colors.css";
 
@@ -321,21 +320,6 @@ const highlightManager = new AsyncDomAnchorHighlightManager(
   makeHighlightManagerPromise(),
 );
 
-function makeHighlighlightManager(
-  eventListeners?: HighlightManagerEventListenerOptions,
-): DomAnchorHighlightManager<HighlightData> {
-  return new DomAnchorHighlightManager<HighlightData>({
-    container: document.body,
-    logger: contentLogger,
-    isEquivalentHighlight: ({ data: data1 }, { data: data2 }) =>
-      data1.mediaExcerptId === data2.mediaExcerptId,
-    getHighlightClassNames: ({ mediaExcerptId }) => [
-      getHighlightClass(mediaExcerptId),
-    ],
-    eventListeners,
-  });
-}
-
 function makeHighlightManagerPromise(): Promise<
   DomAnchorHighlightManager<HighlightData>
 > {
@@ -344,9 +328,7 @@ function makeHighlightManagerPromise(): Promise<
       document.addEventListener("webviewerloaded", function () {
         window.PDFViewerApplication.initializedPromise
           .then(() => {
-            const highlightManager = makeHighlighlightManager({
-              scroll: { updateHighlights: true },
-            });
+            const highlightManager = makeHighlighlightManager();
             resolve(highlightManager);
             window.PDFViewerApplication.eventBus.on("updateviewarea", () => {
               highlightManager.updateAllHighlightElements();
@@ -367,6 +349,18 @@ function makeHighlightManagerPromise(): Promise<
       ),
     );
   }
+}
+
+function makeHighlighlightManager(): DomAnchorHighlightManager<HighlightData> {
+  return new DomAnchorHighlightManager<HighlightData>({
+    container: document.body,
+    logger: contentLogger,
+    isEquivalentHighlight: ({ data: data1 }, { data: data2 }) =>
+      data1.mediaExcerptId === data2.mediaExcerptId,
+    getHighlightClassNames: ({ mediaExcerptId }) => [
+      getHighlightClass(mediaExcerptId),
+    ],
+  });
 }
 
 async function updateMediaExcerptOutcomes(
