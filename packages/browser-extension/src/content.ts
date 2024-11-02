@@ -1,9 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import {
-  DomAnchorHighlightManager,
-  DomAnchor,
-  AsyncDomAnchorHighlightManager,
-} from "tapestry-highlights";
+import { DomAnchorHighlightManager, DomAnchor } from "tapestry-highlights";
 import "tapestry-highlights/rotation-colors.css";
 
 import "./highlights/outcome-colors.scss";
@@ -19,6 +15,7 @@ import { deserializeMap } from "./extension/serialization";
 import { connectionErrorMessage } from "./extension/errorMessages";
 import * as contentLogger from "./logging/contentLogging";
 import { getPdfUrlFromViewerUrl, isPdfViewerUrl } from "./pdfs/pdfs";
+import debounce from "lodash.debounce";
 
 chrome.runtime.onConnect.addListener(getMediaExcerptsWhenSidebarConnects);
 chrome.runtime.onMessage.addListener(
@@ -60,14 +57,14 @@ async function handleMessage(
       break;
     }
     case "focusMediaExcerpt":
-      await focusMediaExcerpt(message.mediaExcerptId);
+      focusMediaExcerpt(message.mediaExcerptId);
       break;
     case "requestUrl":
       sendResponse(getCanonicalOrFullUrl());
       return;
     case "updateMediaExcerptOutcomes": {
       const updatedOutcomes = deserializeMap(message.serializedUpdatedOutcomes);
-      await updateMediaExcerptOutcomes(updatedOutcomes);
+      updateMediaExcerptOutcomes(updatedOutcomes);
       break;
     }
     case "refreshMediaExcerpts": {
@@ -75,11 +72,11 @@ async function handleMessage(
       break;
     }
     case "notifyTabOfNewMediaExcerpt": {
-      await highlightNewMediaExcerptIfOnPage(message.data);
+      highlightNewMediaExcerptIfOnPage(message.data);
       break;
     }
     case "notifyTabsOfDeletedMediaExcerpts": {
-      await highlightManager.removeHighlights(
+      highlightManager.removeHighlights(
         ({ mediaExcerptId }) => mediaExcerptId === message.mediaExcerptId,
       );
     }
@@ -87,11 +84,11 @@ async function handleMessage(
 }
 
 async function refreshMediaExcerpts() {
-  await highlightManager.removeAllHighlights();
+  highlightManager.removeAllHighlights();
   await getMediaExcerpts();
 }
 
-async function highlightNewMediaExcerptIfOnPage(data: AddMediaExcerptData) {
+function highlightNewMediaExcerptIfOnPage(data: AddMediaExcerptData) {
   const canonicalUrl = getCanonicalUrl();
   if (canonicalUrl) {
     if (canonicalUrl !== data.canonicalUrl) {
@@ -104,7 +101,7 @@ async function highlightNewMediaExcerptIfOnPage(data: AddMediaExcerptData) {
     }
   }
 
-  await createHighlight(data.id, data.domAnchor);
+  createHighlight(data.id, data.domAnchor);
 }
 
 async function createMediaExcerptFromCurrentSelection(
@@ -114,7 +111,7 @@ async function createMediaExcerptFromCurrentSelection(
   // If the highlight failed to be created in the extension for whatever reason,
   // remove it here.
   if (highlight && !(await getMediaExcerpt(highlight.data.mediaExcerptId))) {
-    await highlightManager.removeHighlight(highlight);
+    highlightManager.removeHighlight(highlight);
   }
 }
 
@@ -132,8 +129,8 @@ async function getMediaExcerpt(mediaExcerptId: string) {
   }
 }
 
-async function focusMediaExcerpt(mediaExcerptId: string) {
-  await highlightManager.focusHighlight(
+function focusMediaExcerpt(mediaExcerptId: string) {
+  highlightManager.focusHighlight(
     (data) => data.mediaExcerptId === mediaExcerptId,
   );
 }
@@ -152,7 +149,7 @@ async function createMediaExcerptAndHighlight(
     return;
   }
 
-  const highlight = await highlightManager.createHighlightFromCurrentSelection(
+  const highlight = highlightManager.createHighlightFromCurrentSelection(
     {
       mediaExcerptId,
     },
@@ -174,7 +171,7 @@ async function createMediaExcerptAndHighlight(
     };
     const success = await createMediaExcerpt(data);
     if (!success) {
-      await highlightManager.removeHighlight(highlight);
+      highlightManager.removeHighlight(highlight);
       return undefined;
     }
   } else {
@@ -316,39 +313,37 @@ declare global {
   }
 }
 
-const highlightManager = new AsyncDomAnchorHighlightManager(
-  makeHighlightManagerPromise(),
-);
+const highlightManager = makeHighlighlightManager();
 
-function makeHighlightManagerPromise(): Promise<
-  DomAnchorHighlightManager<HighlightData>
-> {
-  if (isCurrentPageThePdfViewer()) {
-    return new Promise((resolve) => {
-      document.addEventListener("webviewerloaded", function () {
-        window.PDFViewerApplication.initializedPromise
-          .then(() => {
-            const highlightManager = makeHighlighlightManager();
-            resolve(highlightManager);
-            window.PDFViewerApplication.eventBus.on("updateviewarea", () => {
-              highlightManager.updateAllHighlightElements();
-            });
-          })
-          .catch((reason) => {
-            contentLogger.error(
-              "Failed to initialize highlight manager in PDF",
-              reason,
-            );
-          });
+if (isCurrentPageThePdfViewer()) {
+  updateHighlightsForPdfView();
+}
+
+function updateHighlightsForPdfView() {
+  document.addEventListener("webviewerloaded", function () {
+    window.PDFViewerApplication.initializedPromise
+      .then(() => {
+        // I think PDF.js captures scrolling and manually shifts its absolutely positioned text layer.
+        // So update our highlights too.
+        const updateHighlights = debounce(() => {
+          console.log("updateviewarea");
+          highlightManager.updateAllHighlightElements();
+        }, 50);
+        window.PDFViewerApplication.eventBus.on(
+          "updateviewarea",
+          updateHighlights,
+        );
+        window.PDFViewerApplication.eventBus.on("updateviewarea", () => {
+          highlightManager.updateAllHighlightElements();
+        });
+      })
+      .catch((reason) => {
+        contentLogger.error(
+          "Failed to initialize highlight manager in PDF",
+          reason,
+        );
       });
-    });
-  } else {
-    return new Promise((resolve) =>
-      document.addEventListener("DOMContentLoaded", () =>
-        resolve(makeHighlighlightManager()),
-      ),
-    );
-  }
+  });
 }
 
 function makeHighlighlightManager(): DomAnchorHighlightManager<HighlightData> {
@@ -363,7 +358,7 @@ function makeHighlighlightManager(): DomAnchorHighlightManager<HighlightData> {
   });
 }
 
-async function updateMediaExcerptOutcomes(
+function updateMediaExcerptOutcomes(
   updatedOutcomes: Map<string, BasisOutcome | undefined>,
 ) {
   updatedOutcomes.forEach((outcome, mediaExcerptId) => {
@@ -373,7 +368,7 @@ async function updateMediaExcerptOutcomes(
       mediaExcerptOutcomes.delete(mediaExcerptId);
     }
   });
-  await highlightManager.updateHighlightsClassNames(({ mediaExcerptId }) =>
+  highlightManager.updateHighlightsClassNames(({ mediaExcerptId }) =>
     updatedOutcomes.has(mediaExcerptId),
   );
 }
