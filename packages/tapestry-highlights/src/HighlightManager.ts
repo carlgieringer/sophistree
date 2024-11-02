@@ -612,7 +612,8 @@ class HighlightManager<Anchor, Data> {
     for (let i = 1; i < sortedRects.length; i++) {
       const nextRect = sortedRects[i]!;
 
-      // Check if nextRect is entirely encompassed by currentRect
+      // Check if nextRect is entirely encompassed by currentRect. This occurs
+      // in some PDFs.
       if (
         nextRect.left >= currentRect.left &&
         nextRect.right <= currentRect.right &&

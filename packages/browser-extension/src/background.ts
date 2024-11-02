@@ -127,7 +127,8 @@ chrome.webNavigation.onCommitted.addListener(wrapCallback(handleNavigation));
 async function handleNavigation(
   details: chrome.webNavigation.WebNavigationFramedCallbackDetails,
 ) {
-  if (details.frameId !== 0) return; // Only handle main frame navigation
+  // Only handle main frame navigation
+  if (details.frameId !== 0) return;
 
   if (isPdfUrl(details.url)) {
     const redirectUrl = makePdfViewerUrl(details.url);

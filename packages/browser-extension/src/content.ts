@@ -288,38 +288,24 @@ async function getMediaExcerpts() {
   }
   const { mediaExcerpts, serializedOutcomes } = response;
   mediaExcerptOutcomes = deserializeMap(serializedOutcomes);
-  await highlightMediaExcerpts(mediaExcerpts);
+  highlightMediaExcerpts(mediaExcerpts);
 }
 
-async function highlightMediaExcerpts(mediaExcerpts: MediaExcerpt[]) {
-  await Promise.all(
-    mediaExcerpts.map(({ id, domAnchor }) => createHighlight(id, domAnchor)),
-  );
+function highlightMediaExcerpts(mediaExcerpts: MediaExcerpt[]) {
+  mediaExcerpts.forEach(({ id, domAnchor }) => createHighlight(id, domAnchor));
 }
 
 interface HighlightData {
   mediaExcerptId: string;
 }
 
-declare global {
-  interface Window {
-    PDFViewerApplication: {
-      initializedPromise: Promise<void>;
-      metadata: Map<string, string>;
-      eventBus: {
-        on(event: string, callback: () => void): void;
-      };
-    };
-  }
-}
-
 const highlightManager = makeHighlighlightManager();
 
 if (isCurrentPageThePdfViewer()) {
-  updateHighlightsForPdfView();
+  updateHighlightsWhenPdfViewUpdates();
 }
 
-function updateHighlightsForPdfView() {
+function updateHighlightsWhenPdfViewUpdates() {
   document.addEventListener("webviewerloaded", function () {
     window.PDFViewerApplication.initializedPromise
       .then(() => {
@@ -434,3 +420,15 @@ export type ChromeRuntimeMessage =
   | SelectMediaExcerptMessage
   | GetMediaExcerptMessage
   | GetMediaExcerptsMessage;
+
+declare global {
+  interface Window {
+    PDFViewerApplication: {
+      initializedPromise: Promise<void>;
+      metadata: Map<string, string>;
+      eventBus: {
+        on(event: string, callback: () => void): void;
+      };
+    };
+  }
+}

@@ -26,18 +26,6 @@
     }
   ],
   "host_permissions": ["<all_urls>"],
-  "web_accessible_resources": [
-    {
-      "resources": ["pdfjs/*"],
-      "matches": ["<all_urls>"]
-    },
-    {
-      {{!-- TODO make accessible just from our extension since just the PDF viewer page needs to
-      access these. ~--}}
-      "resources": ["content.js", "content.css"],
-      "matches": ["<all_urls>"]
-    }
-  ],
   "side_panel": {
     "default_path": "sidebar.html"
   },
