@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import deepEqual from "deep-equal";
 
 import type { Logger } from "./logger.js";
+import { mergeCopy } from "./mergeCopy.js";
 
 export type HighlightManagerOptions<Anchor, Data> = {
   /** The container to which the manager will add highlight elements. */
@@ -26,6 +27,7 @@ export type HighlightManagerOptions<Anchor, Data> = {
   focusClass?: string;
   /** The logger to use. If omitted, window.console is used. */
   logger?: Logger;
+  eventListeners?: HighlightManagerEventListenerOptions;
 };
 type GetRangesFromAnchorFunction<Anchor> = (anchor: Anchor) => Range[];
 type IsEquivalentHighlightFunction<Anchor, Data> = (
@@ -40,6 +42,12 @@ type GetHighlightClassNamesFunction<Data> = (
   highlightData: Data,
   index: number,
 ) => string[];
+export type HighlightManagerEventListenerOptions = {
+  resize?: {
+    // Whether to update highlights upon resize
+    updateHighlights: boolean;
+  };
+};
 
 /** A class that manages a collection of highlights on a page. */
 class HighlightManager<Anchor, Data> {
@@ -54,6 +62,10 @@ class HighlightManager<Anchor, Data> {
   }> = [];
 
   constructor(options: HighlightManagerOptions<Anchor, Data>) {
+    if (!options.container) {
+      throw new Error(`container is required.`);
+    }
+
     this.highlightManagerId = uuidv4();
     this.options = {
       container: options.container,
@@ -66,6 +78,10 @@ class HighlightManager<Anchor, Data> {
       highlightClass: options.highlightClass ?? defaultOptions.highlightClass,
       hoverClass: options.hoverClass ?? defaultOptions.hoverClass,
       focusClass: options.focusClass ?? defaultOptions.focusClass,
+      eventListeners: mergeCopy(
+        defaultOptions.eventListeners,
+        options.eventListeners,
+      ),
     };
 
     this.addEventListeners();
@@ -292,10 +308,12 @@ class HighlightManager<Anchor, Data> {
       "click",
       this.handleClick.bind(this),
     );
-    window.addEventListener(
-      "resize",
-      debounce(this.handleResize.bind(this), 300),
-    );
+    if (this.options.eventListeners?.resize?.updateHighlights) {
+      this.window().addEventListener(
+        "resize",
+        debounce(this.handleResize.bind(this), 300),
+      );
+    }
   }
 
   private createMutationObserver() {
@@ -502,7 +520,7 @@ class HighlightManager<Anchor, Data> {
     this.updateStyles();
   }
 
-  private updateAllHighlightElements() {
+  updateAllHighlightElements() {
     const newElements = this.highlights.flatMap((highlight) =>
       this.updateHighlightElements(highlight),
     );
@@ -530,7 +548,7 @@ class HighlightManager<Anchor, Data> {
 
     highlight.ranges.forEach((range) => {
       const rangeRects = Array.from(range.getClientRects());
-      const combinedRects = this.combineAdjacentRects(rangeRects);
+      const combinedRects = this.combineRects(rangeRects);
 
       combinedRects.forEach((rect) => {
         let element = highlight.elements[elementIndex];
@@ -593,7 +611,8 @@ class HighlightManager<Anchor, Data> {
     return element;
   }
 
-  private combineAdjacentRects(rects: DOMRect[]): DOMRect[] {
+  /** Combines adjacent rects into one and drops rects completely encompassed by other rects. */
+  private combineRects(rects: DOMRect[]): DOMRect[] {
     if (rects.length === 0) return [];
 
     // Sort rects by top, then left
@@ -606,6 +625,18 @@ class HighlightManager<Anchor, Data> {
 
     for (let i = 1; i < sortedRects.length; i++) {
       const nextRect = sortedRects[i]!;
+
+      // Check if nextRect is entirely encompassed by currentRect. This occurs
+      // in some PDFs.
+      if (
+        nextRect.left >= currentRect.left &&
+        nextRect.right <= currentRect.right &&
+        nextRect.top >= currentRect.top &&
+        nextRect.bottom <= currentRect.bottom
+      ) {
+        // Skip this rect as it's entirely encompassed
+        continue;
+      }
 
       // If the rects have the same top and height and are adjacent or overlapping
       if (
@@ -723,6 +754,7 @@ type MergedHighlightManagerOptions<Anchor, Data> = {
   hoverClass: string;
   focusClass: string;
   logger: Logger;
+  eventListeners?: HighlightManagerEventListenerOptions;
 };
 
 export const classNameIndexPlaceholder = "{index}";
@@ -744,6 +776,11 @@ const defaultOptions = {
   highlightClass: "highlight",
   hoverClass: "highlight-hover",
   focusClass: "highlight-focus",
+  eventListeners: {
+    resize: {
+      updateHighlights: true,
+    },
+  },
 };
 
 type HighlightSelector<Data> = (highlightData: Data) => boolean;

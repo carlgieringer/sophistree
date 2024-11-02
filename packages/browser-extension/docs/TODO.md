@@ -1,6 +1,6 @@
 # TODO
 
--- Test with more examples
+- Test with more examples
 
 - Include conclusion outcomes in map card (and include aggregate of all outcomes ("50% false"))
 - Add 'sources excerpted for evidence' in map card

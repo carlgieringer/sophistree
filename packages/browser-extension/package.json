@@ -21,6 +21,7 @@
     "test-watch": "jest --watch",
     "test-debug": "node --inspect-brk ../../node_modules/jest/bin/jest.js --runInBand --watch",
     "type-check": "tsc --noEmit",
+    "update-pdfjs": "bin/update-pdfjs.sh",
     "watch-all": "npm run build-dev-watch",
     "zip-extension": "node bin/zip-extension.js"
   },

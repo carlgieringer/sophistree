@@ -7,10 +7,12 @@ import { sassPlugin } from "esbuild-sass-plugin";
 import fs from "fs/promises";
 import Handlebars from "handlebars";
 import path from "path";
+import glob from "glob";
 
 const watch = process.argv.includes("--watch");
 const prod = process.env.NODE_ENV === "production";
 const outdir = prod ? "./dist/prod" : "./dist/dev";
+const pdfjsSubdir = "pdfjs";
 
 const options = {
   entryPoints: ["src/main.tsx", "src/background.ts", "src/content.ts"],
@@ -37,6 +39,7 @@ const options = {
     ".jsx",
     ".web.js",
     ".js",
+    ".mjs",
     ".css",
     ".json",
   ],
@@ -72,10 +75,32 @@ const options = {
           from: ["./public/logo*.png"],
           to: ["."],
         },
+        {
+          from: ["./public/pdfjs-dist/**"],
+          to: [pdfjsSubdir],
+        },
       ],
       verbose: true,
       watch,
     }),
+    {
+      name: "Delete PDF.js source maps (prod)",
+      setup(build) {
+        if (!prod) {
+          return;
+        }
+        build.onEnd(async (result) => {
+          if (result.errors.length > 0) return;
+
+          const sourceMaps = glob.sync(
+            path.join(outdir, pdfjsSubdir, "**/*.map"),
+          );
+          for (const map of sourceMaps) {
+            await fs.unlink(map);
+          }
+        });
+      },
+    },
     sassPlugin(),
     flow(
       new RegExp(

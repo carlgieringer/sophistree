@@ -1,8 +1,12 @@
 import { v4 as uuidv4 } from "uuid";
-import { DomAnchorHighlightManager, DomAnchor } from "tapestry-highlights";
+import {
+  DomAnchorHighlightManager,
+  DomAnchor,
+  HighlightManagerEventListenerOptions,
+} from "tapestry-highlights";
 import "tapestry-highlights/rotation-colors.css";
-import "./highlights/outcome-colors.scss";
 
+import "./highlights/outcome-colors.scss";
 import { AddMediaExcerptData, MediaExcerpt } from "./store/entitiesSlice";
 import type {
   ContentMessage,
@@ -14,9 +18,20 @@ import { outcomeValence } from "./outcomes/valences";
 import { deserializeMap } from "./extension/serialization";
 import { connectionErrorMessage } from "./extension/errorMessages";
 import * as contentLogger from "./logging/contentLogging";
+import { getPdfUrlFromViewerUrl, isPdfViewerUrl } from "./pdfs/pdfs";
+import debounce from "lodash.debounce";
 
 chrome.runtime.onConnect.addListener(getMediaExcerptsWhenSidebarConnects);
-chrome.runtime.onMessage.addListener(handleMessage);
+chrome.runtime.onMessage.addListener(
+  (message: ContentMessage, sender, sendResponse) => {
+    handleMessage(message, sender, sendResponse).catch((reason) => {
+      contentLogger.error(
+        `Failed to handle Chrome runtime message ${JSON.stringify(message)}`,
+        reason,
+      );
+    });
+  },
+);
 
 function getMediaExcerptsWhenSidebarConnects(port: chrome.runtime.Port) {
   if (port.name === sidepanelKeepalivePortName) {
@@ -35,14 +50,14 @@ function getMediaExcerptsWhenSidebarConnects(port: chrome.runtime.Port) {
 
 export const sidepanelKeepalivePortName = "keepalive";
 
-function handleMessage(
+async function handleMessage(
   message: ContentMessage,
   sender: chrome.runtime.MessageSender,
   sendResponse: (response: unknown) => void,
 ) {
   switch (message.action) {
     case "createMediaExcerpt": {
-      void createMediaExcerptFromCurrentSelection(message);
+      await createMediaExcerptFromCurrentSelection(message);
       break;
     }
     case "focusMediaExcerpt":
@@ -57,8 +72,7 @@ function handleMessage(
       break;
     }
     case "refreshMediaExcerpts": {
-      highlightManager.removeAllHighlights();
-      void getMediaExcerpts();
+      await refreshMediaExcerpts();
       break;
     }
     case "notifyTabOfNewMediaExcerpt": {
@@ -71,6 +85,11 @@ function handleMessage(
       );
     }
   }
+}
+
+async function refreshMediaExcerpts() {
+  highlightManager.removeAllHighlights();
+  await getMediaExcerpts();
 }
 
 function highlightNewMediaExcerptIfOnPage(data: AddMediaExcerptData) {
@@ -191,7 +210,11 @@ async function createMediaExcerpt(data: AddMediaExcerptData) {
 }
 
 function getUrl() {
-  return window.location.href;
+  const url = window.location.href;
+  if (isCurrentPageThePdfViewer()) {
+    return getPdfUrlFromViewerUrl(url);
+  }
+  return url;
 }
 
 function getCanonicalUrl() {
@@ -205,12 +228,38 @@ function getCanonicalOrFullUrl() {
   return getCanonicalUrl() || getUrl();
 }
 
+function isCurrentPageThePdfViewer() {
+  return isPdfViewerUrl(window.location.href);
+}
+
 function getTitle() {
+  if (isCurrentPageThePdfViewer()) {
+    return getTitleFromPdfMetadata();
+  }
   return (
     document
       .querySelector('meta[property="og:title"]')
       ?.getAttribute("content") || document.title
   );
+}
+
+function getTitleFromPdfMetadata(): string {
+  const metadata = window.PDFViewerApplication.metadata;
+  if (metadata.has("dc:title")) {
+    const title = metadata.get("dc:title");
+    if (title) {
+      return title;
+    }
+  }
+  if (metadata.has("title")) {
+    const title = metadata.get("title");
+    if (title) {
+      return title;
+    }
+  }
+  // return the filename
+  const pdfUrl = getPdfUrlFromViewerUrl(window.location.href);
+  return pdfUrl.split("/").pop() || "";
 }
 
 let mediaExcerptOutcomes: Map<string, BasisOutcome> = new Map();
@@ -254,15 +303,53 @@ interface HighlightData {
   mediaExcerptId: string;
 }
 
-const highlightManager = new DomAnchorHighlightManager<HighlightData>({
-  container: document.body,
-  logger: contentLogger,
-  isEquivalentHighlight: ({ data: data1 }, { data: data2 }) =>
-    data1.mediaExcerptId === data2.mediaExcerptId,
-  getHighlightClassNames: ({ mediaExcerptId }) => [
-    getHighlightClass(mediaExcerptId),
-  ],
-});
+const isPdfViewer = isCurrentPageThePdfViewer();
+const highlightManager = isPdfViewer
+  ? // updateviewarea fires for resizes, too, and we already update highlights for that below.
+    makeHighlighlightManager({ resize: { updateHighlights: false } })
+  : makeHighlighlightManager();
+if (isPdfViewer) {
+  updateHighlightsWhenPdfViewUpdates();
+}
+
+function updateHighlightsWhenPdfViewUpdates() {
+  document.addEventListener("webviewerloaded", function () {
+    window.PDFViewerApplication.initializedPromise
+      .then(() => {
+        // I think PDF.js captures scrolling and manually shifts its absolutely positioned text layer.
+        // So update our highlights too.
+        const updateHighlights = debounce(() => {
+          console.log("updateviewarea");
+          highlightManager.updateAllHighlightElements();
+        }, 50);
+        window.PDFViewerApplication.eventBus.on(
+          "updateviewarea",
+          updateHighlights,
+        );
+      })
+      .catch((reason) => {
+        contentLogger.error(
+          "Failed to initialize highlight manager in PDF",
+          reason,
+        );
+      });
+  });
+}
+
+function makeHighlighlightManager(
+  eventListeners?: HighlightManagerEventListenerOptions,
+): DomAnchorHighlightManager<HighlightData> {
+  return new DomAnchorHighlightManager<HighlightData>({
+    container: document.body,
+    logger: contentLogger,
+    isEquivalentHighlight: ({ data: data1 }, { data: data2 }) =>
+      data1.mediaExcerptId === data2.mediaExcerptId,
+    getHighlightClassNames: ({ mediaExcerptId }) => [
+      getHighlightClass(mediaExcerptId),
+    ],
+    eventListeners,
+  });
+}
 
 function updateMediaExcerptOutcomes(
   updatedOutcomes: Map<string, BasisOutcome | undefined>,
@@ -340,3 +427,15 @@ export type ChromeRuntimeMessage =
   | SelectMediaExcerptMessage
   | GetMediaExcerptMessage
   | GetMediaExcerptsMessage;
+
+declare global {
+  interface Window {
+    PDFViewerApplication: {
+      initializedPromise: Promise<void>;
+      metadata: Map<string, string>;
+      eventBus: {
+        on(event: string, callback: () => void): void;
+      };
+    };
+  }
+}

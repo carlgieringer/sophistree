@@ -128,3 +128,11 @@ npm run zip-extension
 ```
 
 Upload the zip file.
+
+## Updating PDF.js
+
+Pick a release from [available releases](https://github.com/mozilla/pdf.js/releases).
+
+```sh
+ npm run update-pdfjs -- https://github.com/mozilla/pdf.js/releases/download/v4.7.76/pdfjs-4.7.76-dist.zip
+```
