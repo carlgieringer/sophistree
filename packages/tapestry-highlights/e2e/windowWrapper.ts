@@ -4,10 +4,14 @@ import { DomAnchorHighlightManager } from "../src/DomAnchorHighlightManager.js";
 import { HighlightManager } from "../src/HighlightManager.js";
 
 // Put test dependenies on the window
+window.HighlightManager = HighlightManager;
+window.DomAnchorHighlightManager = DomAnchorHighlightManager;
+window.textQuoteToRange = textQuote.toRange;
 
-// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-(window as any).HighlightManager = HighlightManager;
-// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-(window as any).DomAnchorHighlightManager = DomAnchorHighlightManager;
-// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-(window as any).textQuoteToRange = textQuote.toRange;
+declare global {
+  interface Window {
+    HighlightManager: typeof HighlightManager;
+    DomAnchorHighlightManager: typeof DomAnchorHighlightManager;
+    textQuoteToRange: typeof textQuote.toRange;
+  }
+}

@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import deepEqual from "deep-equal";
 
 import type { Logger } from "./logger.js";
+import { mergeCopy } from "./mergeCopy.js";
 
 export type HighlightManagerOptions<Anchor, Data> = {
   /** The container to which the manager will add highlight elements. */
@@ -26,6 +27,7 @@ export type HighlightManagerOptions<Anchor, Data> = {
   focusClass?: string;
   /** The logger to use. If omitted, window.console is used. */
   logger?: Logger;
+  eventListeners?: HighlightManagerEventListenerOptions;
 };
 type GetRangesFromAnchorFunction<Anchor> = (anchor: Anchor) => Range[];
 type IsEquivalentHighlightFunction<Anchor, Data> = (
@@ -40,6 +42,12 @@ type GetHighlightClassNamesFunction<Data> = (
   highlightData: Data,
   index: number,
 ) => string[];
+export type HighlightManagerEventListenerOptions = {
+  resize?: {
+    // Whether to update highlights upon resize
+    updateHighlights: boolean;
+  };
+};
 
 /** A class that manages a collection of highlights on a page. */
 class HighlightManager<Anchor, Data> {
@@ -70,6 +78,10 @@ class HighlightManager<Anchor, Data> {
       highlightClass: options.highlightClass ?? defaultOptions.highlightClass,
       hoverClass: options.hoverClass ?? defaultOptions.hoverClass,
       focusClass: options.focusClass ?? defaultOptions.focusClass,
+      eventListeners: mergeCopy(
+        defaultOptions.eventListeners,
+        options.eventListeners,
+      ),
     };
 
     this.addEventListeners();
@@ -296,10 +308,12 @@ class HighlightManager<Anchor, Data> {
       "click",
       this.handleClick.bind(this),
     );
-    this.window().addEventListener(
-      "resize",
-      debounce(this.handleResize.bind(this), 300),
-    );
+    if (this.options.eventListeners?.resize?.updateHighlights) {
+      this.window().addEventListener(
+        "resize",
+        debounce(this.handleResize.bind(this), 300),
+      );
+    }
   }
 
   private createMutationObserver() {
@@ -740,6 +754,7 @@ type MergedHighlightManagerOptions<Anchor, Data> = {
   hoverClass: string;
   focusClass: string;
   logger: Logger;
+  eventListeners?: HighlightManagerEventListenerOptions;
 };
 
 export const classNameIndexPlaceholder = "{index}";
@@ -761,6 +776,11 @@ const defaultOptions = {
   highlightClass: "highlight",
   hoverClass: "highlight-hover",
   focusClass: "highlight-focus",
+  eventListeners: {
+    resize: {
+      updateHighlights: true,
+    },
+  },
 };
 
-export type HighlightSelector<Data> = (highlightData: Data) => boolean;
+type HighlightSelector<Data> = (highlightData: Data) => boolean;

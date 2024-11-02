@@ -1,5 +1,9 @@
 import { v4 as uuidv4 } from "uuid";
-import { DomAnchorHighlightManager, DomAnchor } from "tapestry-highlights";
+import {
+  DomAnchorHighlightManager,
+  DomAnchor,
+  HighlightManagerEventListenerOptions,
+} from "tapestry-highlights";
 import "tapestry-highlights/rotation-colors.css";
 
 import "./highlights/outcome-colors.scss";
@@ -299,9 +303,12 @@ interface HighlightData {
   mediaExcerptId: string;
 }
 
-const highlightManager = makeHighlighlightManager();
-
-if (isCurrentPageThePdfViewer()) {
+const isPdfViewer = isCurrentPageThePdfViewer();
+const highlightManager = isPdfViewer
+  ? // updateviewarea fires for resizes, too, and we already update highlights for that below.
+    makeHighlighlightManager({ resize: { updateHighlights: false } })
+  : makeHighlighlightManager();
+if (isPdfViewer) {
   updateHighlightsWhenPdfViewUpdates();
 }
 
@@ -319,9 +326,6 @@ function updateHighlightsWhenPdfViewUpdates() {
           "updateviewarea",
           updateHighlights,
         );
-        window.PDFViewerApplication.eventBus.on("updateviewarea", () => {
-          highlightManager.updateAllHighlightElements();
-        });
       })
       .catch((reason) => {
         contentLogger.error(
@@ -332,7 +336,9 @@ function updateHighlightsWhenPdfViewUpdates() {
   });
 }
 
-function makeHighlighlightManager(): DomAnchorHighlightManager<HighlightData> {
+function makeHighlighlightManager(
+  eventListeners?: HighlightManagerEventListenerOptions,
+): DomAnchorHighlightManager<HighlightData> {
   return new DomAnchorHighlightManager<HighlightData>({
     container: document.body,
     logger: contentLogger,
@@ -341,6 +347,7 @@ function makeHighlighlightManager(): DomAnchorHighlightManager<HighlightData> {
     getHighlightClassNames: ({ mediaExcerptId }) => [
       getHighlightClass(mediaExcerptId),
     ],
+    eventListeners,
   });
 }
 
