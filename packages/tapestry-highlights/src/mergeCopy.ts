@@ -1,7 +1,7 @@
 import merge from "lodash.merge";
 import type { MergeDeep } from "type-fest";
 
-/** 
+/**
  * Merge two values without mutating either.
  *
  * lodash's merge's types do not correctly merge the types of subarrays. type-fest's
