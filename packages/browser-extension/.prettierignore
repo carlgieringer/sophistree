@@ -4,3 +4,6 @@
 # The Handlebars directives violate JSON, and the `<all_urls>`
 # that look like unclosed HTML tags violate Handlebars.
 public/manifest.json.hbs
+
+# Since we import this code, we don't want to alert on style mismatches.
+public/pdfjs-dist/

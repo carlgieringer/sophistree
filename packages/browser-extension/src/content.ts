@@ -1,5 +1,10 @@
 import { v4 as uuidv4 } from "uuid";
-import { DomAnchorHighlightManager, DomAnchor } from "tapestry-highlights";
+import {
+  DomAnchorHighlightManager,
+  DomAnchor,
+  AsyncDomAnchorHighlightManager,
+  HighlightManagerEventListenerOptions,
+} from "tapestry-highlights";
 import "tapestry-highlights/rotation-colors.css";
 
 import "./highlights/outcome-colors.scss";
@@ -14,9 +19,19 @@ import { outcomeValence } from "./outcomes/valences";
 import { deserializeMap } from "./extension/serialization";
 import { connectionErrorMessage } from "./extension/errorMessages";
 import * as contentLogger from "./logging/contentLogging";
+import { getPdfUrlFromViewerUrl, isPdfViewerUrl } from "./pdfs/pdfs";
 
 chrome.runtime.onConnect.addListener(getMediaExcerptsWhenSidebarConnects);
-chrome.runtime.onMessage.addListener(handleMessage);
+chrome.runtime.onMessage.addListener(
+  (message: ContentMessage, sender, sendResponse) => {
+    handleMessage(message, sender, sendResponse).catch((reason) => {
+      contentLogger.error(
+        `Failed to handle Chrome runtime message ${JSON.stringify(message)}`,
+        reason,
+      );
+    });
+  },
+);
 
 function getMediaExcerptsWhenSidebarConnects(port: chrome.runtime.Port) {
   if (port.name === sidepanelKeepalivePortName) {
@@ -35,45 +50,49 @@ function getMediaExcerptsWhenSidebarConnects(port: chrome.runtime.Port) {
 
 export const sidepanelKeepalivePortName = "keepalive";
 
-function handleMessage(
+async function handleMessage(
   message: ContentMessage,
   sender: chrome.runtime.MessageSender,
   sendResponse: (response: unknown) => void,
 ) {
   switch (message.action) {
     case "createMediaExcerpt": {
-      void createMediaExcerptFromCurrentSelection(message);
+      await createMediaExcerptFromCurrentSelection(message);
       break;
     }
     case "focusMediaExcerpt":
-      focusMediaExcerpt(message.mediaExcerptId);
+      await focusMediaExcerpt(message.mediaExcerptId);
       break;
     case "requestUrl":
       sendResponse(getCanonicalOrFullUrl());
       return;
     case "updateMediaExcerptOutcomes": {
       const updatedOutcomes = deserializeMap(message.serializedUpdatedOutcomes);
-      updateMediaExcerptOutcomes(updatedOutcomes);
+      await updateMediaExcerptOutcomes(updatedOutcomes);
       break;
     }
     case "refreshMediaExcerpts": {
-      highlightManager.removeAllHighlights();
-      void getMediaExcerpts();
+      await refreshMediaExcerpts();
       break;
     }
     case "notifyTabOfNewMediaExcerpt": {
-      highlightNewMediaExcerptIfOnPage(message.data);
+      await highlightNewMediaExcerptIfOnPage(message.data);
       break;
     }
     case "notifyTabsOfDeletedMediaExcerpts": {
-      highlightManager.removeHighlights(
+      await highlightManager.removeHighlights(
         ({ mediaExcerptId }) => mediaExcerptId === message.mediaExcerptId,
       );
     }
   }
 }
 
-function highlightNewMediaExcerptIfOnPage(data: AddMediaExcerptData) {
+async function refreshMediaExcerpts() {
+  await highlightManager.removeAllHighlights();
+  await getMediaExcerpts();
+}
+
+async function highlightNewMediaExcerptIfOnPage(data: AddMediaExcerptData) {
   const canonicalUrl = getCanonicalUrl();
   if (canonicalUrl) {
     if (canonicalUrl !== data.canonicalUrl) {
@@ -86,7 +105,7 @@ function highlightNewMediaExcerptIfOnPage(data: AddMediaExcerptData) {
     }
   }
 
-  createHighlight(data.id, data.domAnchor);
+  await createHighlight(data.id, data.domAnchor);
 }
 
 async function createMediaExcerptFromCurrentSelection(
@@ -96,7 +115,7 @@ async function createMediaExcerptFromCurrentSelection(
   // If the highlight failed to be created in the extension for whatever reason,
   // remove it here.
   if (highlight && !(await getMediaExcerpt(highlight.data.mediaExcerptId))) {
-    highlightManager.removeHighlight(highlight);
+    await highlightManager.removeHighlight(highlight);
   }
 }
 
@@ -114,8 +133,8 @@ async function getMediaExcerpt(mediaExcerptId: string) {
   }
 }
 
-function focusMediaExcerpt(mediaExcerptId: string) {
-  highlightManager.focusHighlight(
+async function focusMediaExcerpt(mediaExcerptId: string) {
+  await highlightManager.focusHighlight(
     (data) => data.mediaExcerptId === mediaExcerptId,
   );
 }
@@ -134,7 +153,7 @@ async function createMediaExcerptAndHighlight(
     return;
   }
 
-  const highlight = highlightManager.createHighlightFromCurrentSelection(
+  const highlight = await highlightManager.createHighlightFromCurrentSelection(
     {
       mediaExcerptId,
     },
@@ -156,7 +175,7 @@ async function createMediaExcerptAndHighlight(
     };
     const success = await createMediaExcerpt(data);
     if (!success) {
-      highlightManager.removeHighlight(highlight);
+      await highlightManager.removeHighlight(highlight);
       return undefined;
     }
   } else {
@@ -191,7 +210,11 @@ async function createMediaExcerpt(data: AddMediaExcerptData) {
 }
 
 function getUrl() {
-  return window.location.href;
+  const url = window.location.href;
+  if (isCurrentPageThePdfViewer()) {
+    return getPdfUrlFromViewerUrl(url);
+  }
+  return url;
 }
 
 function getCanonicalUrl() {
@@ -205,12 +228,38 @@ function getCanonicalOrFullUrl() {
   return getCanonicalUrl() || getUrl();
 }
 
+function isCurrentPageThePdfViewer() {
+  return isPdfViewerUrl(window.location.href);
+}
+
 function getTitle() {
+  if (isCurrentPageThePdfViewer()) {
+    return getTitleFromPdfMetadata();
+  }
   return (
     document
       .querySelector('meta[property="og:title"]')
       ?.getAttribute("content") || document.title
   );
+}
+
+function getTitleFromPdfMetadata(): string {
+  const metadata = window.PDFViewerApplication.metadata;
+  if (metadata.has("dc:title")) {
+    const title = metadata.get("dc:title");
+    if (title) {
+      return title;
+    }
+  }
+  if (metadata.has("title")) {
+    const title = metadata.get("title");
+    if (title) {
+      return title;
+    }
+  }
+  // return the filename
+  const pdfUrl = getPdfUrlFromViewerUrl(window.location.href);
+  return pdfUrl.split("/").pop() || "";
 }
 
 let mediaExcerptOutcomes: Map<string, BasisOutcome> = new Map();
@@ -243,11 +292,13 @@ async function getMediaExcerpts() {
   }
   const { mediaExcerpts, serializedOutcomes } = response;
   mediaExcerptOutcomes = deserializeMap(serializedOutcomes);
-  highlightMediaExcerpts(mediaExcerpts);
+  await highlightMediaExcerpts(mediaExcerpts);
 }
 
-function highlightMediaExcerpts(mediaExcerpts: MediaExcerpt[]) {
-  mediaExcerpts.forEach(({ id, domAnchor }) => createHighlight(id, domAnchor));
+async function highlightMediaExcerpts(mediaExcerpts: MediaExcerpt[]) {
+  await Promise.all(
+    mediaExcerpts.map(({ id, domAnchor }) => createHighlight(id, domAnchor)),
+  );
 }
 
 interface HighlightData {
@@ -258,29 +309,21 @@ declare global {
   interface Window {
     PDFViewerApplication: {
       initializedPromise: Promise<void>;
+      metadata: Map<string, string>;
+      eventBus: {
+        on(event: string, callback: () => void): void;
+      };
     };
   }
 }
 
-let highlightManager: DomAnchorHighlightManager<HighlightData>;
-if (getUrl().endsWith(".pdf")) {
-  document.addEventListener("webviewerloaded", function () {
-    window.PDFViewerApplication.initializedPromise
-      .then(function () {
-        highlightManager = makeManager();
-      })
-      .catch((reason) => {
-        contentLogger.error(
-          "Failed to initialize highlight manager in PDF",
-          reason,
-        );
-      });
-  });
-} else {
-  highlightManager = makeManager();
-}
+const highlightManager = new AsyncDomAnchorHighlightManager(
+  makeHighlightManagerPromise(),
+);
 
-function makeManager() {
+function makeHighlighlightManager(
+  eventListeners?: HighlightManagerEventListenerOptions,
+): DomAnchorHighlightManager<HighlightData> {
   return new DomAnchorHighlightManager<HighlightData>({
     container: document.body,
     logger: contentLogger,
@@ -289,10 +332,44 @@ function makeManager() {
     getHighlightClassNames: ({ mediaExcerptId }) => [
       getHighlightClass(mediaExcerptId),
     ],
+    eventListeners,
   });
 }
 
-function updateMediaExcerptOutcomes(
+function makeHighlightManagerPromise(): Promise<
+  DomAnchorHighlightManager<HighlightData>
+> {
+  if (isCurrentPageThePdfViewer()) {
+    return new Promise((resolve) => {
+      document.addEventListener("webviewerloaded", function () {
+        window.PDFViewerApplication.initializedPromise
+          .then(() => {
+            const highlightManager = makeHighlighlightManager({
+              scroll: { updateHighlights: true },
+            });
+            resolve(highlightManager);
+            window.PDFViewerApplication.eventBus.on("updateviewarea", () => {
+              highlightManager.updateAllHighlightElements();
+            });
+          })
+          .catch((reason) => {
+            contentLogger.error(
+              "Failed to initialize highlight manager in PDF",
+              reason,
+            );
+          });
+      });
+    });
+  } else {
+    return new Promise((resolve) =>
+      document.addEventListener("DOMContentLoaded", () =>
+        resolve(makeHighlighlightManager()),
+      ),
+    );
+  }
+}
+
+async function updateMediaExcerptOutcomes(
   updatedOutcomes: Map<string, BasisOutcome | undefined>,
 ) {
   updatedOutcomes.forEach((outcome, mediaExcerptId) => {
@@ -302,7 +379,7 @@ function updateMediaExcerptOutcomes(
       mediaExcerptOutcomes.delete(mediaExcerptId);
     }
   });
-  highlightManager.updateHighlightsClassNames(({ mediaExcerptId }) =>
+  await highlightManager.updateHighlightsClassNames(({ mediaExcerptId }) =>
     updatedOutcomes.has(mediaExcerptId),
   );
 }

@@ -54,6 +54,10 @@ class HighlightManager<Anchor, Data> {
   }> = [];
 
   constructor(options: HighlightManagerOptions<Anchor, Data>) {
+    if (!options.container) {
+      throw new Error(`container is required.`);
+    }
+
     this.highlightManagerId = uuidv4();
     this.options = {
       container: options.container,
@@ -292,7 +296,7 @@ class HighlightManager<Anchor, Data> {
       "click",
       this.handleClick.bind(this),
     );
-    window.addEventListener(
+    this.window().addEventListener(
       "resize",
       debounce(this.handleResize.bind(this), 300),
     );
@@ -502,7 +506,7 @@ class HighlightManager<Anchor, Data> {
     this.updateStyles();
   }
 
-  private updateAllHighlightElements() {
+  updateAllHighlightElements() {
     const newElements = this.highlights.flatMap((highlight) =>
       this.updateHighlightElements(highlight),
     );
@@ -530,7 +534,7 @@ class HighlightManager<Anchor, Data> {
 
     highlight.ranges.forEach((range) => {
       const rangeRects = Array.from(range.getClientRects());
-      const combinedRects = this.combineAdjacentRects(rangeRects);
+      const combinedRects = this.combineRects(rangeRects);
 
       combinedRects.forEach((rect) => {
         let element = highlight.elements[elementIndex];
@@ -593,7 +597,8 @@ class HighlightManager<Anchor, Data> {
     return element;
   }
 
-  private combineAdjacentRects(rects: DOMRect[]): DOMRect[] {
+  /** Combines adjacent rects into one and drops rects completely encompassed by other rects. */
+  private combineRects(rects: DOMRect[]): DOMRect[] {
     if (rects.length === 0) return [];
 
     // Sort rects by top, then left
@@ -606,6 +611,17 @@ class HighlightManager<Anchor, Data> {
 
     for (let i = 1; i < sortedRects.length; i++) {
       const nextRect = sortedRects[i]!;
+
+      // Check if nextRect is entirely encompassed by currentRect
+      if (
+        nextRect.left >= currentRect.left &&
+        nextRect.right <= currentRect.right &&
+        nextRect.top >= currentRect.top &&
+        nextRect.bottom <= currentRect.bottom
+      ) {
+        // Skip this rect as it's entirely encompassed
+        continue;
+      }
 
       // If the rects have the same top and height and are adjacent or overlapping
       if (
@@ -746,4 +762,4 @@ const defaultOptions = {
   focusClass: "highlight-focus",
 };
 
-type HighlightSelector<Data> = (highlightData: Data) => boolean;
+export type HighlightSelector<Data> = (highlightData: Data) => boolean;

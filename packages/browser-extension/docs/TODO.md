@@ -1,6 +1,8 @@
 # TODO
 
--- Test with more examples
+- Async manager may no longer be necessary if script is at end...
+
+- Test with more examples
 
 - Include conclusion outcomes in map card (and include aggregate of all outcomes ("50% false"))
 - Add 'sources excerpted for evidence' in map card
