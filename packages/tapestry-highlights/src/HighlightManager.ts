@@ -1,9 +1,10 @@
 import debounce from "lodash.debounce";
 import { v4 as uuidv4 } from "uuid";
 import deepEqual from "deep-equal";
+import merge from "lodash.merge";
 
 import type { Logger } from "./logger.js";
-import { mergeCopy } from "./mergeCopy.js";
+import { combineRects } from "./rects/rects.js";
 
 export type HighlightManagerOptions<Anchor, Data> = {
   /** The container to which the manager will add highlight elements. */
@@ -78,7 +79,8 @@ class HighlightManager<Anchor, Data> {
       highlightClass: options.highlightClass ?? defaultOptions.highlightClass,
       hoverClass: options.hoverClass ?? defaultOptions.hoverClass,
       focusClass: options.focusClass ?? defaultOptions.focusClass,
-      eventListeners: mergeCopy(
+      eventListeners: merge(
+        {},
         defaultOptions.eventListeners,
         options.eventListeners,
       ),
@@ -548,7 +550,7 @@ class HighlightManager<Anchor, Data> {
 
     highlight.ranges.forEach((range) => {
       const rangeRects = Array.from(range.getClientRects());
-      const combinedRects = this.combineRects(rangeRects);
+      const combinedRects = combineRects(rangeRects);
 
       combinedRects.forEach((rect) => {
         let element = highlight.elements[elementIndex];
@@ -609,59 +611,6 @@ class HighlightManager<Anchor, Data> {
       .toString();
     highlight.elements.push(element);
     return element;
-  }
-
-  /** Combines adjacent rects into one and drops rects completely encompassed by other rects. */
-  private combineRects(rects: DOMRect[]): DOMRect[] {
-    if (rects.length === 0) return [];
-
-    // Sort rects by top, then left
-    const sortedRects = rects.sort((a, b) =>
-      a.top !== b.top ? a.top - b.top : a.left - b.left,
-    );
-
-    const combinedRects: DOMRect[] = [];
-    let currentRect = sortedRects[0]!;
-
-    for (let i = 1; i < sortedRects.length; i++) {
-      const nextRect = sortedRects[i]!;
-
-      // Check if nextRect is entirely encompassed by currentRect. This occurs
-      // in some PDFs.
-      if (
-        nextRect.left >= currentRect.left &&
-        nextRect.right <= currentRect.right &&
-        nextRect.top >= currentRect.top &&
-        nextRect.bottom <= currentRect.bottom
-      ) {
-        // Skip this rect as it's entirely encompassed
-        continue;
-      }
-
-      // If the rects have the same top and height and are adjacent or overlapping
-      if (
-        currentRect.top === nextRect.top &&
-        currentRect.height === nextRect.height &&
-        nextRect.left <= currentRect.right + 1
-      ) {
-        // Combine the rects
-        currentRect = new DOMRect(
-          currentRect.left,
-          currentRect.top,
-          Math.max(nextRect.right - currentRect.left, currentRect.width),
-          currentRect.height,
-        );
-      } else {
-        // If they're not combinable, add the current rect to the result and move to the next
-        combinedRects.push(currentRect);
-        currentRect = nextRect;
-      }
-    }
-
-    // Add the last rect
-    combinedRects.push(currentRect);
-
-    return combinedRects;
   }
 
   /** Remove the highlight matching `highlight.id`. */

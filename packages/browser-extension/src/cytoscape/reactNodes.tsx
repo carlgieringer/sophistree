@@ -1,7 +1,7 @@
 import React from "react";
 import cytoscape, { EventObjectNode, NodeDataDefinition } from "cytoscape";
 import ReactDOM from "react-dom/client";
-import debounce from "lodash.debounce";
+import throttle from "lodash.throttle";
 
 import { sunflower } from "../colors";
 import * as appLogger from "../logging/appLogging";
@@ -19,8 +19,8 @@ export default function register(cs: typeof cytoscape) {
 interface ReactNodesOptions {
   nodes: ReactNodeOptions[];
   layoutOptions: cytoscape.LayoutOptions;
-  // The debounce delay before reactNodes applies a layout when one is necessary.
-  layoutDebounceDelay?: number;
+  // The delay before reactNodes applies a layout when one is necessary.
+  layoutThrottleDelay?: number;
 }
 
 export interface ReactNodeOptions {
@@ -34,9 +34,9 @@ export interface ReactNodeOptions {
   unselectedStyle?: Partial<CSSStyleDeclaration>;
 }
 
-const defaultOptions: Required<Pick<ReactNodesOptions, "layoutDebounceDelay">> =
+const defaultOptions: Required<Pick<ReactNodesOptions, "layoutThrottleDelay">> =
   {
-    layoutDebounceDelay: 100,
+    layoutThrottleDelay: 100,
   };
 
 const defaultReactNodeOptions: ReactNodeOptions = {
@@ -58,10 +58,9 @@ const defaultReactNodeOptions: ReactNodeOptions = {
 
 /** A cytoscape extension that renders React elements over nodes. */
 function reactNodes(this: cytoscape.Core, options: ReactNodesOptions) {
-  // debounce layout function to avoid layout thrashing
-  const layout = debounce(() => {
+  const layout = throttle(() => {
     this.layout(options.layoutOptions).run();
-  }, options.layoutDebounceDelay ?? defaultOptions.layoutDebounceDelay);
+  }, options.layoutThrottleDelay ?? defaultOptions.layoutThrottleDelay);
 
   options.nodes.forEach((nodeOptions) =>
     makeReactNode(this, nodeOptions, layout),

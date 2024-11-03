@@ -2,16 +2,17 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { v4 as uuidv4 } from "uuid";
 import { DomAnchor } from "tapestry-highlights";
 import deepEqual from "deep-equal";
+import merge from "lodash.merge";
 
 import * as appLogger from "../logging/appLogging";
 import { notifyTabsOfDeletedMediaExcerpt } from "../extension/messages";
 
-interface BaseEntity {
+type BaseEntity = {
   id: string;
   // if explicitVisibility is missing, falls back to autoVisibility
   explicitVisibility?: Visibility | undefined;
   autoVisibility: Visibility;
-}
+};
 
 type Visibility = "Visible" | "Hidden";
 
@@ -45,13 +46,13 @@ export interface Justification extends BaseEntity {
   polarity: Polarity;
 }
 
-export interface MediaExcerpt extends BaseEntity {
+export type MediaExcerpt = BaseEntity & {
   type: "MediaExcerpt";
   quotation: string;
   urlInfo: UrlInfo;
   sourceInfo: SourceInfo;
   domAnchor: DomAnchor;
-}
+};
 
 interface UrlInfo {
   url: string;
@@ -97,7 +98,16 @@ export interface ArgumentMap {
   id: string;
   name: string;
   entities: Entity[];
+  /** Conclusions summarize the main points of the argument */
   conclusions: ConclusionInfo[];
+  /**
+   * Some sources (especially PDFs) have poor names. We track what the user
+   * last override MediaExcerpt sources to be, and automatically apply them
+   * when new MediaExcerpts are created for the same URL. (We store overrides
+   * for both the canonical and plain URL, preferring the override matching the
+   * URL.)
+   */
+  sourceNameOverrides: Record<string, string>;
 }
 
 const initialState = {
@@ -131,6 +141,7 @@ export const entitiesSlice = createSlice({
         ...action.payload,
         // Overwrite any ID from the payload to ensure that uploaded maps do not replace existing ones.
         id: uuidv4(),
+        sourceNameOverrides: {},
       };
       state.maps.push(newMap);
       state.activeMapId = newMap.id;
@@ -181,13 +192,21 @@ export const entitiesSlice = createSlice({
         appLogger.warn("Declining to create a duplicative MediaExcerpt.");
         return;
       }
+
+      const sourceNameOverride = getSourceNameOverride(
+        activeMap.sourceNameOverrides,
+        {
+          url,
+          canonicalUrl,
+        },
+      );
       const newNode: MediaExcerpt = {
         type: "MediaExcerpt",
         ...defaultVisibilityProps,
         id,
         quotation,
         urlInfo: { url, canonicalUrl },
-        sourceInfo: { name: sourceName },
+        sourceInfo: { name: sourceNameOverride ?? sourceName },
         domAnchor,
       };
       activeMap.entities.push(newNode);
@@ -236,6 +255,38 @@ export const entitiesSlice = createSlice({
           ...activeMap.entities[index],
           ...action.payload.updates,
         };
+      }
+    },
+    updateMediaExerpt(
+      state,
+      action: PayloadAction<{
+        id: string;
+        updates: Partial<Omit<MediaExcerpt, "type">>;
+      }>,
+    ) {
+      const activeMap = state.maps.find((map) => map.id === state.activeMapId);
+      if (!activeMap) return;
+      const index = activeMap.entities.findIndex(
+        (entity) => entity.id === action.payload.id,
+      );
+      if (index !== -1) {
+        const mediaExcerpt = activeMap.entities[
+          index
+        ] as unknown as MediaExcerpt;
+
+        const updates = action.payload.updates;
+        const sourceName = updates.sourceInfo?.name;
+        if (sourceName) {
+          const { url, canonicalUrl } = mediaExcerpt.urlInfo;
+          updateSourceNameOverrides(
+            activeMap.sourceNameOverrides,
+            { url, canonicalUrl },
+            sourceName,
+          );
+        }
+
+        const merged = merge({}, mediaExcerpt, updates) as MediaExcerpt;
+        activeMap.entities[index] = merged;
       }
     },
     updateJustification(
@@ -332,6 +383,27 @@ export const entitiesSlice = createSlice({
     },
   },
 });
+
+function getSourceNameOverride(
+  sourceNameOverrides: Record<string, string>,
+  { url, canonicalUrl }: { url: string; canonicalUrl: string | undefined },
+) {
+  return (
+    sourceNameOverrides[url] ??
+    (canonicalUrl ? sourceNameOverrides[canonicalUrl] : undefined)
+  );
+}
+
+function updateSourceNameOverrides(
+  sourceNameOverrides: Record<string, string>,
+  { url, canonicalUrl }: { url: string; canonicalUrl: string | undefined },
+  sourceName: string,
+) {
+  if (canonicalUrl) {
+    sourceNameOverrides[canonicalUrl] = sourceName;
+  }
+  sourceNameOverrides[url] = sourceName;
+}
 
 export function updateConclusions(map: ArgumentMap) {
   const {
@@ -763,22 +835,23 @@ export function isEquivalentMediaExcerpt(
 }
 
 export const {
-  createMap,
-  deleteMap,
-  setActiveMap,
-  addNewProposition,
   addMediaExcerpt,
-  updateEntity,
-  updateProposition,
-  updateJustification,
-  deleteEntity,
+  addNewProposition,
+  automateEntityVisibility,
   completeDrag,
+  createMap,
+  deleteEntity,
+  deleteMap,
+  hideEntity,
+  renameActiveMap,
   resetSelection,
   selectEntities,
-  renameActiveMap,
+  setActiveMap,
   showEntity,
-  hideEntity,
-  automateEntityVisibility,
+  updateEntity,
+  updateJustification,
+  updateMediaExerpt,
+  updateProposition,
 } = entitiesSlice.actions;
 
 export default entitiesSlice.reducer;

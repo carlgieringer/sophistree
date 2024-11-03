@@ -34,11 +34,15 @@
     "lint": "eslint src/",
     "lint-fix": "eslint src/  --fix",
     "package": "npm run clean-build && npm run build && npm run build-styles && npm pack",
-    "test": "playwright test --ignore-snapshots --project=chromium",
-    "test-ci": "echo Playwright tests are run separately from the CI checks job",
-    "test-debug": "npm run test -- --debug",
-    "test-snapshots": "time (docker build -t playwright-screenshots -f playwright-screenshots.dockerfile . && docker run --rm -v $(pwd)/e2e:/tapestry-highlights/e2e playwright-screenshots)",
-    "test-update-snapshots": "docker build -t playwright-screenshots -f playwright-screenshots.dockerfile . && docker run --rm -v $(pwd)/e2e:/tapestry-highlights/e2e playwright-screenshots npx playwright test --update-snapshots",
+    "test": "npm run test-modular && npm run test-e2e",
+    "test-modular": "jest",
+    "test-modular-watch": "jest --watch",
+    "test-modular-debug": "node --inspect-brk ../../node_modules/jest/bin/jest.js --runInBand --watch",
+    "test-e2e": "playwright test --ignore-snapshots --project=chromium",
+    "test-ci": "npm run test-modular",
+    "test-e2e-debug": "npm run test-e2e -- --debug",
+    "test-e2e-snapshots": "time (docker build -t playwright-screenshots -f playwright-screenshots.dockerfile . && docker run --rm -v $(pwd)/e2e:/tapestry-highlights/e2e playwright-screenshots)",
+    "test-e2e-update-snapshots": "docker build -t playwright-screenshots -f playwright-screenshots.dockerfile . && docker run --rm -v $(pwd)/e2e:/tapestry-highlights/e2e playwright-screenshots npx playwright test --update-snapshots",
     "type-check": "tsc && npm run build",
     "watch-all": "node bin/watchAll.mjs"
   },
@@ -55,9 +59,9 @@
     "uuid": "^10.0.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.25.2",
-    "@babel/preset-env": "^7.25.4",
-    "@babel/preset-typescript": "^7.24.7",
+    "@babel/core": "^7.26.0",
+    "@babel/preset-env": "^7.26.0",
+    "@babel/preset-typescript": "^7.26.0",
     "@eslint/js": "^9.12.0",
     "@playwright/test": "^1.48.0",
     "@types/eslint__js": "^8.42.3",
@@ -81,7 +85,6 @@
     "playwright": "^1.48.0",
     "prettier": "^3.3.3",
     "sass": "^1.79.5",
-    "type-fest": "^4.26.1",
     "typescript": "^5.6.3",
     "typescript-eslint": "^8.9.0"
   }

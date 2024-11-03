@@ -18,8 +18,12 @@ import { outcomeValence } from "./outcomes/valences";
 import { deserializeMap } from "./extension/serialization";
 import { connectionErrorMessage } from "./extension/errorMessages";
 import * as contentLogger from "./logging/contentLogging";
-import { getPdfUrlFromViewerUrl, isPdfViewerUrl } from "./pdfs/pdfs";
-import debounce from "lodash.debounce";
+import {
+  getPdfUrlFromViewerUrl,
+  isPdfViewerUrl,
+  makeCanonicalPdfUrl,
+} from "./pdfs/pdfs";
+import throttle from "lodash.throttle";
 
 chrome.runtime.onConnect.addListener(getMediaExcerptsWhenSidebarConnects);
 chrome.runtime.onMessage.addListener(
@@ -218,6 +222,11 @@ function getUrl() {
 }
 
 function getCanonicalUrl() {
+  if (isCurrentPageThePdfViewer()) {
+    const url = window.location.href;
+    const pdfUrl = getPdfUrlFromViewerUrl(url);
+    return makeCanonicalPdfUrl(pdfUrl);
+  }
   return (
     document.querySelector('link[rel="canonical"]')?.getAttribute("href") ||
     undefined
@@ -318,10 +327,9 @@ function updateHighlightsWhenPdfViewUpdates() {
       .then(() => {
         // I think PDF.js captures scrolling and manually shifts its absolutely positioned text layer.
         // So update our highlights too.
-        const updateHighlights = debounce(() => {
-          console.log("updateviewarea");
+        const updateHighlights = throttle(() => {
           highlightManager.updateAllHighlightElements();
-        }, 50);
+        }, 10);
         window.PDFViewerApplication.eventBus.on(
           "updateviewarea",
           updateHighlights,
