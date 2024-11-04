@@ -11,6 +11,7 @@ import {
   updateProposition,
   Justification,
   MediaExcerpt,
+  updateMediaExerpt,
 } from "../store/entitiesSlice";
 import * as selectors from "../store/selectors";
 
@@ -79,7 +80,26 @@ function JustificationEditor({ entity }: { entity: Justification }) {
 }
 
 function MediaExcerptEditor({ entity }: { entity: MediaExcerpt }) {
-  return <Text>MediaExcerpt {entity.id}</Text>;
+  const dispatch = useDispatch();
+  return (
+    <View>
+      <TextInput
+        label="Source Title"
+        placeholder="“The Title” The Publication (2024-10-01)"
+        value={entity.sourceInfo.name}
+        multiline={true}
+        numberOfLines={1}
+        onChangeText={(text) =>
+          dispatch(
+            updateMediaExerpt({
+              id: entity.id,
+              updates: { sourceInfo: { name: text } },
+            }),
+          )
+        }
+      />
+    </View>
+  );
 }
 
 export default EntityEditor;

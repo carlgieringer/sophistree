@@ -12,6 +12,8 @@ import entitiesReducer, {
   hideEntity,
   automateEntityVisibility,
   Proposition,
+  updateMediaExerpt,
+  MediaExcerpt,
 } from "./entitiesSlice";
 import { v4 as uuidv4 } from "uuid";
 
@@ -41,6 +43,7 @@ describe("entitiesSlice", () => {
         name: "Test Map",
         entities: [],
         conclusions: [],
+        sourceNameOverrides: {},
       });
       expect(newState.activeMapId).toBe("new-map-id");
     });
@@ -50,7 +53,15 @@ describe("entitiesSlice", () => {
     it("should add a new proposition to the active map", () => {
       (uuidv4 as jest.Mock).mockReturnValue("new-proposition-id");
       const initialState = {
-        maps: [{ id: "map1", name: "Map 1", entities: [], conclusions: [] }],
+        maps: [
+          {
+            id: "map1",
+            name: "Map 1",
+            entities: [],
+            conclusions: [],
+            sourceNameOverrides: {},
+          },
+        ],
         activeMapId: "map1",
         selectedEntityIds: [],
       };
@@ -70,7 +81,15 @@ describe("entitiesSlice", () => {
   describe("addMediaExcerpt", () => {
     it("should add a new media excerpt to the active map", () => {
       const initialState = {
-        maps: [{ id: "map1", name: "Map 1", entities: [], conclusions: [] }],
+        maps: [
+          {
+            id: "map1",
+            name: "Map 1",
+            entities: [],
+            conclusions: [],
+            sourceNameOverrides: {},
+          },
+        ],
         activeMapId: "map1",
         selectedEntityIds: [],
       };
@@ -137,6 +156,7 @@ describe("entitiesSlice", () => {
                 },
               ],
               conclusions: [],
+              sourceNameOverrides: {},
             },
           ],
           activeMapId: "map1",
@@ -183,6 +203,7 @@ describe("entitiesSlice", () => {
               },
             ],
             conclusions: [],
+            sourceNameOverrides: {},
           },
         ],
         activeMapId: "map1",
@@ -223,6 +244,7 @@ describe("entitiesSlice", () => {
               },
             ],
             conclusions: [],
+            sourceNameOverrides: {},
           },
         ],
         activeMapId: "map1",
@@ -264,6 +286,7 @@ describe("entitiesSlice", () => {
               },
             ],
             conclusions: [],
+            sourceNameOverrides: {},
           },
         ],
         activeMapId: "map1",
@@ -300,6 +323,7 @@ describe("entitiesSlice", () => {
               },
             ],
             conclusions: [],
+            sourceNameOverrides: {},
           },
         ],
         activeMapId: "map1",
@@ -352,6 +376,7 @@ describe("entitiesSlice", () => {
               },
             ],
             conclusions: [],
+            sourceNameOverrides: {},
           },
         ],
         activeMapId: "map1",
@@ -398,6 +423,7 @@ describe("entitiesSlice", () => {
               },
             ],
             conclusions: [],
+            sourceNameOverrides: {},
           },
         ],
         activeMapId: "map1",
@@ -426,6 +452,7 @@ describe("entitiesSlice", () => {
               },
             ],
             conclusions: [],
+            sourceNameOverrides: {},
           },
         ],
         activeMapId: "map1",
@@ -454,6 +481,7 @@ describe("entitiesSlice", () => {
               },
             ],
             conclusions: [],
+            sourceNameOverrides: {},
           },
         ],
         activeMapId: "map1",
@@ -483,6 +511,7 @@ describe("entitiesSlice", () => {
               },
             ],
             conclusions: [],
+            sourceNameOverrides: {},
           },
         ],
         activeMapId: "map1",
@@ -492,6 +521,58 @@ describe("entitiesSlice", () => {
       const newState = entitiesReducer(initialState, action);
 
       expect(newState.maps[0].entities[0].explicitVisibility).toBeUndefined();
+    });
+  });
+
+  describe("updateMediaExerpt", () => {
+    it("should update sourceNameOverrides when editing a MediaExcerpt's source name", () => {
+      const initialState = {
+        maps: [
+          {
+            id: "map1",
+            name: "Map 1",
+            entities: [
+              {
+                id: "mediaExcerpt1",
+                type: "MediaExcerpt" as const,
+                quotation: "Test quote",
+                urlInfo: {
+                  url: "https://example.com",
+                  canonicalUrl: "https://example.com/canonical",
+                },
+                sourceInfo: { name: "Original Source" },
+                domAnchor: {
+                  text: { exact: "Test quote" },
+                  position: { start: 0, end: 10 },
+                },
+                autoVisibility: "Visible" as const,
+              },
+            ],
+            conclusions: [],
+            sourceNameOverrides: {},
+          },
+        ],
+        activeMapId: "map1",
+        selectedEntityIds: [],
+      };
+      const action = updateMediaExerpt({
+        id: "mediaExcerpt1",
+        updates: {
+          sourceInfo: { name: "Updated Source" },
+        },
+      });
+
+      const newState = entitiesReducer(initialState, action);
+
+      // Check that the MediaExcerpt's source name was updated
+      const newMediaExcerpt = newState.maps[0].entities[0] as MediaExcerpt;
+      expect(newMediaExcerpt.sourceInfo.name).toBe("Updated Source");
+
+      // Check that sourceNameOverrides was updated for both URL and canonicalURL
+      expect(newState.maps[0].sourceNameOverrides).toEqual({
+        "https://example.com": "Updated Source",
+        "https://example.com/canonical": "Updated Source",
+      });
     });
   });
 });

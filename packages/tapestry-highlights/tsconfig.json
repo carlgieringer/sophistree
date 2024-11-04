@@ -3,8 +3,11 @@
   "extends": "./tsconfig-dist.json",
   "compilerOptions": {
     "rootDir": ".",
+    "allowImportingTsExtensions": true,
     "noEmit": true
   },
   "include": ["src", "e2e"],
+  // Override excluding tests.
+  "exclude": [],
   "files": ["playwright.config.ts"]
 }

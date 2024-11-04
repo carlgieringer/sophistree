@@ -11,6 +11,7 @@ import { ChromeRuntimeMessage, sidepanelKeepalivePortName } from "./content";
 import {
   addMediaExcerpt,
   AddMediaExcerptData,
+  isMatchingUrlInfo,
   MediaExcerpt,
   selectEntities,
 } from "./store/entitiesSlice";
@@ -179,14 +180,12 @@ function useHandleChromeRuntimeMessage() {
             break;
           }
           case "getMediaExcerpts": {
-            const { url, canonicalUrl } = message.data;
-            const mediaExcerpts = entities.filter(
-              (entity) =>
-                entity.type === "MediaExcerpt" &&
-                (entity.urlInfo.canonicalUrl
-                  ? entity.urlInfo.canonicalUrl === canonicalUrl
-                  : entity.urlInfo.url === url),
-            ) as MediaExcerpt[];
+            const mediaExcerpts = entities.filter((entity) => {
+              if (entity.type !== "MediaExcerpt") {
+                return false;
+              }
+              return isMatchingUrlInfo(entity.urlInfo, message.data);
+            }) as MediaExcerpt[];
 
             // Serialize for responding to the content script since Maps cannot
             // pass the runtime boundary

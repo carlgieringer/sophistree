@@ -76,7 +76,7 @@ const options = {
           to: ["."],
         },
         {
-          from: ["./public/pdfjs-dist/**"],
+          from: ["./public/pdfjs-dist/**/*"],
           to: [pdfjsSubdir],
         },
       ],

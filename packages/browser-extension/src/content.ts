@@ -2,12 +2,20 @@ import { v4 as uuidv4 } from "uuid";
 import {
   DomAnchorHighlightManager,
   DomAnchor,
-  HighlightManagerEventListenerOptions,
+  PdfJsAnchorHighlightManager,
+  PdfJsAnchorHighlightManagerOptions,
+  DomAnchorHighlightManagerOptions,
+  HighlightManagerOptions,
+  PDFViewerApplication,
 } from "tapestry-highlights";
 import "tapestry-highlights/rotation-colors.css";
 
 import "./highlights/outcome-colors.scss";
-import { AddMediaExcerptData, MediaExcerpt } from "./store/entitiesSlice";
+import {
+  AddMediaExcerptData,
+  MediaExcerpt,
+  UrlInfo,
+} from "./store/entitiesSlice";
 import type {
   ContentMessage,
   CreateMediaExcerptMessage,
@@ -19,7 +27,6 @@ import { deserializeMap } from "./extension/serialization";
 import { connectionErrorMessage } from "./extension/errorMessages";
 import * as contentLogger from "./logging/contentLogging";
 import { getPdfUrlFromViewerUrl, isPdfViewerUrl } from "./pdfs/pdfs";
-import debounce from "lodash.debounce";
 
 chrome.runtime.onConnect.addListener(getMediaExcerptsWhenSidebarConnects);
 chrome.runtime.onMessage.addListener(
@@ -61,10 +68,10 @@ async function handleMessage(
       break;
     }
     case "focusMediaExcerpt":
-      focusMediaExcerpt(message.mediaExcerptId);
+      await focusMediaExcerpt(message.mediaExcerptId);
       break;
-    case "requestUrl":
-      sendResponse(getCanonicalOrFullUrl());
+    case "requestUrlInfo":
+      sendResponse(getUrlInfo());
       return;
     case "updateMediaExcerptOutcomes": {
       const updatedOutcomes = deserializeMap(message.serializedUpdatedOutcomes);
@@ -133,8 +140,8 @@ async function getMediaExcerpt(mediaExcerptId: string) {
   }
 }
 
-function focusMediaExcerpt(mediaExcerptId: string) {
-  highlightManager.focusHighlight(
+async function focusMediaExcerpt(mediaExcerptId: string) {
+  await highlightManager.focusHighlight(
     (data) => data.mediaExcerptId === mediaExcerptId,
   );
 }
@@ -146,6 +153,7 @@ async function createMediaExcerptAndHighlight(
   const quotation = message.selectedText;
   const url = getUrl();
   const canonicalUrl = getCanonicalUrl();
+  const pdfFingerprint = getPdfFingerprint();
   const sourceName = getTitle();
 
   if (!quotation) {
@@ -170,6 +178,7 @@ async function createMediaExcerptAndHighlight(
       quotation,
       url,
       canonicalUrl,
+      pdfFingerprint,
       sourceName,
       domAnchor: highlight.anchor,
     };
@@ -218,14 +227,30 @@ function getUrl() {
 }
 
 function getCanonicalUrl() {
+  if (isCurrentPageThePdfViewer()) {
+    return undefined;
+  }
   return (
     document.querySelector('link[rel="canonical"]')?.getAttribute("href") ||
     undefined
   );
 }
 
-function getCanonicalOrFullUrl() {
-  return getCanonicalUrl() || getUrl();
+function getPdfFingerprint() {
+  const pdfViewerApplication = window.PDFViewerApplication;
+  if (!pdfViewerApplication) {
+    return undefined;
+  }
+  // The PDF.js seems to take the first fingerprint as the only one.
+  return pdfViewerApplication.pdfDocument.fingerprints[0];
+}
+
+function getUrlInfo(): UrlInfo {
+  return {
+    url: getUrl(),
+    canonicalUrl: getCanonicalUrl(),
+    pdfFingerprint: getPdfFingerprint(),
+  };
 }
 
 function isCurrentPageThePdfViewer() {
@@ -244,7 +269,13 @@ function getTitle() {
 }
 
 function getTitleFromPdfMetadata(): string {
-  const metadata = window.PDFViewerApplication.metadata;
+  const pdfViewerApplication = window.PDFViewerApplication;
+  if (!pdfViewerApplication) {
+    throw new Error(
+      "Cannot getTitleFromPdfMetadata if window.PDFViewerApplication is mising. Is the current page the PDF.js viewer?",
+    );
+  }
+  const metadata = pdfViewerApplication.metadata;
   if (metadata.has("dc:title")) {
     const title = metadata.get("dc:title");
     if (title) {
@@ -266,11 +297,13 @@ let mediaExcerptOutcomes: Map<string, BasisOutcome> = new Map();
 async function getMediaExcerpts() {
   const url = getUrl();
   const canonicalUrl = getCanonicalUrl();
+  const pdfFingerprint = getPdfFingerprint();
   const message: GetMediaExcerptsMessage = {
     action: "getMediaExcerpts",
     data: {
       url,
       canonicalUrl,
+      pdfFingerprint,
     },
   };
   let response: GetMediaExcerptsResponse;
@@ -303,43 +336,15 @@ interface HighlightData {
   mediaExcerptId: string;
 }
 
-const isPdfViewer = isCurrentPageThePdfViewer();
-const highlightManager = isPdfViewer
-  ? // updateviewarea fires for resizes, too, and we already update highlights for that below.
-    makeHighlighlightManager({ resize: { updateHighlights: false } })
-  : makeHighlighlightManager();
-if (isPdfViewer) {
-  updateHighlightsWhenPdfViewUpdates();
-}
+const highlightManager = makeHighlighlightManager();
 
-function updateHighlightsWhenPdfViewUpdates() {
-  document.addEventListener("webviewerloaded", function () {
-    window.PDFViewerApplication.initializedPromise
-      .then(() => {
-        // I think PDF.js captures scrolling and manually shifts its absolutely positioned text layer.
-        // So update our highlights too.
-        const updateHighlights = debounce(() => {
-          console.log("updateviewarea");
-          highlightManager.updateAllHighlightElements();
-        }, 50);
-        window.PDFViewerApplication.eventBus.on(
-          "updateviewarea",
-          updateHighlights,
-        );
-      })
-      .catch((reason) => {
-        contentLogger.error(
-          "Failed to initialize highlight manager in PDF",
-          reason,
-        );
-      });
-  });
-}
-
-function makeHighlighlightManager(
-  eventListeners?: HighlightManagerEventListenerOptions,
-): DomAnchorHighlightManager<HighlightData> {
-  return new DomAnchorHighlightManager<HighlightData>({
+function makeHighlighlightManager():
+  | PdfJsAnchorHighlightManager<HighlightData>
+  | DomAnchorHighlightManager<HighlightData> {
+  const options: Omit<
+    HighlightManagerOptions<unknown, HighlightData>,
+    "getRangesFromAnchor"
+  > = {
     container: document.body,
     logger: contentLogger,
     isEquivalentHighlight: ({ data: data1 }, { data: data2 }) =>
@@ -347,8 +352,15 @@ function makeHighlighlightManager(
     getHighlightClassNames: ({ mediaExcerptId }) => [
       getHighlightClass(mediaExcerptId),
     ],
-    eventListeners,
-  });
+  };
+  if (isCurrentPageThePdfViewer()) {
+    return new PdfJsAnchorHighlightManager<HighlightData>(
+      options as PdfJsAnchorHighlightManagerOptions<HighlightData>,
+    );
+  }
+  return new DomAnchorHighlightManager<HighlightData>(
+    options as DomAnchorHighlightManagerOptions<HighlightData>,
+  );
 }
 
 function updateMediaExcerptOutcomes(
@@ -419,6 +431,7 @@ interface GetMediaExcerptsMessage {
   data: {
     url: string;
     canonicalUrl?: string;
+    pdfFingerprint?: string;
   };
 }
 
@@ -430,12 +443,6 @@ export type ChromeRuntimeMessage =
 
 declare global {
   interface Window {
-    PDFViewerApplication: {
-      initializedPromise: Promise<void>;
-      metadata: Map<string, string>;
-      eventBus: {
-        on(event: string, callback: () => void): void;
-      };
-    };
+    PDFViewerApplication?: PDFViewerApplication;
   }
 }

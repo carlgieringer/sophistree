@@ -1,5 +1,8 @@
 # TODO
 
+- Add context menu item to add Proposition
+- Add proposition node via ID and position to graph to help initial placement?
+
 - Test with more examples
 
 - Include conclusion outcomes in map card (and include aggregate of all outcomes ("50% false"))

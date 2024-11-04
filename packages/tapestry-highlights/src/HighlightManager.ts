@@ -1,9 +1,10 @@
-import debounce from "lodash.debounce";
+import throttle from "lodash.throttle";
 import { v4 as uuidv4 } from "uuid";
 import deepEqual from "deep-equal";
+import merge from "lodash.merge";
 
 import type { Logger } from "./logger.js";
-import { mergeCopy } from "./mergeCopy.js";
+import { combineRects } from "./rects/rects.js";
 
 export type HighlightManagerOptions<Anchor, Data> = {
   /** The container to which the manager will add highlight elements. */
@@ -28,6 +29,12 @@ export type HighlightManagerOptions<Anchor, Data> = {
   /** The logger to use. If omitted, window.console is used. */
   logger?: Logger;
   eventListeners?: HighlightManagerEventListenerOptions;
+  /** A callback that is called before a highlight is focused. This allows a PDF highlighter to
+   * focus the correct page first. */
+  beforeFocusHighlight?: (
+    highlight: Highlight<Anchor, Data>,
+    highlighHasElements: () => boolean,
+  ) => Promise<void>;
 };
 type GetRangesFromAnchorFunction<Anchor> = (anchor: Anchor) => Range[];
 type IsEquivalentHighlightFunction<Anchor, Data> = (
@@ -42,7 +49,7 @@ type GetHighlightClassNamesFunction<Data> = (
   highlightData: Data,
   index: number,
 ) => string[];
-export type HighlightManagerEventListenerOptions = {
+type HighlightManagerEventListenerOptions = {
   resize?: {
     // Whether to update highlights upon resize
     updateHighlights: boolean;
@@ -60,6 +67,10 @@ class HighlightManager<Anchor, Data> {
     highlight: HighlightInternal<Anchor, Data>;
     element: HTMLElement;
   }> = [];
+  private readonly highlightEventHandlers: Map<
+    string,
+    Map<HighlightEventName, Set<HighlightEventHandler>>
+  > = new Map();
 
   constructor(options: HighlightManagerOptions<Anchor, Data>) {
     if (!options.container) {
@@ -78,10 +89,12 @@ class HighlightManager<Anchor, Data> {
       highlightClass: options.highlightClass ?? defaultOptions.highlightClass,
       hoverClass: options.hoverClass ?? defaultOptions.hoverClass,
       focusClass: options.focusClass ?? defaultOptions.focusClass,
-      eventListeners: mergeCopy(
+      eventListeners: merge(
+        {},
         defaultOptions.eventListeners,
         options.eventListeners,
       ),
+      beforeFocusHighlight: options.beforeFocusHighlight,
     };
 
     this.addEventListeners();
@@ -92,7 +105,7 @@ class HighlightManager<Anchor, Data> {
   updateHighlightsClassNames(selector: HighlightSelector<Data>) {
     const highlights = this.highlights.filter((h) => selector(h.data));
     if (highlights.length < 1) {
-      this.options.logger.warn(
+      this.logger().warn(
         `No highlights matched selector to update class names.`,
       );
     }
@@ -125,10 +138,10 @@ class HighlightManager<Anchor, Data> {
    * Scrolls to the first element of the first highlight matching the selector and
    * applies the focus style to it.
    */
-  focusHighlight(selector: HighlightSelector<Data>) {
+  async focusHighlight(selector: HighlightSelector<Data>) {
     const highlight = this.highlights.find((h) => selector(h.data));
     if (!highlight) {
-      this.options.logger.error(
+      this.logger().error(
         `Could not focus highlight for selector ${selector.name} because the highlight wasn't found.`,
       );
       return;
@@ -137,13 +150,24 @@ class HighlightManager<Anchor, Data> {
     // Reset styles to their default state
     this.updateStyles();
 
+    try {
+      await this.options.beforeFocusHighlight?.(
+        this.makeExternalHighlight(highlight),
+        () => highlight.elements.length > 0,
+      );
+    } catch (error) {
+      this.logger().warn(
+        `Error awaiting beforeFocusHighlight. Proceeding with focus.`,
+        error,
+      );
+    }
+
     const element = highlight.elements[0];
     if (!element) {
-      this.options.logger.error(
-        "Cannot focus highlight because it has no elements.",
-      );
+      this.logger().error("Cannot focus highlight because it has no elements.");
       return;
     }
+
     element.scrollIntoView({
       behavior: "smooth",
       block: "center",
@@ -155,7 +179,7 @@ class HighlightManager<Anchor, Data> {
   private applyFocusStyle(highlightIndex: number) {
     const highlight = this.highlights[highlightIndex];
     if (!highlight) {
-      this.options.logger.error(
+      this.logger().error(
         `Cannot apply focus style because no highlight exists at index ${highlightIndex}`,
       );
       return;
@@ -168,7 +192,7 @@ class HighlightManager<Anchor, Data> {
   private applyHoverStyle(highlightIndex: number) {
     const highlight = this.highlights[highlightIndex];
     if (!highlight) {
-      this.options.logger.error(
+      this.logger().error(
         `Cannot apply hover style because no highlight exists at index ${highlightIndex}`,
       );
       return;
@@ -192,8 +216,7 @@ class HighlightManager<Anchor, Data> {
   ): Highlight<Anchor, Data> {
     const equivalentHighlight = this.getEquivalentHighlight(anchor, data);
     if (equivalentHighlight) {
-      const { id, anchor, classNames, data } = equivalentHighlight;
-      return { id, anchor, classNames, data };
+      return this.makeExternalHighlight(equivalentHighlight);
     }
 
     const ranges = this.options.getRangesFromAnchor(anchor);
@@ -201,8 +224,7 @@ class HighlightManager<Anchor, Data> {
     const coextensiveHighlight =
       ranges.length && this.getCoextensiveHighlight(ranges);
     if (coextensiveHighlight) {
-      const { id, anchor, classNames, data } = coextensiveHighlight;
-      return { id, anchor, classNames, data };
+      return this.makeExternalHighlight(coextensiveHighlight);
     }
 
     const elements: HTMLElement[] = [];
@@ -232,8 +254,7 @@ class HighlightManager<Anchor, Data> {
       this.updateStyles();
     });
 
-    const { id, classNames } = highlight;
-    return { id, anchor, classNames, data };
+    return this.makeExternalHighlight(highlight);
   }
 
   private getEquivalentHighlight(anchor: Anchor, data: Data) {
@@ -311,7 +332,7 @@ class HighlightManager<Anchor, Data> {
     if (this.options.eventListeners?.resize?.updateHighlights) {
       this.window().addEventListener(
         "resize",
-        debounce(this.handleResize.bind(this), 300),
+        throttle(this.handleResize.bind(this), 300),
       );
     }
   }
@@ -401,7 +422,7 @@ class HighlightManager<Anchor, Data> {
       if (comparison !== 0) {
         return comparison > 0;
       }
-      this.options.logger.error(
+      this.logger().error(
         "Encountered coextensive highlights. This should not happen.",
       );
       return false;
@@ -458,9 +479,7 @@ class HighlightManager<Anchor, Data> {
     }
     const highlightIndex = highlightElement.dataset["highlightIndex"];
     if (!highlightIndex) {
-      this.options.logger.error(
-        `highlight element was missing a highlight index.`,
-      );
+      this.logger().error(`highlight element was missing a highlight index.`);
       return;
     }
 
@@ -476,6 +495,10 @@ class HighlightManager<Anchor, Data> {
         highlight.onClick(highlight.data);
       }
     }
+  }
+
+  protected logger() {
+    return this.options.logger;
   }
 
   private document() {
@@ -548,7 +571,7 @@ class HighlightManager<Anchor, Data> {
 
     highlight.ranges.forEach((range) => {
       const rangeRects = Array.from(range.getClientRects());
-      const combinedRects = this.combineRects(rangeRects);
+      const combinedRects = combineRects(rangeRects);
 
       combinedRects.forEach((rect) => {
         let element = highlight.elements[elementIndex];
@@ -587,6 +610,15 @@ class HighlightManager<Anchor, Data> {
       });
     });
 
+    if (newElements.length) {
+      this.highlightEventHandlers
+        .get(highlight.id)
+        ?.get("newelements")
+        ?.forEach((handler) => {
+          handler();
+        });
+    }
+
     return newElements;
   }
 
@@ -611,61 +643,8 @@ class HighlightManager<Anchor, Data> {
     return element;
   }
 
-  /** Combines adjacent rects into one and drops rects completely encompassed by other rects. */
-  private combineRects(rects: DOMRect[]): DOMRect[] {
-    if (rects.length === 0) return [];
-
-    // Sort rects by top, then left
-    const sortedRects = rects.sort((a, b) =>
-      a.top !== b.top ? a.top - b.top : a.left - b.left,
-    );
-
-    const combinedRects: DOMRect[] = [];
-    let currentRect = sortedRects[0]!;
-
-    for (let i = 1; i < sortedRects.length; i++) {
-      const nextRect = sortedRects[i]!;
-
-      // Check if nextRect is entirely encompassed by currentRect. This occurs
-      // in some PDFs.
-      if (
-        nextRect.left >= currentRect.left &&
-        nextRect.right <= currentRect.right &&
-        nextRect.top >= currentRect.top &&
-        nextRect.bottom <= currentRect.bottom
-      ) {
-        // Skip this rect as it's entirely encompassed
-        continue;
-      }
-
-      // If the rects have the same top and height and are adjacent or overlapping
-      if (
-        currentRect.top === nextRect.top &&
-        currentRect.height === nextRect.height &&
-        nextRect.left <= currentRect.right + 1
-      ) {
-        // Combine the rects
-        currentRect = new DOMRect(
-          currentRect.left,
-          currentRect.top,
-          Math.max(nextRect.right - currentRect.left, currentRect.width),
-          currentRect.height,
-        );
-      } else {
-        // If they're not combinable, add the current rect to the result and move to the next
-        combinedRects.push(currentRect);
-        currentRect = nextRect;
-      }
-    }
-
-    // Add the last rect
-    combinedRects.push(currentRect);
-
-    return combinedRects;
-  }
-
   /** Remove the highlight matching `highlight.id`. */
-  removeHighlight(highlight: Highlight<Anchor, Data>) {
+  removeHighlight(highlight: Pick<Highlight<Anchor, Data>, "id">) {
     const index = this.highlights.findIndex((h) => h.id === highlight.id);
     if (index < 0) {
       return;
@@ -704,7 +683,63 @@ class HighlightManager<Anchor, Data> {
     }
     return internal.elements.map((e) => e.getBoundingClientRect());
   }
+
+  getElementClientRects({ id }: Highlight<Anchor, Data>) {
+    const internal = this.highlights.find((h) => h.id === id);
+    if (!internal) {
+      throw new Error("Highlight was not found.");
+    }
+    return internal.elements.flatMap((e) => Array.from(e.getClientRects()));
+  }
+
+  private makeExternalHighlight(
+    highlight: HighlightInternal<Anchor, Data>,
+  ): Highlight<Anchor, Data> {
+    const { id, anchor, classNames, data } = highlight;
+    return {
+      id,
+      anchor,
+      classNames,
+      data,
+      hasElements: () => highlight.elements.length > 0,
+      on: (event, handler) => {
+        this.addHighlightEventListener(highlight, event, handler);
+      },
+      off: (event, handler) => {
+        this.removeHighlightEventListener(highlight, event, handler);
+      },
+    };
+  }
+
+  private addHighlightEventListener(
+    highlight: HighlightInternal<Anchor, Data>,
+    event: HighlightEventName,
+    handler: HighlightEventHandler,
+  ) {
+    let highlightHandlers = this.highlightEventHandlers.get(highlight.id);
+    if (!highlightHandlers) {
+      highlightHandlers = new Map();
+      this.highlightEventHandlers.set(highlight.id, highlightHandlers);
+    }
+    let eventHandlers = highlightHandlers.get(event);
+    if (!eventHandlers) {
+      eventHandlers = new Set();
+      highlightHandlers.set(event, eventHandlers);
+    }
+    eventHandlers.add(handler);
+  }
+
+  private removeHighlightEventListener(
+    highlight: HighlightInternal<Anchor, Data>,
+    event: HighlightEventName,
+    handler: HighlightEventHandler,
+  ) {
+    this.highlightEventHandlers.get(highlight.id)?.get(event)?.delete(handler);
+  }
 }
+
+export type HighlightEventName = "newelements";
+export type HighlightEventHandler = () => void;
 
 export interface HighlightHandlers<Data> {
   onClick: (highlightData: Data) => void;
@@ -743,6 +778,16 @@ export interface Highlight<Anchor, Data> {
   readonly data: Readonly<Data>;
   /** The class names applied to the highlight. */
   readonly classNames: ReadonlyArray<string>;
+  /** Returns true if the highlight has elements and false otherwise.*/
+  readonly hasElements: () => boolean;
+  readonly on: (
+    event: HighlightEventName,
+    handler: HighlightEventHandler,
+  ) => void;
+  readonly off: (
+    event: HighlightEventName,
+    handler: HighlightEventHandler,
+  ) => void;
 }
 
 type MergedHighlightManagerOptions<Anchor, Data> = {
@@ -755,6 +800,10 @@ type MergedHighlightManagerOptions<Anchor, Data> = {
   focusClass: string;
   logger: Logger;
   eventListeners?: HighlightManagerEventListenerOptions;
+  beforeFocusHighlight?: (
+    highlight: Highlight<Anchor, Data>,
+    highlightHasElements: () => boolean,
+  ) => Promise<void>;
 };
 
 export const classNameIndexPlaceholder = "{index}";

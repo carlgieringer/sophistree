@@ -1,5 +1,9 @@
 import { BasisOutcome } from "../outcomes/outcomes";
-import { AddMediaExcerptData, MediaExcerpt } from "../store/entitiesSlice";
+import {
+  AddMediaExcerptData,
+  MediaExcerpt,
+  UrlInfo,
+} from "../store/entitiesSlice";
 import { serializeMap } from "./serialization";
 import * as appLogger from "../logging/appLogging";
 
@@ -12,8 +16,8 @@ export interface FocusMediaExcerptMessage {
   mediaExcerptId: string;
 }
 
-export interface RequestUrlMessage {
-  action: "requestUrl";
+export interface RequestUrlInfoMessage {
+  action: "requestUrlInfo";
 }
 
 export interface UpdateMediaExcerptOutcomesMessage {
@@ -43,15 +47,15 @@ export interface NotifyTabsOfDeletedMediaExcerptsMessage {
 export type ContentMessage =
   | CreateMediaExcerptMessage
   | FocusMediaExcerptMessage
-  | RequestUrlMessage
+  | RequestUrlInfoMessage
   | UpdateMediaExcerptOutcomesMessage
   | RefreshMediaExcerptsMessage
   | NotifyTabOfNewMediaExcerptMessage
   | NotifyTabsOfDeletedMediaExcerptsMessage;
 
-export function getTabUrl(tabId: number): Promise<string> {
-  const message: RequestUrlMessage = {
-    action: "requestUrl",
+export function getTabUrlInfo(tabId: number): Promise<UrlInfo> {
+  const message: RequestUrlInfoMessage = {
+    action: "requestUrlInfo",
   };
   return chrome.tabs.sendMessage(tabId, message);
 }
