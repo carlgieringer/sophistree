@@ -54,9 +54,10 @@ export type MediaExcerpt = BaseEntity & {
   domAnchor: DomAnchor;
 };
 
-interface UrlInfo {
+export interface UrlInfo {
   url: string;
   canonicalUrl?: string;
+  pdfFingerprint?: string;
 }
 
 interface SourceInfo {
@@ -125,6 +126,7 @@ export interface AddMediaExcerptData {
   quotation: string;
   url: string;
   canonicalUrl?: string;
+  pdfFingerprint?: string;
   sourceName: string;
   domAnchor: DomAnchor;
 }
@@ -183,10 +185,22 @@ export const entitiesSlice = createSlice({
         window.alert("Please open a map to add excerpts.");
         return;
       }
-      const { quotation, url, canonicalUrl, sourceName, domAnchor, id } =
-        action.payload;
+      const {
+        quotation,
+        url,
+        canonicalUrl,
+        pdfFingerprint,
+        sourceName,
+        domAnchor,
+        id,
+      } = action.payload;
       const extantMediaExcerpt = activeMap.entities.find((e) =>
-        isEquivalentMediaExcerpt(e, { url, canonicalUrl, domAnchor }),
+        isEquivalentMediaExcerpt(e, {
+          url,
+          canonicalUrl,
+          pdfFingerprint,
+          domAnchor,
+        }),
       );
       if (extantMediaExcerpt) {
         appLogger.warn("Declining to create a duplicative MediaExcerpt.");
@@ -198,6 +212,7 @@ export const entitiesSlice = createSlice({
         {
           url,
           canonicalUrl,
+          pdfFingerprint,
         },
       );
       const newNode: MediaExcerpt = {
@@ -205,7 +220,7 @@ export const entitiesSlice = createSlice({
         ...defaultVisibilityProps,
         id,
         quotation,
-        urlInfo: { url, canonicalUrl },
+        urlInfo: { url, canonicalUrl, pdfFingerprint },
         sourceInfo: { name: sourceNameOverride ?? sourceName },
         domAnchor,
       };
@@ -277,10 +292,10 @@ export const entitiesSlice = createSlice({
         const updates = action.payload.updates;
         const sourceName = updates.sourceInfo?.name;
         if (sourceName) {
-          const { url, canonicalUrl } = mediaExcerpt.urlInfo;
+          const { url, canonicalUrl, pdfFingerprint } = mediaExcerpt.urlInfo;
           updateSourceNameOverrides(
             activeMap.sourceNameOverrides,
-            { url, canonicalUrl },
+            { url, canonicalUrl, pdfFingerprint },
             sourceName,
           );
         }
@@ -386,9 +401,18 @@ export const entitiesSlice = createSlice({
 
 function getSourceNameOverride(
   sourceNameOverrides: Record<string, string>,
-  { url, canonicalUrl }: { url: string; canonicalUrl: string | undefined },
+  {
+    url,
+    canonicalUrl,
+    pdfFingerprint,
+  }: {
+    url: string;
+    canonicalUrl: string | undefined;
+    pdfFingerprint: string | undefined;
+  },
 ) {
   return (
+    (pdfFingerprint ? sourceNameOverrides[pdfFingerprint] : undefined) ??
     sourceNameOverrides[url] ??
     (canonicalUrl ? sourceNameOverrides[canonicalUrl] : undefined)
   );
@@ -396,11 +420,22 @@ function getSourceNameOverride(
 
 function updateSourceNameOverrides(
   sourceNameOverrides: Record<string, string>,
-  { url, canonicalUrl }: { url: string; canonicalUrl: string | undefined },
+  {
+    url,
+    canonicalUrl,
+    pdfFingerprint,
+  }: {
+    url: string;
+    canonicalUrl: string | undefined;
+    pdfFingerprint: string | undefined;
+  },
   sourceName: string,
 ) {
   if (canonicalUrl) {
     sourceNameOverrides[canonicalUrl] = sourceName;
+  }
+  if (pdfFingerprint) {
+    sourceNameOverrides[pdfFingerprint] = sourceName;
   }
   sourceNameOverrides[url] = sourceName;
 }
@@ -819,19 +854,43 @@ export function isEquivalentMediaExcerpt(
   {
     url,
     canonicalUrl,
+    pdfFingerprint,
     domAnchor,
   }: {
     url: string;
     canonicalUrl: string | undefined;
+    pdfFingerprint: string | undefined;
     domAnchor: DomAnchor;
   },
 ) {
   return (
     e.type === "MediaExcerpt" &&
-    e.urlInfo.canonicalUrl === canonicalUrl &&
-    e.urlInfo.url === url &&
+    isEquivalentUrlInfo(e.urlInfo, { url, canonicalUrl, pdfFingerprint }) &&
     deepEqual(e.domAnchor, domAnchor)
   );
+}
+
+/** Whether the two UrlInfos are equivalent and represent the exact same source. */
+export function isEquivalentUrlInfo(urlInfo1: UrlInfo, urlInfo2: UrlInfo) {
+  return (
+    urlInfo1.url === urlInfo2.url &&
+    urlInfo1.canonicalUrl === urlInfo2.canonicalUrl &&
+    urlInfo1.pdfFingerprint === urlInfo2.pdfFingerprint
+  );
+}
+
+/** Whether the MediaExcerpt should be displayed on the page with the given UrlInfo. */
+export function isMatchingUrlInfo(
+  mediaExcerptUrlInfo: UrlInfo,
+  pageUrlInfo: UrlInfo,
+) {
+  if (mediaExcerptUrlInfo.pdfFingerprint) {
+    return mediaExcerptUrlInfo.pdfFingerprint === pageUrlInfo.pdfFingerprint;
+  }
+  if (mediaExcerptUrlInfo.canonicalUrl) {
+    return mediaExcerptUrlInfo.canonicalUrl === pageUrlInfo.canonicalUrl;
+  }
+  return mediaExcerptUrlInfo.url === pageUrlInfo.url;
 }
 
 export const {

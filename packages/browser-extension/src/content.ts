@@ -11,7 +11,11 @@ import {
 import "tapestry-highlights/rotation-colors.css";
 
 import "./highlights/outcome-colors.scss";
-import { AddMediaExcerptData, MediaExcerpt } from "./store/entitiesSlice";
+import {
+  AddMediaExcerptData,
+  MediaExcerpt,
+  UrlInfo,
+} from "./store/entitiesSlice";
 import type {
   ContentMessage,
   CreateMediaExcerptMessage,
@@ -22,11 +26,7 @@ import { outcomeValence } from "./outcomes/valences";
 import { deserializeMap } from "./extension/serialization";
 import { connectionErrorMessage } from "./extension/errorMessages";
 import * as contentLogger from "./logging/contentLogging";
-import {
-  getPdfUrlFromViewerUrl,
-  isPdfViewerUrl,
-  makeCanonicalPdfUrl,
-} from "./pdfs/pdfs";
+import { getPdfUrlFromViewerUrl, isPdfViewerUrl } from "./pdfs/pdfs";
 
 chrome.runtime.onConnect.addListener(getMediaExcerptsWhenSidebarConnects);
 chrome.runtime.onMessage.addListener(
@@ -70,8 +70,8 @@ async function handleMessage(
     case "focusMediaExcerpt":
       await focusMediaExcerpt(message.mediaExcerptId);
       break;
-    case "requestUrl":
-      sendResponse(getCanonicalOrFullUrl());
+    case "requestUrlInfo":
+      sendResponse(getUrlInfo());
       return;
     case "updateMediaExcerptOutcomes": {
       const updatedOutcomes = deserializeMap(message.serializedUpdatedOutcomes);
@@ -153,6 +153,7 @@ async function createMediaExcerptAndHighlight(
   const quotation = message.selectedText;
   const url = getUrl();
   const canonicalUrl = getCanonicalUrl();
+  const pdfFingerprint = getPdfFingerprint();
   const sourceName = getTitle();
 
   if (!quotation) {
@@ -177,6 +178,7 @@ async function createMediaExcerptAndHighlight(
       quotation,
       url,
       canonicalUrl,
+      pdfFingerprint,
       sourceName,
       domAnchor: highlight.anchor,
     };
@@ -226,9 +228,7 @@ function getUrl() {
 
 function getCanonicalUrl() {
   if (isCurrentPageThePdfViewer()) {
-    const url = window.location.href;
-    const pdfUrl = getPdfUrlFromViewerUrl(url);
-    return makeCanonicalPdfUrl(pdfUrl);
+    return undefined;
   }
   return (
     document.querySelector('link[rel="canonical"]')?.getAttribute("href") ||
@@ -236,8 +236,21 @@ function getCanonicalUrl() {
   );
 }
 
-function getCanonicalOrFullUrl() {
-  return getCanonicalUrl() || getUrl();
+function getPdfFingerprint() {
+  const pdfViewerApplication = window.PDFViewerApplication;
+  if (!pdfViewerApplication) {
+    return undefined;
+  }
+  // The PDF.js seems to take the first fingerprint as the only one.
+  return pdfViewerApplication.pdfDocument.fingerprints[0];
+}
+
+function getUrlInfo(): UrlInfo {
+  return {
+    url: getUrl(),
+    canonicalUrl: getCanonicalUrl(),
+    pdfFingerprint: getPdfFingerprint(),
+  };
 }
 
 function isCurrentPageThePdfViewer() {
@@ -284,11 +297,13 @@ let mediaExcerptOutcomes: Map<string, BasisOutcome> = new Map();
 async function getMediaExcerpts() {
   const url = getUrl();
   const canonicalUrl = getCanonicalUrl();
+  const pdfFingerprint = getPdfFingerprint();
   const message: GetMediaExcerptsMessage = {
     action: "getMediaExcerpts",
     data: {
       url,
       canonicalUrl,
+      pdfFingerprint,
     },
   };
   let response: GetMediaExcerptsResponse;
@@ -372,9 +387,9 @@ function getHighlightClass(mediaExcerptId: string) {
   return `highlight-color-${valence}`;
 }
 
-function createHighlight(mediaExcerptId: string, anchor: DomAnchor) {
+function createHighlight(mediaExcerptId: string, domAnchor: DomAnchor) {
   return highlightManager.createHighlight(
-    anchor,
+    domAnchor,
     { mediaExcerptId },
     {
       onClick: function highlightOnClick() {
@@ -416,6 +431,7 @@ interface GetMediaExcerptsMessage {
   data: {
     url: string;
     canonicalUrl?: string;
+    pdfFingerprint?: string;
   };
 }
 

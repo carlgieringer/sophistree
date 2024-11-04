@@ -5,10 +5,12 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 import {
   deleteEntity,
+  isMatchingUrlInfo,
   MediaExcerpt,
   preferredUrl,
+  UrlInfo,
 } from "../store/entitiesSlice";
-import { getTabUrl, FocusMediaExcerptMessage } from "../extension/messages";
+import { getTabUrlInfo, FocusMediaExcerptMessage } from "../extension/messages";
 import { PropositionNodeData } from "./graphTypes";
 import { catchErrors } from "../extension/callbacks";
 import * as appLogger from "../logging/appLogging";
@@ -100,10 +102,9 @@ const styles = StyleSheet.create({
 export async function focusMediaExcerpt(mediaExcerpt: MediaExcerpt) {
   const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
   const activeTab = tabs[0];
-  const mediaExcerptUrl = preferredUrl(mediaExcerpt.urlInfo);
-  const mediaExcerptId = mediaExcerpt.id;
-  const tabId = await getOrOpenTab(activeTab, mediaExcerptUrl);
+  const tabId = await getOrOpenTab(activeTab, mediaExcerpt.urlInfo);
 
+  const mediaExcerptId = mediaExcerpt.id;
   const message: FocusMediaExcerptMessage = {
     action: "focusMediaExcerpt",
     mediaExcerptId,
@@ -117,23 +118,23 @@ export async function focusMediaExcerpt(mediaExcerpt: MediaExcerpt) {
 
 async function getOrOpenTab(
   activeTab: chrome.tabs.Tab,
-  url: string,
+  urlInfo: UrlInfo,
 ): Promise<number> {
   if (!activeTab.id) {
     throw new Error("Active tab ID was missing. This should never happen.");
   }
   // activeTab.url is often missing, so we request it from the tab.
-  let tabUrl = undefined;
+  let tabUrlInfo = undefined;
   try {
-    tabUrl = await getTabUrl(activeTab.id);
+    tabUrlInfo = await getTabUrlInfo(activeTab.id);
   } catch (error) {
     appLogger.error(`Failed to getTabUrl`, error);
   }
-  if (tabUrl === url) {
+  if (tabUrlInfo && isMatchingUrlInfo(urlInfo, tabUrlInfo)) {
     return activeTab.id;
   }
   const tabIdPromise = waitForTabId(activeTab.id);
-  window.open(url);
+  window.open(urlInfo.url);
   return tabIdPromise;
 }
 

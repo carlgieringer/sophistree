@@ -55,6 +55,7 @@
   "dependencies": {
     "deep-equal": "^2.2.3",
     "lodash.merge": "^4.6.2",
+    "lodash.throttle": "^4.1.1",
     "text-fragments-polyfill": "^5.7.0",
     "uuid": "^10.0.0"
   },
@@ -67,6 +68,7 @@
     "@types/eslint__js": "^8.42.3",
     "@types/jest": "^29.5.13",
     "@types/lodash.merge": "^4.6.9",
+    "@types/lodash.throttle": "^4.1.9",
     "@types/node": "^22.5.4",
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^8.8.0",

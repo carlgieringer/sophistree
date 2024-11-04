@@ -53,6 +53,9 @@ export class PdfJsAnchorHighlightManager<Data> extends HighlightManager<
             if (!highlight.hasElements()) {
               return;
             }
+
+            this.scrollToHighlight(highlight);
+
             clearTimeout(timeoutId);
             if (this.checkFocusHighlightElements) {
               highlight.off("newelements", this.checkFocusHighlightElements);
@@ -82,6 +85,24 @@ export class PdfJsAnchorHighlightManager<Data> extends HighlightManager<
       },
     });
     this.updateHighlightsWhenPdfViewUpdates();
+  }
+
+  private scrollToHighlight(highlight: Highlight<DomAnchor, Data>) {
+    const rects = this.getElementClientRects(highlight);
+    // The first rect seems is sometimes some odd rect towards the beginning of the doc. So take the
+    // second one.
+    const rect =
+      rects.length > 1 ? rects[1] : rects.length ? rects[0] : undefined;
+    if (!rect) {
+      return;
+    }
+    const pdfContainer = pdfViewerApplication().pdfViewer.container;
+    // Scroll the PDF container so that the rect is midway vertically
+    // within the container.
+    // scrollTop is relative to the beginning of the PDF whereas rect.top
+    // is absolutely positioned and so is relative to the current view.
+    pdfContainer.scrollTop += rect.top - 0.5 * pdfContainer.offsetHeight;
+    pdfViewerApplication().pdfViewer.scroll._eventHandler();
   }
 
   private updateHighlightsWhenPdfViewUpdates() {

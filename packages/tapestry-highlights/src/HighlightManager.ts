@@ -1,4 +1,4 @@
-import debounce from "lodash.debounce";
+import throttle from "lodash.throttle";
 import { v4 as uuidv4 } from "uuid";
 import deepEqual from "deep-equal";
 import merge from "lodash.merge";
@@ -150,8 +150,6 @@ class HighlightManager<Anchor, Data> {
     // Reset styles to their default state
     this.updateStyles();
 
-    this.logger().warn("focusHighlight: before");
-
     try {
       await this.options.beforeFocusHighlight?.(
         this.makeExternalHighlight(highlight),
@@ -164,13 +162,12 @@ class HighlightManager<Anchor, Data> {
       );
     }
 
-    this.logger().warn("focusHighlight: after");
-
     const element = highlight.elements[0];
     if (!element) {
       this.logger().error("Cannot focus highlight because it has no elements.");
       return;
     }
+
     element.scrollIntoView({
       behavior: "smooth",
       block: "center",
@@ -335,7 +332,7 @@ class HighlightManager<Anchor, Data> {
     if (this.options.eventListeners?.resize?.updateHighlights) {
       this.window().addEventListener(
         "resize",
-        debounce(this.handleResize.bind(this), 300),
+        throttle(this.handleResize.bind(this), 300),
       );
     }
   }
@@ -358,7 +355,6 @@ class HighlightManager<Anchor, Data> {
       }
 
       if (needsUpdate) {
-        this.logger().info("Mutation needsUpdate");
         this.updateAllHighlightElements();
       }
     });
@@ -686,6 +682,14 @@ class HighlightManager<Anchor, Data> {
       throw new Error("Highlight was not found.");
     }
     return internal.elements.map((e) => e.getBoundingClientRect());
+  }
+
+  getElementClientRects({ id }: Highlight<Anchor, Data>) {
+    const internal = this.highlights.find((h) => h.id === id);
+    if (!internal) {
+      throw new Error("Highlight was not found.");
+    }
+    return internal.elements.flatMap((e) => Array.from(e.getClientRects()));
   }
 
   private makeExternalHighlight(
