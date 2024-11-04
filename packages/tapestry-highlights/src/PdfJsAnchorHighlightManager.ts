@@ -102,7 +102,7 @@ export class PdfJsAnchorHighlightManager<Data> extends HighlightManager<
     // scrollTop is relative to the beginning of the PDF whereas rect.top
     // is absolutely positioned and so is relative to the current view.
     pdfContainer.scrollTop += rect.top - 0.5 * pdfContainer.offsetHeight;
-    pdfViewerApplication().pdfViewer.scroll._eventHandler();
+    pdfContainer.dispatchEvent(new Event("scroll"));
   }
 
   private updateHighlightsWhenPdfViewUpdates() {

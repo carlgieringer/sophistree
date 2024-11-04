@@ -23,7 +23,4 @@ export interface PDFViewer {
   currentPageNumber: number;
   currentPageLabel: string;
   container: HTMLDivElement;
-  scroll: {
-    _eventHandler: () => void;
-  };
 }
