@@ -41,13 +41,17 @@ export class PdfJsAnchorHighlightManager<Data> extends HighlightManager<
         const {
           anchor: { pdf },
         } = highlight;
-        if (!pdf) return Promise.resolve();
+        if (!pdf) {
+          return Promise.resolve();
+        }
+
         const { pageNumber } = pdf;
         const currentPageNumber =
           pdfViewerApplication().pdfViewer.currentPageNumber;
         if (pageNumber === currentPageNumber) {
           return Promise.resolve();
         }
+
         const promise = new Promise<void>((resolve, reject) => {
           this.checkFocusHighlightElements = () => {
             if (!highlight.hasElements()) {
@@ -55,7 +59,6 @@ export class PdfJsAnchorHighlightManager<Data> extends HighlightManager<
             }
 
             this.scrollToHighlight(highlight);
-
             clearTimeout(timeoutId);
             if (this.checkFocusHighlightElements) {
               highlight.off("newelements", this.checkFocusHighlightElements);
@@ -70,7 +73,7 @@ export class PdfJsAnchorHighlightManager<Data> extends HighlightManager<
             }
             reject(
               new Error(
-                "PDF.js did not call updateviewarea within timeout after calling scrollPageIntoView",
+                "Timed out waiting for focused highlight to have elements.",
               ),
             );
           }, this.scrollToPagePromiseTimeoutMs);
@@ -81,6 +84,7 @@ export class PdfJsAnchorHighlightManager<Data> extends HighlightManager<
         pdfViewerApplication().pdfViewer.scrollPageIntoView({
           pageNumber,
         });
+
         return promise;
       },
     });
