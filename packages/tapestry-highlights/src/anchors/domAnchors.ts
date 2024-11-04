@@ -8,6 +8,10 @@ import type { Logger } from "../logger.js";
 export interface DomAnchor {
   fragment?: TextFragment;
   text: textQuote.TextQuoteAnchor;
+  pdf?: {
+    pageNumber: number;
+    pageLabel: string;
+  };
 }
 
 export function getRangesFromDomAnchor(
@@ -20,8 +24,9 @@ export function getRangesFromDomAnchor(
     // processTextFragmentDirective returns an empty array when it fails
     if (ranges.length) {
       return ranges;
-    } else {
-      logger.warn(
+      // Missing anchors are common in PDF.js which renders a few pages at a time.
+    } else if (!domAnchor.pdf) {
+      logger.info(
         `Failed to get ranges from text fragment: ${JSON.stringify(domAnchor.fragment)}`,
       );
     }
@@ -42,6 +47,19 @@ export function makeDomAnchorFromRange(range: Range): DomAnchor {
     result.status === GenerateFragmentStatus.SUCCESS
       ? result.fragment
       : undefined;
+  const pdfViewerApplication = window.PDFViewerApplication;
+  if (pdfViewerApplication) {
+    const pageNumber = pdfViewerApplication.pdfViewer.currentPageNumber;
+    const pageLabel = pdfViewerApplication.pdfViewer.currentPageLabel;
+    return {
+      text,
+      fragment,
+      pdf: {
+        pageNumber,
+        pageLabel,
+      },
+    };
+  }
   return {
     text,
     fragment,

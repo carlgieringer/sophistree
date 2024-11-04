@@ -43,6 +43,7 @@ describe("entitiesSlice", () => {
         name: "Test Map",
         entities: [],
         conclusions: [],
+        sourceNameOverrides: {},
       });
       expect(newState.activeMapId).toBe("new-map-id");
     });

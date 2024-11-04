@@ -2,7 +2,11 @@ import { v4 as uuidv4 } from "uuid";
 import {
   DomAnchorHighlightManager,
   DomAnchor,
-  HighlightManagerEventListenerOptions,
+  PdfJsAnchorHighlightManager,
+  PdfJsAnchorHighlightManagerOptions,
+  DomAnchorHighlightManagerOptions,
+  HighlightManagerOptions,
+  PDFViewerApplication,
 } from "tapestry-highlights";
 import "tapestry-highlights/rotation-colors.css";
 
@@ -23,7 +27,6 @@ import {
   isPdfViewerUrl,
   makeCanonicalPdfUrl,
 } from "./pdfs/pdfs";
-import throttle from "lodash.throttle";
 
 chrome.runtime.onConnect.addListener(getMediaExcerptsWhenSidebarConnects);
 chrome.runtime.onMessage.addListener(
@@ -65,7 +68,7 @@ async function handleMessage(
       break;
     }
     case "focusMediaExcerpt":
-      focusMediaExcerpt(message.mediaExcerptId);
+      await focusMediaExcerpt(message.mediaExcerptId);
       break;
     case "requestUrl":
       sendResponse(getCanonicalOrFullUrl());
@@ -137,8 +140,8 @@ async function getMediaExcerpt(mediaExcerptId: string) {
   }
 }
 
-function focusMediaExcerpt(mediaExcerptId: string) {
-  highlightManager.focusHighlight(
+async function focusMediaExcerpt(mediaExcerptId: string) {
+  await highlightManager.focusHighlight(
     (data) => data.mediaExcerptId === mediaExcerptId,
   );
 }
@@ -253,7 +256,13 @@ function getTitle() {
 }
 
 function getTitleFromPdfMetadata(): string {
-  const metadata = window.PDFViewerApplication.metadata;
+  const pdfViewerApplication = window.PDFViewerApplication;
+  if (!pdfViewerApplication) {
+    throw new Error(
+      "Cannot getTitleFromPdfMetadata if window.PDFViewerApplication is mising. Is the current page the PDF.js viewer?",
+    );
+  }
+  const metadata = pdfViewerApplication.metadata;
   if (metadata.has("dc:title")) {
     const title = metadata.get("dc:title");
     if (title) {
@@ -312,42 +321,15 @@ interface HighlightData {
   mediaExcerptId: string;
 }
 
-const isPdfViewer = isCurrentPageThePdfViewer();
-const highlightManager = isPdfViewer
-  ? // updateviewarea fires for resizes, too, and we already update highlights for that below.
-    makeHighlighlightManager({ resize: { updateHighlights: false } })
-  : makeHighlighlightManager();
-if (isPdfViewer) {
-  updateHighlightsWhenPdfViewUpdates();
-}
+const highlightManager = makeHighlighlightManager();
 
-function updateHighlightsWhenPdfViewUpdates() {
-  document.addEventListener("webviewerloaded", function () {
-    window.PDFViewerApplication.initializedPromise
-      .then(() => {
-        // I think PDF.js captures scrolling and manually shifts its absolutely positioned text layer.
-        // So update our highlights too.
-        const updateHighlights = throttle(() => {
-          highlightManager.updateAllHighlightElements();
-        }, 10);
-        window.PDFViewerApplication.eventBus.on(
-          "updateviewarea",
-          updateHighlights,
-        );
-      })
-      .catch((reason) => {
-        contentLogger.error(
-          "Failed to initialize highlight manager in PDF",
-          reason,
-        );
-      });
-  });
-}
-
-function makeHighlighlightManager(
-  eventListeners?: HighlightManagerEventListenerOptions,
-): DomAnchorHighlightManager<HighlightData> {
-  return new DomAnchorHighlightManager<HighlightData>({
+function makeHighlighlightManager():
+  | PdfJsAnchorHighlightManager<HighlightData>
+  | DomAnchorHighlightManager<HighlightData> {
+  const options: Omit<
+    HighlightManagerOptions<unknown, HighlightData>,
+    "getRangesFromAnchor"
+  > = {
     container: document.body,
     logger: contentLogger,
     isEquivalentHighlight: ({ data: data1 }, { data: data2 }) =>
@@ -355,8 +337,15 @@ function makeHighlighlightManager(
     getHighlightClassNames: ({ mediaExcerptId }) => [
       getHighlightClass(mediaExcerptId),
     ],
-    eventListeners,
-  });
+  };
+  if (isCurrentPageThePdfViewer()) {
+    return new PdfJsAnchorHighlightManager<HighlightData>(
+      options as PdfJsAnchorHighlightManagerOptions<HighlightData>,
+    );
+  }
+  return new DomAnchorHighlightManager<HighlightData>(
+    options as DomAnchorHighlightManagerOptions<HighlightData>,
+  );
 }
 
 function updateMediaExcerptOutcomes(
@@ -383,9 +372,9 @@ function getHighlightClass(mediaExcerptId: string) {
   return `highlight-color-${valence}`;
 }
 
-function createHighlight(mediaExcerptId: string, domAnchor: DomAnchor) {
+function createHighlight(mediaExcerptId: string, anchor: DomAnchor) {
   return highlightManager.createHighlight(
-    domAnchor,
+    anchor,
     { mediaExcerptId },
     {
       onClick: function highlightOnClick() {
@@ -438,12 +427,6 @@ export type ChromeRuntimeMessage =
 
 declare global {
   interface Window {
-    PDFViewerApplication: {
-      initializedPromise: Promise<void>;
-      metadata: Map<string, string>;
-      eventBus: {
-        on(event: string, callback: () => void): void;
-      };
-    };
+    PDFViewerApplication?: PDFViewerApplication;
   }
 }

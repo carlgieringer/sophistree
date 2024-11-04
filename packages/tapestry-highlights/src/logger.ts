@@ -1,1 +1,1 @@
-export type Logger = Pick<typeof console, "error" | "warn">;
+export type Logger = Pick<typeof console, "error" | "warn" | "info">;

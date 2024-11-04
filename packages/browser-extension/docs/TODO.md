@@ -1,12 +1,5 @@
 # TODO
 
-- Support editing MediaExcerpt Source name
-- Remember last Source name used per URL
-- Apply highlights to PDFs with different URL fragments or query params.
-- Fix deduplicating encompassed rects.
-
-- Fix scrolling to excerpt on different page in PDFs
-
 - Test with more examples
 
 - Include conclusion outcomes in map card (and include aggregate of all outcomes ("50% false"))

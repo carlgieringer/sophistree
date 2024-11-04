@@ -17,7 +17,7 @@ export type DomAnchorHighlightManagerOptions<Data> = Omit<
   "getRangesFromAnchor"
 >;
 
-/** A HighlightManager with a predetermined Anchor type. */
+/** A HighlightManager using an anchor for web pages. */
 export class DomAnchorHighlightManager<Data> extends HighlightManager<
   DomAnchor,
   Data

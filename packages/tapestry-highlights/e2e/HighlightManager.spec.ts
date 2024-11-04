@@ -212,12 +212,12 @@ test.describe("HighlightManager", () => {
   });
 
   test("should focus a highlight", async () => {
-    const highlightIndex = await page.evaluate(() => {
+    const highlightIndex = await page.evaluate(async () => {
       window.manager.createHighlight({ exact: "This is some" }, { id: 1 });
       window.manager.createHighlight({ exact: "sample text" }, { id: 2 });
       window.manager.createHighlight({ exact: "that we will use" }, { id: 3 });
 
-      window.manager.focusHighlight(({ id }) => id === 2);
+      await window.manager.focusHighlight(({ id }) => id === 2);
 
       const element = document.querySelector(".highlight-focus") as HTMLElement;
       return element?.dataset["highlightIndex"];
@@ -331,7 +331,7 @@ test.describe("HighlightManager", () => {
   });
 
   test("should log errors for invalid operations", async () => {
-    const errorLogged = await page.evaluate(() => {
+    const errorLogged = await page.evaluate(async () => {
       let errorLogged = false;
       const originalConsoleError = console.error;
       console.error = (...args) => {
@@ -339,7 +339,7 @@ test.describe("HighlightManager", () => {
         errorLogged = true;
       };
 
-      window.manager.focusHighlight(({ id }) => id === 999);
+      await window.manager.focusHighlight(({ id }) => id === 999);
 
       console.error = originalConsoleError;
       return errorLogged;

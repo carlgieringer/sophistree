@@ -23,7 +23,7 @@ class DOMRect {
     throw new Error("Not implemented");
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  static fromRect(otherRect: DOMRect): DOMRect {
+  static fromRect(_otherRect: DOMRect): DOMRect {
     throw new Error("Not implemented");
   }
 }

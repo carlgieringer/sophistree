@@ -1,0 +1,154 @@
+import throttle from "lodash.throttle";
+
+import {
+  HighlightManager,
+  type HighlightManagerOptions,
+  type HighlightHandlers,
+  type Highlight,
+} from "./HighlightManager.js";
+
+import {
+  getRangesFromDomAnchor,
+  makeDomAnchorFromRange,
+  makeDomAnchorFromSelection,
+  type DomAnchor,
+} from "./anchors/index.js";
+import type { PDFViewerApplication } from "./pdfjs/pdfjs.js";
+
+export type PdfJsAnchorHighlightManagerOptions<Data> = Omit<
+  HighlightManagerOptions<DomAnchor, Data>,
+  "getRangesFromAnchor"
+>;
+
+/** A HighlightManager customized for PDF.js pages. */
+export class PdfJsAnchorHighlightManager<Data> extends HighlightManager<
+  DomAnchor,
+  Data
+> {
+  private scrollToPagePromiseTimeoutMs: number = 5000;
+  private checkFocusHighlightElements: (() => void) | undefined = undefined;
+  constructor(options: PdfJsAnchorHighlightManagerOptions<Data>) {
+    super({
+      ...options,
+      getRangesFromAnchor: (anchor: DomAnchor) =>
+        getRangesFromDomAnchor(options.container, anchor, options.logger),
+
+      // updateviewarea fires for resizes, too, and we already update highlights for that below.
+      eventListeners: { resize: { updateHighlights: false } },
+
+      // Wait for PDF.js to scroll to the page before highlighting.
+      beforeFocusHighlight: (highlight) => {
+        const {
+          anchor: { pdf },
+        } = highlight;
+        if (!pdf) return Promise.resolve();
+        const { pageNumber } = pdf;
+        const currentPageNumber =
+          pdfViewerApplication().pdfViewer.currentPageNumber;
+        if (pageNumber === currentPageNumber) {
+          return Promise.resolve();
+        }
+        const promise = new Promise<void>((resolve, reject) => {
+          this.checkFocusHighlightElements = () => {
+            if (!highlight.hasElements()) {
+              return;
+            }
+            clearTimeout(timeoutId);
+            if (this.checkFocusHighlightElements) {
+              highlight.off("newelements", this.checkFocusHighlightElements);
+              this.checkFocusHighlightElements = undefined;
+            }
+            resolve();
+          };
+          const timeoutId = setTimeout(() => {
+            if (this.checkFocusHighlightElements) {
+              highlight.off("newelements", this.checkFocusHighlightElements);
+              this.checkFocusHighlightElements = undefined;
+            }
+            reject(
+              new Error(
+                "PDF.js did not call updateviewarea within timeout after calling scrollPageIntoView",
+              ),
+            );
+          }, this.scrollToPagePromiseTimeoutMs);
+
+          highlight.on("newelements", this.checkFocusHighlightElements);
+        });
+
+        pdfViewerApplication().pdfViewer.scrollPageIntoView({
+          pageNumber,
+        });
+        return promise;
+      },
+    });
+    this.updateHighlightsWhenPdfViewUpdates();
+  }
+
+  private updateHighlightsWhenPdfViewUpdates() {
+    document.addEventListener("webviewerloaded", () => {
+      pdfViewerApplication()
+        .initializedPromise.then(() => {
+          // I think PDF.js captures scrolling and manually shifts its absolutely positioned text layer.
+          // So update our highlights too.
+          const updateHighlights = throttle(() => {
+            this.updateAllHighlightElements();
+            this.checkFocusHighlightElements?.();
+          }, 10);
+          pdfViewerApplication().eventBus.on(
+            "updateviewarea",
+            updateHighlights,
+          );
+        })
+        .catch((reason) => {
+          this.logger().error(
+            "Failed to initialize highlight manager in PDF",
+            reason,
+          );
+        });
+    });
+  }
+
+  createHighlightFromCurrentSelection(
+    data: Data,
+    handlers?: HighlightHandlers<Data>,
+  ): Highlight<DomAnchor, Data> {
+    const selection = window.getSelection();
+    if (!selection) {
+      throw new Error(
+        "Cannot create highlight from current selection because there isn't one.",
+      );
+    }
+    return this.createHighlightFromSelection(selection, data, handlers);
+  }
+
+  createHighlightFromSelection(
+    selection: Selection,
+    data: Data,
+    handlers?: HighlightHandlers<Data>,
+  ): Highlight<DomAnchor, Data> {
+    if (!selection || selection.isCollapsed) {
+      throw new Error("Cannot highlight empty selection.");
+    }
+    const anchor = makeDomAnchorFromSelection(selection);
+    return this.createHighlight(anchor, data, handlers);
+  }
+
+  createHighlightFromRange(
+    range: Range,
+    data: Data,
+    handlers?: HighlightHandlers<Data>,
+  ): Highlight<DomAnchor, Data> {
+    const anchor = makeDomAnchorFromRange(range);
+    return this.createHighlight(anchor, data, handlers);
+  }
+}
+
+function pdfViewerApplication(): PDFViewerApplication {
+  const { PDFViewerApplication } = window;
+  if (!PDFViewerApplication) {
+    throw new Error(
+      "PDFViewerApplication not found; is the current page the PDF.js viewer?",
+    );
+  }
+  return PDFViewerApplication;
+}
