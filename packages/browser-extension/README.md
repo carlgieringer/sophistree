@@ -102,6 +102,25 @@ of CUJs.
 The model is the same as Howdju, and is explained here with a graph:
 https://docs.howdju.com/concepts
 
+## PDF support
+
+Sophistree supports highlighting PDFs by:
+
+- Including PDF.js's embedded PDF viewer page, modified to inject our content script into the page.
+- Detecting PDF files and redirecting to the embedded PDF viewer page.
+- Supporting highlights on the PDF viewer page with `tapestry-highlight`'s `PdfJsAnchorHighlightManager`.
+
+Note that the PDF support is currently very basic, only detecting PDFs with a `".pdf"` extension. If
+you encounter issues, please report them using Github's issues.
+
+### Updating PDF.js
+
+Pick a release from [available releases](https://github.com/mozilla/pdf.js/releases).
+
+```sh
+ npm run update-pdfjs -- https://github.com/mozilla/pdf.js/releases/download/v4.7.76/pdfjs-4.7.76-dist.zip
+```
+
 ## Extension components and permissions
 
 This section briefly describes why the extensions requires certain scripts and permissions:
@@ -118,6 +137,9 @@ This section briefly describes why the extensions requires certain scripts and p
     emphasize focused exerpts.
   - `<all_urls>` so that Sophistree works on all pages
 
+- `webNavigation`: allows the extension to detect PDF files and redirect to a PDF viewer that supports
+  highlighting.
+
 ## Publishing to Chrome Web Store
 
 Ensure the versions in `manifest.json` and `package.json` are up-to-date.
@@ -128,11 +150,3 @@ npm run zip-extension
 ```
 
 Upload the zip file.
-
-## Updating PDF.js
-
-Pick a release from [available releases](https://github.com/mozilla/pdf.js/releases).
-
-```sh
- npm run update-pdfjs -- https://github.com/mozilla/pdf.js/releases/download/v4.7.76/pdfjs-4.7.76-dist.zip
-```

@@ -8,7 +8,11 @@ chrome.runtime.onInstalled.addListener(
   wrapCallback(installContentScriptsInOpenTabs),
 );
 chrome.runtime.onInstalled.addListener(wrapCallback(installContextMenus));
+
 chrome.contextMenus.onClicked.addListener(wrapCallback(handleContextMenuClick));
+
+chrome.webNavigation.onCommitted.addListener(wrapCallback(handleNavigation));
+
 void chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
 
 const addToSophistreeContextMenuId =
@@ -121,8 +125,6 @@ async function handleContextMenuClick(
     );
   }
 }
-
-chrome.webNavigation.onCommitted.addListener(wrapCallback(handleNavigation));
 
 async function handleNavigation(
   details: chrome.webNavigation.WebNavigationFramedCallbackDetails,

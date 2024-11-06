@@ -88,6 +88,18 @@ can select the highlights in callbacks you pass to other manager methods.
 
 ### Advanced Usage
 
+#### Highlighting PDFs
+
+`tapestry-highlights` can highlight PDFs rendered by [PDF.js](https://mozilla.github.io/pdf.js/)
+using the `PdfJsAnchorHighlightManager` class. This class encapsulates configuration and behavior
+supporting PDF-specific behavior such as scrolling to a particular page of the PDF when focusing a
+highlight.
+
+Supporting PDF highlighting in a browser extension has multiple requirements. See
+the [Sophistree extension's
+README](https://github.com/carlgieringer/sophistree/blob/main/packages/browser-extension/README.md)
+for more details on browser extension PDF support.
+
 #### Custom highlight classes
 
 By default, `HighlightManager` adds a class to highlights to color them using
