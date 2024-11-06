@@ -142,7 +142,7 @@ This section briefly describes why the extensions requires certain scripts and p
 
 ## Publishing to Chrome Web Store
 
-Ensure the versions in `manifest.json` and `package.json` are up-to-date.
+Ensure the version in `package.json` is up-to-date.
 
 ```sh
 npm run build-prod

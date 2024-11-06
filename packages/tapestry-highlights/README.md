@@ -268,6 +268,8 @@ explanations e.g. screenshot diffs.
 
 ### Publishing
 
+Ensure that the version in `package.json` is up-to-date.
+
 #### Packaging
 
 ```sh
