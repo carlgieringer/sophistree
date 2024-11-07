@@ -19,7 +19,11 @@ export function getRangesFromDomAnchor(
   domAnchor: DomAnchor,
   logger: Logger = console,
 ): Range[] {
-  if (domAnchor.fragment) {
+  // text-fragments-polyfill is unreliable for PDFs. It sometimes returns two ranges that are
+  // the inverse of each other. I.e. the first range is correct whereas the second range has
+  // startContainer equal to the first's endContainer and endContainer equal to the first's
+  // startContainer.
+  if (domAnchor.fragment && !domAnchor.pdf) {
     const ranges = processTextFragmentDirective(domAnchor.fragment);
     // processTextFragmentDirective returns an empty array when it fails
     if (ranges.length) {

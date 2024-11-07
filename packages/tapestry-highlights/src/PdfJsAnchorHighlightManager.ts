@@ -37,63 +37,64 @@ export class PdfJsAnchorHighlightManager<Data> extends HighlightManager<
       eventListeners: { resize: { updateHighlights: false } },
 
       // Wait for PDF.js to scroll to the page before highlighting.
-      beforeFocusHighlight: (highlight) => {
-        const {
-          anchor: { pdf },
-        } = highlight;
-        if (!pdf) {
-          return Promise.resolve();
-        }
-
-        const { pageNumber } = pdf;
-        const currentPageNumber =
-          pdfViewerApplication().pdfViewer.currentPageNumber;
-        if (pageNumber === currentPageNumber) {
-          return Promise.resolve();
-        }
-
-        const promise = new Promise<void>((resolve, reject) => {
-          this.checkFocusHighlightElements = () => {
-            if (!highlight.hasElements()) {
-              return;
-            }
-
-            this.scrollToHighlight(highlight);
-            clearTimeout(timeoutId);
-            if (this.checkFocusHighlightElements) {
-              highlight.off("newelements", this.checkFocusHighlightElements);
-              this.checkFocusHighlightElements = undefined;
-            }
-            resolve();
-          };
-          const timeoutId = setTimeout(() => {
-            if (this.checkFocusHighlightElements) {
-              highlight.off("newelements", this.checkFocusHighlightElements);
-              this.checkFocusHighlightElements = undefined;
-            }
-            reject(
-              new Error(
-                "Timed out waiting for focused highlight to have elements.",
-              ),
-            );
-          }, this.scrollToPagePromiseTimeoutMs);
-
-          highlight.on("newelements", this.checkFocusHighlightElements);
-        });
-
-        pdfViewerApplication().pdfViewer.scrollPageIntoView({
-          pageNumber,
-        });
-
-        return promise;
-      },
+      beforeFocusHighlight: (highlight) =>
+        this.untilHighlightHasElements(highlight),
     });
     this.updateHighlightsWhenPdfViewUpdates();
   }
 
+  private untilHighlightHasElements(
+    highlight: Highlight<DomAnchor, Data>,
+  ): Promise<void> {
+    {
+      const {
+        anchor: { pdf },
+      } = highlight;
+      if (!pdf) {
+        return Promise.resolve();
+      }
+
+      const promise = new Promise<void>((resolve, reject) => {
+        this.checkFocusHighlightElements = () => {
+          if (!highlight.hasElements()) {
+            return;
+          }
+
+          this.scrollToHighlight(highlight);
+          clearTimeout(timeoutId);
+          if (this.checkFocusHighlightElements) {
+            highlight.off("newelements", this.checkFocusHighlightElements);
+            this.checkFocusHighlightElements = undefined;
+          }
+          resolve();
+        };
+        const timeoutId = setTimeout(() => {
+          if (this.checkFocusHighlightElements) {
+            highlight.off("newelements", this.checkFocusHighlightElements);
+            this.checkFocusHighlightElements = undefined;
+          }
+          reject(
+            new Error(
+              "Timed out waiting for focused highlight to have elements.",
+            ),
+          );
+        }, this.scrollToPagePromiseTimeoutMs);
+
+        highlight.on("newelements", this.checkFocusHighlightElements);
+      });
+
+      const { pageNumber } = pdf;
+      pdfViewerApplication().pdfViewer.scrollPageIntoView({
+        pageNumber,
+      });
+
+      return promise;
+    }
+  }
+
   private scrollToHighlight(highlight: Highlight<DomAnchor, Data>) {
     const rects = this.getElementClientRects(highlight);
-    // The first rect seems is sometimes some odd rect towards the beginning of the doc. So take the
+    // The first rect is sometimes some odd rect towards the beginning of the page. So take the
     // second one.
     const rect =
       rects.length > 1 ? rects[1] : rects.length ? rects[0] : undefined;
@@ -110,7 +111,7 @@ export class PdfJsAnchorHighlightManager<Data> extends HighlightManager<
   }
 
   private updateHighlightsWhenPdfViewUpdates() {
-    document.addEventListener("webviewerloaded", () => {
+    this.document().addEventListener("webviewerloaded", () => {
       pdfViewerApplication()
         .initializedPromise.then(() => {
           // I think PDF.js captures scrolling and manually shifts its absolutely positioned text layer.

@@ -501,11 +501,11 @@ class HighlightManager<Anchor, Data> {
     return this.options.logger;
   }
 
-  private document() {
+  protected document() {
     return this.options.container.ownerDocument;
   }
 
-  private window() {
+  protected window() {
     const view = this.document().defaultView;
     if (!view) {
       throw new Error(
