@@ -539,26 +539,38 @@ function useContextMenus(
           hasTrailingDivider: true,
         },
         {
+          id: "add-proposition",
+          content: "Add proposition",
+          tooltipText: "Add a proposition",
+          selector: "",
+          coreAsWell: true,
+          onClickFunction: (event: EventObject) => {
+            if (event.target === cy) {
+              dispatch(addNewProposition());
+            }
+          },
+        },
+        {
           id: "zoom-out",
           content: "Zoom out",
           selector: "*",
-          onClickFunction: zoomOut,
           coreAsWell: true,
+          onClickFunction: zoomOut,
         },
         {
           id: "zoom-in",
           content: "Zoom in",
           selector: "*",
-          onClickFunction: zoomIn,
           coreAsWell: true,
+          onClickFunction: zoomIn,
         },
         {
           id: "fit-to-contents",
           content: "Fit to contents",
           selector: "*",
+          coreAsWell: true,
           tooltipText: "Layout the graph to fit to all contents",
           onClickFunction: () => layoutGraph(true),
-          coreAsWell: true,
         },
         {
           id: "show-element-data",
