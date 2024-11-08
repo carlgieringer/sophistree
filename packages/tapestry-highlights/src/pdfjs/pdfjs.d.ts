@@ -6,7 +6,7 @@ declare global {
 
 export interface PDFViewerApplication {
   initializedPromise: Promise<void>;
-  metadata: Map<string, string>;
+  metadata?: Map<string, string>;
   pdfDocument: PDFDocumentProxy;
   pdfViewer: PDFViewer;
   eventBus: {

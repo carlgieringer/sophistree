@@ -276,13 +276,13 @@ function getTitleFromPdfMetadata(): string {
     );
   }
   const metadata = pdfViewerApplication.metadata;
-  if (metadata.has("dc:title")) {
+  if (metadata?.has("dc:title")) {
     const title = metadata.get("dc:title");
     if (title) {
       return title;
     }
   }
-  if (metadata.has("title")) {
+  if (metadata?.has("title")) {
     const title = metadata.get("title");
     if (title) {
       return title;
