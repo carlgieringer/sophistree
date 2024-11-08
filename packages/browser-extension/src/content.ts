@@ -276,18 +276,18 @@ function getTitleFromPdfMetadata(): string {
     );
   }
   const metadata = pdfViewerApplication.metadata;
-  if (metadata.has("dc:title")) {
-    const title = metadata.get("dc:title");
-    if (title) {
-      return title;
+    if (metadata?.has("dc:title")) {
+      const title = metadata.get("dc:title");
+      if (title) {
+        return title;
+      }
     }
-  }
-  if (metadata.has("title")) {
-    const title = metadata.get("title");
-    if (title) {
-      return title;
+    if (metadata?.has("title")) {
+      const title = metadata.get("title");
+      if (title) {
+        return title;
+      }
     }
-  }
   // return the filename
   const pdfUrl = getPdfUrlFromViewerUrl(window.location.href);
   return pdfUrl.split("/").pop() || "";
