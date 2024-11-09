@@ -93,11 +93,7 @@ export class PdfJsAnchorHighlightManager<Data> extends HighlightManager<
   }
 
   private scrollToHighlight(highlight: Highlight<DomAnchor, Data>) {
-    const rects = this.getElementClientRects(highlight);
-    // The first rect is sometimes some odd rect towards the beginning of the page. So take the
-    // second one.
-    const rect =
-      rects.length > 1 ? rects[1] : rects.length ? rects[0] : undefined;
+    const rect = this.getFirstNonemptyElementRect(highlight);
     if (!rect) {
       return;
     }
