@@ -684,12 +684,26 @@ class HighlightManager<Anchor, Data> {
     return internal.elements.map((e) => e.getBoundingClientRect());
   }
 
-  getElementClientRects({ id }: Highlight<Anchor, Data>) {
+  /**
+   * Returns the first rect of the first non-empty element for the highlight. Non-empty means that
+   * the element has a width and height greater than 0.
+   *
+   * Returns undefined if no such element is found.
+   */
+  getFirstNonemptyElementRect({ id }: Highlight<Anchor, Data>) {
     const internal = this.highlights.find((h) => h.id === id);
     if (!internal) {
       throw new Error("Highlight was not found.");
     }
-    return internal.elements.flatMap((e) => Array.from(e.getClientRects()));
+    const rects = internal.elements
+      .find((el) => {
+        const styles = this.window().getComputedStyle(el);
+        const width = this.window().parseFloat(styles["width"]);
+        const height = this.window().parseFloat(styles["height"]);
+        return width > 0 && height > 0;
+      })
+      ?.getClientRects();
+    return rects && rects?.length > 0 ? rects[0] : undefined;
   }
 
   private makeExternalHighlight(
