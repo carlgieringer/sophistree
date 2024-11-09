@@ -31,6 +31,7 @@ Excerpt creation guidelines:
   error message when trying to crate a media excerpt.
 - If excerpt creation fails, no highlight is created.
 - There must be an active map to create a new excerpt. Otherwise, the user gets an error message.
+- The content can be a web page or a PDF.
 
 ## Highlights
 
@@ -48,6 +49,7 @@ Guidelines:
 
 - Sophistree prefers matching excerpts to pages using the page's canonical URL, if any, and
   otherwise falls back to the full URL.
+- The content can be a web page or a PDF.
 
 ## Outcomes
 
