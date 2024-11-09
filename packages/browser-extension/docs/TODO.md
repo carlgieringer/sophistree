@@ -1,9 +1,29 @@
 # TODO
 
 - Test with more examples
+- Prototytype:
+
+  - sharing maps (feed)
+  - discovering maps (on-page?)
+  - and contributing to a map.
 
 - Include conclusion outcomes in map card (and include aggregate of all outcomes ("50% false"))
 - Add 'sources excerpted for evidence' in map card
+
+- Map improvements
+
+  - Right click on edge gives option to add proposition countering
+  - Right click on proposition gives option to add justification
+  - Delete multiple elements
+  - Drag PropositionCompound atoms to reorder them
+  - "Grab" a node to have it follow view to make it easier to drag it far away
+  - Add zoom in/out and fit view buttons in corner
+
+- Extension design improvements
+
+  - What happens if you have two windows open to the same map? Are edits propagated?
+    - Only highlight tabs in the current window
+  - Switching between dev and prod extensions with sidepanel open doens't clear highlights
 
 - Try adding
 
