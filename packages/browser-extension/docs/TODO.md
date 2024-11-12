@@ -1,11 +1,6 @@
 # TODO
 
 - Test with more examples
-- Prototytype:
-
-  - sharing maps (feed)
-  - discovering maps (on-page?)
-  - and contributing to a map.
 
 - Include conclusion outcomes in map card (and include aggregate of all outcomes ("50% false"))
 - Add 'sources excerpted for evidence' in map card

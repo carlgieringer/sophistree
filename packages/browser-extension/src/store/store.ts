@@ -6,6 +6,7 @@ import { useDispatch } from "react-redux";
 import entitiesReducer from "./entitiesSlice";
 import { persistedStateVersion, reduxPersistMigrations } from "./migrations";
 import ui from "./uiSlice";
+import auth from "./authSlice";
 
 const persistConfig = {
   key: "root",
@@ -20,6 +21,7 @@ const persistedReducer = persistReducer(persistConfig, entitiesReducer);
 
 export const store = configureStore({
   reducer: {
+    auth,
     entities: persistedReducer,
     ui,
   },

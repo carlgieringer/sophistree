@@ -15,7 +15,12 @@ const outdir = prod ? "./dist/prod" : "./dist/dev";
 const pdfjsSubdir = "pdfjs";
 
 const options = {
-  entryPoints: ["src/main.tsx", "src/background.ts", "src/content.ts"],
+  entryPoints: [
+    "src/main.tsx",
+    "src/background.ts",
+    "src/content.ts",
+    "src/options.tsx",
+  ],
   bundle: true,
   minify: true,
   // React error messages are much more helpful when the Component names are not minimized
@@ -68,7 +73,7 @@ const options = {
     copy({
       assets: [
         {
-          from: ["./public/sidebar.html"],
+          from: ["./public/sidebar.html", "./public/options.html"],
           to: ["."],
         },
         {

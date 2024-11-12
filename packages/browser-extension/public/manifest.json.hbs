@@ -3,8 +3,10 @@
   "name": "Sophistree{{#unless prod}} (Dev){{/unless}}",
   "version": "{{version}}",
   "description": "A browser extension for mapping arguments appearing in web pages",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAu7ncE4EsNZ76PZY6YgKzq0SpPs59Dw+1+gZh+wTX3j18ruCC1+I601Pdi9M/i4kYP82TFsTBhOlW6+IeXQbG06fzJwvmFLAIAwOUX+5IDndcU3/0byW8K5IbFfCNWZeFPg8xJjPlj7NOP1Scud/AGVpQnADquoIk94LwREiqGSEG3INMxr8IbCI3/TpONkimkOlIBPceJPXLT3zIhoe2SnNXXACfCIwglgxtNUYqKmH9aNsrmJY4nRiGFlujAlpNdn5dP6zKou5HAK+hBx/GvxKWwP6EEW4YGwnwExtA6GLALjvJRmMDEcxM+vfhW6CvVAhC2dLwDSfdnRktQdYL+wIDAQAB",
   "permissions": [
-    "contextMenus",{{#unless prod}}
+    "contextMenus",
+    "identity",{{#unless prod}}
     "management",{{/unless}}
     "scripting",
     "sidePanel",
@@ -16,6 +18,7 @@
   "background": {
     "service_worker": "background.js"
   },
+  "options_page": "options.html",
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
@@ -26,6 +29,13 @@
   "host_permissions": ["<all_urls>"],
   "side_panel": {
     "default_path": "sidebar.html"
+  },
+  "oauth2": {
+    "client_id": "521682983614-3mic45o5a0816d1513ls6emeug19as4v.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/userinfo.profile"
+    ]
   },
   "icons": {
     "32": "logo-32.png",

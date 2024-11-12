@@ -28,6 +28,7 @@ import {
 import { serializeMap } from "./extension/serialization";
 import * as appLogger from "./logging/appLogging";
 import { catchErrors } from "./extension/callbacks";
+import { useRefreshAuth } from "./store/hooks";
 
 const App: React.FC = () => {
   const dispatch = useDispatch();
@@ -35,6 +36,7 @@ const App: React.FC = () => {
   useSendUpdatedMediaExcerptOutcomes();
   useHandleChromeRuntimeMessage();
   useContentScriptKeepAliveConnection();
+  useRefreshAuth();
 
   const activeMapId = useSelector(selectors.activeMapId);
   const graphView = activeMapId ? (
