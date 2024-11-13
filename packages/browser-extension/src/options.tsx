@@ -12,5 +12,5 @@ root.render(
     <Provider store={store}>
       <OptionsPage />
     </Provider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );
