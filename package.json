@@ -9,6 +9,7 @@
   "private": true,
   "workspaces": [
     "packages/tapestry-highlights",
+    "packages/backend",
     "packages/browser-extension"
   ],
   "scripts": {
