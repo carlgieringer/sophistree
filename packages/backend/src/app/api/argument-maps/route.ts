@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     console.error("Error fetching maps:", error);
     return NextResponse.json(
       { error: "Failed to fetch maps" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     console.error("Error creating map:", error);
     return NextResponse.json(
       { error: "Failed to create map" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

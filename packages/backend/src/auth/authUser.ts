@@ -13,7 +13,7 @@ export async function getOrCreateUserFromAuth(request: NextRequest) {
           error:
             "Authorization required but no authorization header was provided.",
         },
-        { status: 401 }
+        { status: 401 },
       );
     } else {
       return NextResponse.next();
@@ -24,7 +24,7 @@ export async function getOrCreateUserFromAuth(request: NextRequest) {
   if (authType !== "Bearer" || !token) {
     return NextResponse.json(
       { error: "Invalid authorization header" },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -33,7 +33,7 @@ export async function getOrCreateUserFromAuth(request: NextRequest) {
   if (!provider) {
     return NextResponse.json(
       { error: "No auth provider specified" },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -45,7 +45,7 @@ export async function getOrCreateUserFromAuth(request: NextRequest) {
     console.error("Auth error:", error);
     return NextResponse.json(
       { error: "Authentication failed" },
-      { status: 401 }
+      { status: 401 },
     );
   }
 }

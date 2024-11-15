@@ -33,7 +33,7 @@ beforeAll(async () => {
   try {
     // Create the test database if it doesn't exist
     await rootPrisma.$executeRawUnsafe(
-      `DROP DATABASE IF EXISTS ${uniqueTestDbName}`
+      `DROP DATABASE IF EXISTS ${uniqueTestDbName}`,
     );
     await rootPrisma.$executeRawUnsafe(`CREATE DATABASE ${uniqueTestDbName}`);
     await rootPrisma.$disconnect();
@@ -60,7 +60,7 @@ afterEach(async () => {
     if (tablename !== "_prisma_migrations") {
       try {
         await prisma.$executeRawUnsafe(
-          `TRUNCATE TABLE "public"."${tablename}" CASCADE;`
+          `TRUNCATE TABLE "public"."${tablename}" CASCADE;`,
         );
       } catch (error) {
         console.log({ error });
@@ -91,7 +91,7 @@ afterAll(async () => {
       AND pid <> pg_backend_pid();
     `);
     await rootPrisma.$executeRawUnsafe(
-      `DROP DATABASE IF EXISTS ${uniqueTestDbName}`
+      `DROP DATABASE IF EXISTS ${uniqueTestDbName}`,
     );
   } catch (error) {
     console.error("Failed to cleanup test database:", error);

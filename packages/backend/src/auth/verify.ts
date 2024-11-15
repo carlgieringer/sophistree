@@ -26,12 +26,12 @@ async function verifyGoogleToken(token: string): Promise<AuthUserInfo> {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-    }
+    },
   );
 
   if (!response.ok) {
     throw new Error(
-      `Failed to get user info. ${response.status} "${response.statusText}": ${await response.text()}`
+      `Failed to get user info. ${response.status} "${response.statusText}": ${await response.text()}`,
     );
   }
 
@@ -48,7 +48,7 @@ async function verifyGoogleToken(token: string): Promise<AuthUserInfo> {
 
 export async function verifyToken(
   token: string,
-  provider: string
+  provider: string,
 ): Promise<AuthUserInfo> {
   switch (provider) {
     case "google":
@@ -60,7 +60,7 @@ export async function verifyToken(
 
 export async function getOrCreateUser(
   authUserInfo: AuthUserInfo,
-  provider: string
+  provider: string,
 ) {
   let user = await prisma.user.findFirst({
     where: {

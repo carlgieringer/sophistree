@@ -30,7 +30,7 @@ describe("Argument maps collection resource", () => {
         "http://localhost:3000/api/argument-maps",
         {
           method: "GET",
-        }
+        },
       );
 
       const response = await GET(request);
@@ -71,7 +71,7 @@ describe("Argument maps collection resource", () => {
         "http://localhost:3000/api/argument-maps",
         {
           method: "GET",
-        }
+        },
       );
 
       const response = await GET(request);
@@ -128,7 +128,7 @@ describe("Argument maps collection resource", () => {
             "x-auth-provider": "google",
           },
           body: JSON.stringify(requestData),
-        }
+        },
       );
 
       // Call the API endpoint
@@ -178,7 +178,7 @@ describe("Argument maps collection resource", () => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ data: { name: "Test Map" } }),
-        }
+        },
       );
 
       const response = await POST(request);

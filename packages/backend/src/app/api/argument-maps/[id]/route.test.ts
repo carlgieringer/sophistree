@@ -103,7 +103,7 @@ describe("Argument maps individual resource", () => {
   describe("GET /api/argument-maps/[id]", () => {
     it("should return a map when found", async () => {
       const request = new NextRequest(
-        `http://localhost/api/argument-maps/${testMap.id}`
+        `http://localhost/api/argument-maps/${testMap.id}`,
       );
       const response = await GET(request, { params: { id: testMap.id } });
       const data = await response.json();
@@ -134,13 +134,13 @@ describe("Argument maps individual resource", () => {
               propositionIds: ["entity2"],
             }),
           ]),
-        })
+        }),
       );
     });
 
     it("should return 404 when map is not found", async () => {
       const request = new NextRequest(
-        "http://localhost/api/argument-maps/nonexistent-id"
+        "http://localhost/api/argument-maps/nonexistent-id",
       );
       const response = await GET(request, { params: { id: "nonexistent-id" } });
       const data = await response.json();
@@ -166,7 +166,7 @@ describe("Argument maps individual resource", () => {
             "content-type": "application/json",
           },
           body: JSON.stringify({ data: updateData }),
-        }
+        },
       );
 
       const response = await PUT(request, { params: { id: testMap.id } });
@@ -211,7 +211,7 @@ describe("Argument maps individual resource", () => {
             "content-type": "application/json",
           },
           body: JSON.stringify({ data: updateDataWithEntities }),
-        }
+        },
       );
 
       const response = await PUT(request, { params: { id: testMap.id } });
@@ -241,7 +241,7 @@ describe("Argument maps individual resource", () => {
             data: expect.objectContaining({ text: "New Proposition 1" }),
             autoVisibility: "Visible",
           }),
-        ])
+        ]),
       );
 
       // Verify entity2 was deleted
@@ -280,7 +280,7 @@ describe("Argument maps individual resource", () => {
             "content-type": "application/json",
           },
           body: JSON.stringify({ data: updateDataWithConclusions }),
-        }
+        },
       );
 
       const response = await PUT(request, { params: { id: testMap.id } });
@@ -310,7 +310,7 @@ describe("Argument maps individual resource", () => {
             sourceNames: ["new-source"],
             urls: ["http://new-example.com"],
           }),
-        ])
+        ]),
       );
 
       // Verify conclusion2 was deleted
@@ -351,7 +351,7 @@ describe("Argument maps individual resource", () => {
             "content-type": "application/json",
           },
           body: JSON.stringify({ data: updateDataWithBoth }),
-        }
+        },
       );
 
       const response = await PUT(request, { params: { id: testMap.id } });
@@ -377,7 +377,7 @@ describe("Argument maps individual resource", () => {
           type: "CLAIM",
           data: expect.objectContaining({ text: "Updated claim" }),
           autoVisibility: "SHOW",
-        })
+        }),
       );
 
       // Check conclusions
@@ -388,7 +388,7 @@ describe("Argument maps individual resource", () => {
           propositionIds: ["entity1"],
           sourceNames: ["updated-source"],
           urls: ["http://updated-example.com"],
-        })
+        }),
       );
 
       // Verify removed items were deleted
@@ -412,7 +412,7 @@ describe("Argument maps individual resource", () => {
             "content-type": "application/json",
           },
           body: JSON.stringify({ data: updateData }),
-        }
+        },
       );
 
       const response = await PUT(request, { params: { id: testMap.id } });
@@ -432,7 +432,7 @@ describe("Argument maps individual resource", () => {
             "content-type": "application/json",
           },
           body: JSON.stringify({ data: updateData }),
-        }
+        },
       );
 
       const response = await PUT(request, { params: { id: "nonexistent-id" } });
@@ -463,7 +463,7 @@ describe("Argument maps individual resource", () => {
             "content-type": "application/json",
           },
           body: JSON.stringify({ data: updateData }),
-        }
+        },
       );
 
       const response = await PUT(request, { params: { id: testMap.id } });
@@ -484,7 +484,7 @@ describe("Argument maps individual resource", () => {
             "content-type": "application/json",
           },
           body: JSON.stringify({}),
-        }
+        },
       );
 
       const response = await PUT(request, { params: { id: testMap.id } });
@@ -505,7 +505,7 @@ describe("Argument maps individual resource", () => {
             Authorization: "Bearer fake-token",
             "x-auth-provider": "google",
           },
-        }
+        },
       );
 
       const response = await DELETE(request, { params: { id: testMap.id } });
@@ -523,7 +523,7 @@ describe("Argument maps individual resource", () => {
         `http://localhost/api/argument-maps/${testMap.id}`,
         {
           method: "DELETE",
-        }
+        },
       );
 
       const response = await DELETE(request, { params: { id: testMap.id } });
@@ -541,7 +541,7 @@ describe("Argument maps individual resource", () => {
             Authorization: "Bearer fake-token",
             "x-auth-provider": "google",
           },
-        }
+        },
       );
 
       const response = await DELETE(request, {
@@ -572,7 +572,7 @@ describe("Argument maps individual resource", () => {
             Authorization: "Bearer fake-token",
             "x-auth-provider": "google",
           },
-        }
+        },
       );
 
       const response = await DELETE(request, { params: { id: testMap.id } });

@@ -21,7 +21,7 @@ export const fetchArgumentMaps = createAsyncThunk(
     const response = await fetch("/api/argument-maps");
     if (!response.ok) throw new Error("Failed to fetch maps");
     return response.json();
-  }
+  },
 );
 
 const argumentMapsSlice = createSlice({

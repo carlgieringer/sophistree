@@ -34,7 +34,7 @@ test.describe("HighlightManager", () => {
         </head>
         <body>
           <p>This is some sample text that we will use for our <a href="localhost">highlighting tests</a>.</p>
-          <script type="module" src="http://localhost:3000/windowWrapper.js"></script>
+          <script type="module" src="http://localhost:3100/windowWrapper.js"></script>
         </body>
       </html>
     `);
@@ -367,7 +367,7 @@ test.describe("HighlightManager with mutable classes", () => {
         </head>
         <body>
           <p>This is some sample text that we will use for our <a href="localhost">highlighting tests</a>.</p>
-          <script type="module" src="http://localhost:3000/windowWrapper.js"></script>
+          <script type="module" src="http://localhost:3100/windowWrapper.js"></script>
         </body>
       </html>
     `);

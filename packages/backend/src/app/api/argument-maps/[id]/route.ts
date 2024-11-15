@@ -4,7 +4,7 @@ import { getOrCreateUserFromAuth } from "../../../../auth/authUser";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const map = await prisma.argumentMap.findUnique({
@@ -35,7 +35,7 @@ interface Conclusion {
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const result = await getOrCreateUserFromAuth(request);
@@ -74,7 +74,7 @@ export async function PUT(
     const currentEntityIds = new Set(existingMap.entities.map((e) => e.id));
     const updatedEntityIds = new Set(entities?.map((e: any) => e.id) || []);
     const entityIdsToDelete = Array.from(currentEntityIds).filter(
-      (id) => !updatedEntityIds.has(id)
+      (id) => !updatedEntityIds.has(id),
     );
 
     const formattedEntities = entities?.map((entity: any) => {
@@ -105,21 +105,26 @@ export async function PUT(
         arr1.length === arr2.length &&
         arr1.every((item, index) => item === arr2[index]);
 
-      return arraysEqual(a.propositionIds, b.propositionIds) &&
-             arraysEqual(a.sourceNames, b.sourceNames) &&
-             arraysEqual(a.urls, b.urls);
+      return (
+        arraysEqual(a.propositionIds, b.propositionIds) &&
+        arraysEqual(a.sourceNames, b.sourceNames) &&
+        arraysEqual(a.urls, b.urls)
+      );
     };
 
     // Find conclusions to delete (those in existing but not in updated)
-    const conclusionsToDelete = existingMap.conclusions.filter(existing =>
-      !conclusions?.some((updated: Conclusion) => conclusionsAreEqual(existing, updated))
+    const conclusionsToDelete = existingMap.conclusions.filter(
+      (existing) =>
+        !conclusions?.some((updated: Conclusion) =>
+          conclusionsAreEqual(existing, updated),
+        ),
     );
 
     // Process conclusions for update/create
     const formattedConclusions = conclusions?.map((conclusion: Conclusion) => {
       // Find matching existing conclusion
-      const existingConclusion = existingMap.conclusions.find(existing =>
-        conclusionsAreEqual(existing, conclusion)
+      const existingConclusion = existingMap.conclusions.find((existing) =>
+        conclusionsAreEqual(existing, conclusion),
       );
 
       // If there's a match, use its ID, otherwise use provided ID or let Prisma generate one
@@ -156,7 +161,7 @@ export async function PUT(
         },
         conclusions: {
           deleteMany: {
-            id: { in: conclusionsToDelete.map(c => c.id) },
+            id: { in: conclusionsToDelete.map((c) => c.id) },
           },
           upsert: formattedConclusions,
         },
@@ -172,14 +177,14 @@ export async function PUT(
     console.error("Error updating map:", error);
     return NextResponse.json(
       { error: "Failed to update map" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const result = await getOrCreateUserFromAuth(request);
@@ -216,7 +221,7 @@ export async function DELETE(
     console.error("Error deleting map:", error);
     return NextResponse.json(
       { error: "Failed to delete map" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

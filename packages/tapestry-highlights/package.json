@@ -28,7 +28,7 @@
     "build-styles-watch": "npm run build-styles -- --watch",
     "check-all": "time (npm run type-check && npm run lint && npm run format-check && npm test) || { echo 'Checks failed'; exit 1; }",
     "clean-build": "rm -rf dist/* && rm -f tsconfig-dist.tsbuildinfo",
-    "dev-server": "http-server dist-e2e -p 3000 --cors",
+    "dev-server": "http-server dist-e2e -p 3100 --cors",
     "format-fix": "prettier --write --ignore-path .gitignore .",
     "format-check": "prettier --check --ignore-path .gitignore .",
     "lint": "eslint src/",

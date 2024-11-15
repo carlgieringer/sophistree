@@ -29,7 +29,7 @@ test.beforeEach(async () => {
         </head>
         <body>
           <p>This is some sample text that we will use for our highlighting tests.</p>
-          <script type="module" src="http://localhost:3000/windowWrapper.js"></script>
+          <script type="module" src="http://localhost:3100/windowWrapper.js"></script>
         </body>
       </html>
     `);
