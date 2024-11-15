@@ -8,6 +8,7 @@ import fs from "fs/promises";
 import Handlebars from "handlebars";
 import path from "path";
 import glob from "glob";
+import dotenv from "dotenv";
 
 const watch = process.argv.includes("--watch");
 const prod = process.env.NODE_ENV === "production";
@@ -55,9 +56,7 @@ const options = {
     ".png": "file",
   },
   assetNames: "assets/[name]-[hash]",
-  define: {
-    "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV),
-  },
+  define: makeEnvDefines(),
   plugins: [
     {
       name: "build logging plugin",
@@ -176,4 +175,19 @@ if (watch) {
   } else if (result.warnings.length) {
     throw new Error("build had warnings");
   }
+}
+
+function makeEnvDefines() {
+  const envFile =
+    process.env.NODE_ENV === "production" ? ".env.production" : ".env";
+  const envConfig = dotenv.config({ path: envFile }).parsed;
+
+  const envDefines = {};
+  for (const key in envConfig) {
+    envDefines[`process.env.${key}`] = JSON.stringify(envConfig[key]);
+  }
+
+  envDefines["process.env.NODE_ENV"] = JSON.stringify(process.env.NODE_ENV);
+
+  return envDefines;
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../../../db/client";
+import { getOrCreateUserFromAuth } from "../../../auth/authUser";
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,22 +22,44 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const userId = request.headers.get("x-user-id");
-    if (!userId) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    const result = await getOrCreateUserFromAuth(request);
+    if (result instanceof NextResponse) {
+      return result;
     }
+    const { id: userId } = result;
 
     const body = await request.json();
-    const { name } = body;
+    const { data } = body;
 
-    if (!name) {
-      return NextResponse.json({ error: "Name is required" }, { status: 400 });
-    }
+    // Transform the entities and conclusions data to match Prisma's expected format
+    const transformedData = {
+      ...data,
+      userId,
+      entities: {
+        create: data.entities?.map((entity: any) => ({
+          id: entity.id,
+          type: entity.type,
+          data: { text: entity.text }, // Store text in the data JSON field
+          autoVisibility: entity.autoVisibility,
+        })),
+      },
+      conclusions: {
+        create: data.conclusions?.map((conclusion: any) => ({
+          propositionIds: conclusion.propositionIds,
+          sourceNames: conclusion.sourceNames,
+          urls: conclusion.urls,
+        })),
+      },
+    };
+
+    // Remove the createdBy object since we're setting userId directly
+    delete transformedData.createdBy;
 
     const map = await prisma.argumentMap.create({
-      data: {
-        name,
-        userId,
+      data: transformedData,
+      include: {
+        entities: true, // Include the created entities in the response
+        conclusions: true, // Include the created conclusions in the response
       },
     });
 

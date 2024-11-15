@@ -51,6 +51,8 @@ export const activeMapEntitiesOutcomes = createSelector(
   },
 );
 
+export const isAuthenticated = (state: RootState) => state.auth.isAuthenticated;
+
 /**
  * First group the appearances by mediaExcerptId. Then aggregate the appearances'
  * propositions outcomes into a single outcome for the mediaExcerpt. The rules are:

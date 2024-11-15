@@ -1,43 +1,70 @@
-import { OAuth2Client } from 'google-auth-library';
-import prisma from '../db/client';
+import prisma from "../db/client";
 
-const googleClient = new OAuth2Client();
-
-interface VerifiedToken {
-  sub: string;
+interface AuthUserInfo {
   email: string;
-  name?: string;
+  fullName: string;
+  givenName: string;
+  familyName: string;
+  authId: string;
+  pictureUrl: string;
 }
 
-async function verifyGoogleToken(token: string): Promise<VerifiedToken> {
-  const ticket = await googleClient.verifyIdToken({
-    idToken: token,
-  });
-  const payload = ticket.getPayload();
-  if (!payload || !payload.email) {
-    throw new Error('Invalid token payload');
+interface GoogleUserInfo {
+  email: string;
+  family_name: string;
+  given_name: string;
+  id: string;
+  name: string;
+  picture: string;
+  verified_email: boolean;
+}
+
+async function verifyGoogleToken(token: string): Promise<AuthUserInfo> {
+  const response = await fetch(
+    "https://www.googleapis.com/oauth2/v2/userinfo",
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to get user info. ${response.status} "${response.statusText}": ${await response.text()}`
+    );
   }
 
+  const userInfo = (await response.json()) as GoogleUserInfo;
   return {
-    sub: payload.sub,
-    email: payload.email,
-    name: payload.name,
+    email: userInfo.email,
+    fullName: userInfo.name,
+    givenName: userInfo.given_name,
+    familyName: userInfo.family_name,
+    authId: userInfo.id,
+    pictureUrl: userInfo.picture,
   };
 }
 
-export async function verifyToken(token: string, provider: string): Promise<VerifiedToken> {
+export async function verifyToken(
+  token: string,
+  provider: string
+): Promise<AuthUserInfo> {
   switch (provider) {
-    case 'google':
+    case "google":
       return verifyGoogleToken(token);
     default:
-      throw new Error(`Unsupported auth provider: ${provider}`);
+      throw new Error("Invalid provider");
   }
 }
 
-export async function getOrCreateUser(tokenInfo: VerifiedToken, provider: string) {
+export async function getOrCreateUser(
+  authUserInfo: AuthUserInfo,
+  provider: string
+) {
   let user = await prisma.user.findFirst({
     where: {
-      authExternalId: tokenInfo.sub,
+      authExternalId: authUserInfo.authId,
       authProvider: provider,
     },
   });
@@ -45,10 +72,10 @@ export async function getOrCreateUser(tokenInfo: VerifiedToken, provider: string
   if (!user) {
     user = await prisma.user.create({
       data: {
-        authExternalId: tokenInfo.sub,
+        authExternalId: authUserInfo.authId,
         authProvider: provider,
-        email: tokenInfo.email,
-        name: tokenInfo.name,
+        email: authUserInfo.email,
+        name: authUserInfo.fullName,
       },
     });
   }

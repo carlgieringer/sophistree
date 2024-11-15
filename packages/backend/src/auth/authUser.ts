@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { verifyToken, getOrCreateUser } from "./auth/verify";
 
-export async function middleware(request: NextRequest) {
-  const requiresAuth = request.method !== "GET";
+import { verifyToken, getOrCreateUser } from "./verify";
+
+export async function getOrCreateUserFromAuth(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
   if (!authHeader) {
-    if (requiresAuth) {
+    const isAuthRequired = request.method !== "GET";
+    if (isAuthRequired) {
       return NextResponse.json(
         {
           error:
@@ -37,19 +38,9 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    const tokenInfo = await verifyToken(token, provider);
-    const user = await getOrCreateUser(tokenInfo, provider);
-
-    // Add user info to request headers for downstream handlers
-    const requestHeaders = new Headers(request.headers);
-    requestHeaders.set("x-user-id", user.id);
-    requestHeaders.set("x-user-email", user.email);
-
-    return NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
-    });
+    const authUserInfo = await verifyToken(token, provider);
+    const user = await getOrCreateUser(authUserInfo, provider);
+    return user;
   } catch (error) {
     console.error("Auth error:", error);
     return NextResponse.json(
@@ -58,10 +49,3 @@ export async function middleware(request: NextRequest) {
     );
   }
 }
-
-export const config = {
-  matcher: [
-    // Protect all routes under /api/maps
-    "/api/maps/:path*",
-  ],
-};

@@ -108,6 +108,15 @@ describe("POST /api/some-endpoint", () => {
 });
 ```
 
+## Debugging
+
+```sh
+npm run dev
+```
+
+Next.js has a convention of listening for a debugger for the build on the default port (`9229`)
+and for the application on the next port (`9230`). So attach a debugger to `localhost:9230`.
+
 ### Test Database
 
 The test database is automatically handled:

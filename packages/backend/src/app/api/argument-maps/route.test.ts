@@ -2,6 +2,19 @@ import { NextRequest } from "next/server";
 import prisma from "../../../db/client";
 import { POST, GET } from "./route";
 
+// Mock only verifyToken from the verify module
+jest.mock("../../../auth/verify", () => ({
+  ...jest.requireActual("../../../auth/verify"), // Keep the real getOrCreateUser
+  verifyToken: jest.fn().mockResolvedValue({
+    email: "test@example.com",
+    fullName: "Test User",
+    givenName: "Test",
+    familyName: "User",
+    authId: "test-auth-id",
+    pictureUrl: "https://example.com/picture.jpg",
+  }),
+}));
+
 // Reset database before each test
 beforeEach(async () => {
   await prisma.conclusion.deleteMany();
@@ -32,8 +45,8 @@ describe("Argument maps collection resource", () => {
       const user = await prisma.user.create({
         data: {
           email: "test@example.com",
-          authExternalId: "test-external-id",
-          authProvider: "test-provider",
+          authExternalId: "test-auth-id",
+          authProvider: "google",
         },
       });
 
@@ -77,21 +90,44 @@ describe("Argument maps collection resource", () => {
       const user = await prisma.user.create({
         data: {
           email: "test@example.com",
-          authExternalId: "test-external-id",
-          authProvider: "test-provider",
+          authExternalId: "test-auth-id", // Match the authId from verifyToken mock
+          authProvider: "google",
         },
       });
 
-      // Create mock request
+      const entityId = "test-entity-id";
+      const requestData = {
+        data: {
+          name: "Test Map",
+          entities: [
+            {
+              id: entityId,
+              type: "Proposition",
+              text: "Test Proposition",
+              autoVisibility: "Visible",
+            },
+          ],
+          conclusions: [
+            {
+              propositionIds: [entityId],
+              sourceNames: ["Source 1"],
+              urls: ["https://example.com/source1"],
+            },
+          ],
+        },
+      };
+
+      // Create mock request with auth headers
       const request = new NextRequest(
         "http://localhost:3000/api/argument-maps",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "x-user-id": user.id,
+            Authorization: "Bearer fake-token",
+            "x-auth-provider": "google",
           },
-          body: JSON.stringify({ name: "Test Map" }),
+          body: JSON.stringify(requestData),
         }
       );
 
@@ -106,13 +142,34 @@ describe("Argument maps collection resource", () => {
       // Verify the map was created in the database
       const mapInDb = await prisma.argumentMap.findUnique({
         where: { id: responseData.id },
+        include: {
+          entities: true,
+          conclusions: true,
+        },
       });
       expect(mapInDb).not.toBeNull();
       expect(mapInDb?.name).toBe("Test Map");
-      expect(mapInDb?.userId).toBe(user.id);
+      expect(mapInDb?.userId).toBe(user?.id);
+
+      // Verify the entity was created and linked to the map
+      expect(mapInDb?.entities).toHaveLength(1);
+      const entity = mapInDb?.entities[0];
+      expect(entity?.id).toBe(entityId);
+      expect(entity?.type).toBe("Proposition");
+      expect(entity?.data).toEqual({ text: "Test Proposition" });
+      expect(entity?.autoVisibility).toBe("Visible");
+      expect(entity?.mapId).toBe(mapInDb?.id);
+
+      // Verify the conclusion was created and linked to the map
+      expect(mapInDb?.conclusions).toHaveLength(1);
+      const conclusion = mapInDb?.conclusions[0];
+      expect(conclusion?.propositionIds).toEqual([entityId]);
+      expect(conclusion?.sourceNames).toEqual(["Source 1"]);
+      expect(conclusion?.urls).toEqual(["https://example.com/source1"]);
+      expect(conclusion?.mapId).toBe(mapInDb?.id);
     });
 
-    it("should return 404 if user ID is not provided", async () => {
+    it("should return 401 if auth header is missing", async () => {
       const request = new NextRequest(
         "http://localhost:3000/api/argument-maps",
         {
@@ -120,29 +177,12 @@ describe("Argument maps collection resource", () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ name: "Test Map" }),
+          body: JSON.stringify({ data: { name: "Test Map" } }),
         }
       );
 
       const response = await POST(request);
-      expect(response.status).toBe(404);
-    });
-
-    it("should return 400 if name is not provided", async () => {
-      const request = new NextRequest(
-        "http://localhost:3000/api/argument-maps",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-user-id": "some-user-id",
-          },
-          body: JSON.stringify({}),
-        }
-      );
-
-      const response = await POST(request);
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(401);
     });
   });
 });

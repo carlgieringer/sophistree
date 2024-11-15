@@ -79,6 +79,27 @@ Where `<suitePattern>` matches the test file name and `<testPattern>` matches th
 npm run check-all
 ```
 
+### Environment Variables
+
+The extension supports environment variables through `.env` files. To get started:
+
+1. Copy the example environment file:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Modify the variables in `.env` as needed:
+
+   ```env
+   NEXT_PUBLIC_API_URL=http://localhost:3000  # URL of your backend API
+   NODE_ENV=development                       # or production
+   ```
+
+3. For production builds, you can create a `.env.production` file with production-specific values.
+
+The build system will automatically apply the appropriate environment file based on NODE_ENV.
+
 ## Using the extension
 
 - Select text on a page and there will be a context menu item that creates a MediaExcerpt.
