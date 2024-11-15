@@ -1,2 +1,4 @@
 /.next/
-.env
+.env*
+/infrastructure/.terraform*
+/infrastructure/terraform.tfstate*

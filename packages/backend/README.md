@@ -127,3 +127,15 @@ The test database is automatically handled:
 - Connection string: `postgresql://postgres:postgres@localhost:5432/sophistree_test`
 
 No manual database setup is required - the test infrastructure handles creating and migrating the test database automatically.
+
+## Infrastructure
+
+```shell
+aws-vault exec <profile> -- tofu plan
+```
+
+To update the EC2 instance:
+
+```sh
+aws-vault exec <profile> -- ./packages/backend/infrastructure/update-os.sh "YOUR_IP_ADDRESS" "YOUR_DB_PASSWORD"
+```
