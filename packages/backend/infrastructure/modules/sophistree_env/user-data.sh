@@ -53,6 +53,9 @@ dnf install -y caddy
 
 # Configure Caddy
 echo '${domain_name} {
+  # For frequent rebuilds, use the staging environment which has a higher rate limit for certs
+  # https://letsencrypt.org/docs/rate-limits/#new-certificates-per-exact-set-of-hostnames
+  # acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
   reverse_proxy localhost:3000
   log {
     output file /var/log/caddy/access.log

@@ -140,12 +140,15 @@ To update the EC2 instance:
 aws-vault exec <profile> -- ./packages/backend/infrastructure/update-os.sh "YOUR_DB_PASSWORD"
 ```
 
+### Logs
+
 ```shell
 less /var/log/cloud-init-output.log
 journalctl -u caddy
+sudo docker logs sophistree-web-app
 ```
 
-## Docker
+### Web app Docker container
 
 Locally update
 
@@ -155,9 +158,12 @@ docker login -u sophistree
 docker push sophistree/web-app
 ```
 
-On EC2:
+Updating the web app in-place:
 
 ```shell
-docker pull sophistree/backend
-docker run -d -p 3000:3000 sophistree/backend
+sudo docker-compose -f /web-app/docker-compose.yml -f /web-app/docker-compose.prod.yml\
+ pull app
+sudo docker-compose -f /web-app/docker-compose.yml -f /web-app/docker-compose.prod.yml\
+ up -d --no-deps app
+docker-compose
 ```
