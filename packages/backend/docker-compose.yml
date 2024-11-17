@@ -1,22 +1,36 @@
-version: "3.8"
 services:
+  app:
+    image: sophistree/web-app
+    container_name: sophistree-app
+    env_file:
+      - ./.env
+    environment:
+      - DATABASE_URL=postgresql://sophistree:${DB_PASSWORD}@db:5432/sophistree
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: always
+
   db:
     image: postgres:16
     container_name: sophistree-db
+    env_file:
+      - ./.env
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: sophistree
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: sophistree
-    ports:
-      - "5432:5432"
     volumes:
-      - sophistree_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U sophistree"]
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: always
 
 volumes:
-  sophistree_data:
-    name: sophistree_data
+  postgres_data:
+    name: sophistree_postgres_data

@@ -2,14 +2,13 @@
 set -e
 
 # Check if admin_ip and db_password are provided
-if [ "$#" -ne 2 ]; then
-    echo "Usage: $0 <admin_ip> <db_password>"
-    echo "Example: $0 \"203.0.113.1\" \"mypassword\""
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <db_password>"
+    echo "Example: $0 \"mypassword\""
     exit 1
 fi
 
-ADMIN_IP=$1
-DB_PASSWORD=$2
+DB_PASSWORD=$1
 
 echo "Starting OS update process..."
 
@@ -24,7 +23,6 @@ aws ec2 wait instance-stopped --instance-ids $INSTANCE_ID
 
 # 3. Create a temporary tfvars file
 cat > update.tfvars <<EOF
-admin_ip = "$ADMIN_IP"
 db_password = "$DB_PASSWORD"
 EOF
 

@@ -136,6 +136,28 @@ aws-vault exec <profile> -- tofu plan
 
 To update the EC2 instance:
 
-```sh
-aws-vault exec <profile> -- ./packages/backend/infrastructure/update-os.sh "YOUR_IP_ADDRESS" "YOUR_DB_PASSWORD"
+```shell
+aws-vault exec <profile> -- ./packages/backend/infrastructure/update-os.sh "YOUR_DB_PASSWORD"
+```
+
+```shell
+less /var/log/cloud-init-output.log
+journalctl -u caddy
+```
+
+## Docker
+
+Locally update
+
+```shell
+docker build -t sophistree/web-app .
+docker login -u sophistree
+docker push sophistree/web-app
+```
+
+On EC2:
+
+```shell
+docker pull sophistree/backend
+docker run -d -p 3000:3000 sophistree/backend
 ```

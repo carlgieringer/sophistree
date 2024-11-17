@@ -2,3 +2,4 @@
 .env*
 /infrastructure/.terraform*
 /infrastructure/terraform.tfstate*
+/infrastructure/**/*.tfvars

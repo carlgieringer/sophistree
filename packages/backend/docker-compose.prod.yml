@@ -1,0 +1,18 @@
+services:
+  app:
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: ${CLOUDWATCH_LOG_GROUP}
+        awslogs-region: ${AWS_REGION}
+        awslogs-stream: nextjs-app
+
+  db:
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: ${CLOUDWATCH_LOG_GROUP}
+        awslogs-region: ${AWS_REGION}
+        awslogs-stream: postgres
+    volumes:
+      - /mnt/postgres_data:/var/lib/postgresql/data
