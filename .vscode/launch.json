@@ -1,6 +1,6 @@
 {
   "configurations": [
-    
+
     {
       "name": "Attach",
       "type": "node",
@@ -16,7 +16,7 @@
       "request": "attach",
       "skipFiles": ["<node_internals>/**"],
       "continueOnAttach": true,
-      "cwd": "${workspaceFolder}/packages/backend"
+      "cwd": "${workspaceFolder}/packages/web-app"
     }
   ]
 }

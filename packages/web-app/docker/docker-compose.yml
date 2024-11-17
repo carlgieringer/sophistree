@@ -1,5 +1,5 @@
 services:
-  app:
+  web-app:
     image: sophistree/web-app
     container_name: sophistree-app
     env_file:

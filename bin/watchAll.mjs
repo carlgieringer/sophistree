@@ -2,7 +2,7 @@ import concurrently from "concurrently";
 const { result } = concurrently(
   [
     {
-      command: "npm run dev --workspace packages/backend",
+      command: "npm run dev --workspace packages/web-app",
       name: "backend",
     },
     {

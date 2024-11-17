@@ -14,7 +14,7 @@ The backend uses PostgreSQL as its database, running in Docker.
 1. Start the PostgreSQL container:
 
 ```bash
-cd packages/backend
+cd packages/web-app
 docker compose -p sophistree-backend up -d
 ```
 
@@ -137,7 +137,7 @@ aws-vault exec <profile> -- tofu plan
 To update the EC2 instance:
 
 ```shell
-aws-vault exec <profile> -- ./packages/backend/infrastructure/update-os.sh "YOUR_DB_PASSWORD"
+aws-vault exec <profile> -- ./packages/web-app/infrastructure/update-os.sh "YOUR_DB_PASSWORD"
 ```
 
 ### Logs
@@ -153,7 +153,7 @@ sudo docker logs sophistree-web-app
 Locally update
 
 ```shell
-docker build -t sophistree/web-app .
+docker build -t sophistree/web-app -f docker/Dockerfile .
 docker login -u sophistree
 docker push sophistree/web-app
 ```

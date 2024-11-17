@@ -2,6 +2,7 @@
 
 - Rename tf and package to web-app
 - Test recreate instance data persistence
+- Check if logs appear in Cloudwatch
 
 - Test with more examples
 

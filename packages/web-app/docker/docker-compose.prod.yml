@@ -1,11 +1,11 @@
 services:
-  app:
+  web-app:
     logging:
       driver: awslogs
       options:
         awslogs-group: ${CLOUDWATCH_LOG_GROUP}
         awslogs-region: ${AWS_REGION}
-        awslogs-stream: nextjs-app
+        awslogs-stream: web-app
 
   db:
     logging:

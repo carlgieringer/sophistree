@@ -1,11 +1,11 @@
 output "instance_public_ip" {
   description = "Public IP address of the EC2 instance"
-  value       = aws_instance.web.public_ip
+  value       = aws_instance.web_app.public_ip
 }
 
 output "instance_id" {
   description = "ID of the EC2 instance"
-  value       = aws_instance.web.id
+  value       = aws_instance.web_app.id
 }
 
 output "postgres_backup_bucket" {
@@ -15,5 +15,5 @@ output "postgres_backup_bucket" {
 
 output "cloudwatch_log_group" {
   description = "Name of the CloudWatch log group"
-  value       = aws_cloudwatch_log_group.web_server.name
+  value       = aws_cloudwatch_log_group.web_app.name
 }

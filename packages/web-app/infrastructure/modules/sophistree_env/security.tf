@@ -1,4 +1,3 @@
-# Security group
 resource "aws_security_group" "web" {
   name        = "sophistree-web-sg-${var.environment}"
   description = "Security group for web server"
