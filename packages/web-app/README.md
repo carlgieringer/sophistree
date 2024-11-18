@@ -131,7 +131,7 @@ No manual database setup is required - the test infrastructure handles creating 
 ## Infrastructure
 
 ```shell
-aws-vault exec <profile> -- tofu plan
+aws-vault exec <profile> -- tofu apply -var-file=dev.tfvars
 ```
 
 To update the EC2 instance:
@@ -143,6 +143,7 @@ aws-vault exec <profile> -- ./packages/web-app/infrastructure/update-os.sh "YOUR
 ### Logs
 
 ```shell
+ssh dev.sophistree.app
 less /var/log/cloud-init-output.log
 journalctl -u caddy
 sudo docker logs sophistree-web-app
@@ -166,4 +167,11 @@ sudo docker-compose -f /web-app/docker-compose.yml -f /web-app/docker-compose.pr
 sudo docker-compose -f /web-app/docker-compose.yml -f /web-app/docker-compose.prod.yml\
  up -d --no-deps app
 docker-compose
+```
+
+### Removing dev S3 Postgres backup S3 buckets
+
+```shell
+aws-vault exec <profile> -- aws s3 rm s3://sophistree-postgres-backups-dev --recursive
+aws-vault exec <profile> -- aws s3 rb s3://sophistree-postgres-backups-dev
 ```

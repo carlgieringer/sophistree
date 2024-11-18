@@ -1,9 +1,8 @@
-# Dev environment
 module "sophistree_dev" {
   source = "./modules/sophistree_env"
 
   aws_region        = var.aws_region
-  environment       = "dev"
+  environment       = "test"
   domain_name       = var.domain_name
   key_name          = "sophistree-dev"
   db_password       = var.dev_db_password
