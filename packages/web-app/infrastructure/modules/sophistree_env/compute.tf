@@ -69,11 +69,14 @@ resource "aws_iam_role_policy" "s3_access" {
         Action = [
           "s3:PutObject",
           "s3:GetObject",
-          "s3:ListBucket"
+          "s3:ListBucket",
+          "s3:DeleteObject"
         ]
         Resource = [
           aws_s3_bucket.postgres_backups.arn,
-          "${aws_s3_bucket.postgres_backups.arn}/*"
+          "${aws_s3_bucket.postgres_backups.arn}/*",
+          aws_s3_bucket.caddy_certs.arn,
+          "${aws_s3_bucket.caddy_certs.arn}/*"
         ]
       }
     ]
@@ -112,6 +115,10 @@ data "template_file" "user_data" {
     device_name                 = "/dev/sdf"
     docker_compose_content      = file("${path.root}/../docker/docker-compose.yml")
     docker_compose_prod_content = file("${path.root}/../docker/docker-compose.prod.yml")
+    docker_images_version       = var.docker_images_version
+    caddy_certs_bucket          = aws_s3_bucket.caddy_certs.bucket
+    caddy_certs_bucket_host     = aws_s3_bucket.caddy_certs.bucket_regional_domain_name
+    caddy_email                 = var.caddy_email
   }
 }
 

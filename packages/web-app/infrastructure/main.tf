@@ -4,6 +4,7 @@ module "sophistree_dev" {
   aws_region        = var.aws_region
   environment       = "test"
   domain_name       = var.domain_name
+  caddy_email       = "sophistree.app@gmail.com"
   key_name          = "sophistree-dev"
   db_password       = var.dev_db_password
   subnet_id         = aws_subnet.public.id

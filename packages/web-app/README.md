@@ -144,30 +144,50 @@ aws-vault exec <profile> -- ./packages/web-app/infrastructure/update-os.sh "YOUR
 
 ```shell
 ssh dev.sophistree.app
+# Check the user-data.sh logs
 less /var/log/cloud-init-output.log
-journalctl -u caddy
+# Check a docker container's logs
 sudo docker logs sophistree-web-app
 ```
 
-### Web app Docker container
+### Docker Images
 
-Locally update
+#### Building and Pushing Images
 
-```shell
-docker build -t sophistree/web-app -f docker/Dockerfile .
-docker login -u sophistree
-docker push sophistree/web-app
-```
-
-Updating the web app in-place:
+To build and push Docker images locally:
 
 ```shell
-sudo docker-compose -f /web-app/docker-compose.yml -f /web-app/docker-compose.prod.yml\
- pull app
-sudo docker-compose -f /web-app/docker-compose.yml -f /web-app/docker-compose.prod.yml\
- up -d --no-deps app
-docker-compose
+cd packages/web-app/docker
+
+# Build and push with specific version
+VERSION=1.0.0 docker compose build
+VERSION=1.0.0 docker compose push
+
+# Or use 'latest' tag (if VERSION not specified)
+docker compose build
+docker compose push
 ```
+
+#### Deploying to EC2
+
+To deploy the images on EC2:
+
+```shell
+# Pull and run with specific version
+VERSION=1.0.0 docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
+VERSION=1.0.0 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+# Or use 'latest' tag (if VERSION not specified)
+docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+
+The docker-compose files are configured to:
+
+- Build images locally with version tags
+- Push to Docker Hub
+- Run on EC2 using the pushed images
+- Support versioning through the VERSION environment variable
 
 ### Removing dev S3 Postgres backup S3 buckets
 

@@ -1,5 +1,7 @@
 services:
   web-app:
+    image: sophistree/web-app:${VERSION:-latest}
+    build: null
     logging:
       driver: awslogs
       options:
@@ -16,3 +18,13 @@ services:
         awslogs-stream: postgres
     volumes:
       - /mnt/postgres_data:/var/lib/postgresql/data
+
+  caddy:
+    image: sophistree/caddy:${VERSION:-latest}
+    build: null
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: ${CLOUDWATCH_LOG_GROUP}
+        awslogs-region: ${AWS_REGION}
+        awslogs-stream: caddy

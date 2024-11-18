@@ -44,3 +44,14 @@ variable "availability_zone" {
   description = "Availability zone for the EC2 instance and EBS volume"
   type        = string
 }
+
+variable "docker_images_version" {
+  description = "Version tag for Docker images"
+  type        = string
+  default     = "latest"
+}
+
+variable "caddy_email" {
+  description = "Email address for Let's Encrypt certificate generation"
+  type        = string
+}

@@ -46,28 +46,31 @@ systemctl restart docker
 curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 chmod +x /usr/local/bin/docker-compose
 
-# Install Caddy
-dnf install -y 'dnf-command(copr)'
-dnf copr enable -y @caddy/caddy epel-7-$(arch)
-dnf install -y caddy
-
-# Configure Caddy
-echo -e '${domain_name} {
-  reverse_proxy localhost:3000
-  log {
-    output file /var/log/caddy/access.log
-  }
-}' | tee /etc/caddy/Caddyfile
-mkdir -p /var/log/caddy/
-chown -R caddy:caddy /var/log/caddy/
-
-# Start Caddy
-systemctl enable caddy
-systemctl start caddy
-
 # Create app directory and set up docker-compose files
 mkdir -p /web-app
 cd /web-app
+
+# Create Caddyfile in the same directory as docker-compose files
+echo -e '{
+  # Uncomment the acme_ca line when testing Caddy settings to to avoid rate limiting
+  # by using the staging endpoint. You can check the status of letsencrypt rate limits at:
+  # https://tools.letsdebug.net/cert-search?m=domain&q=sophistree.app&d=168
+  # acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+  email ${caddy_email}
+  storage s3 {
+    region ${aws_region}
+    host ${caddy_certs_bucket_host}
+    # This acts like a prefix since the host contains the bucket.
+    # We do not need a prefix, but the module errors if it is empty.
+    bucket caddy-storage
+    use_iam_provider true
+    insecure false
+  }
+}
+
+${domain_name} {
+  reverse_proxy sophistree-web-app:3000
+}' | tee Caddyfile
 
 # Create docker-compose files
 echo '${docker_compose_content}' | tee docker-compose.yml
@@ -76,7 +79,8 @@ echo '${docker_compose_prod_content}' | tee docker-compose.prod.yml
 # Create .env file for docker-compose
 echo 'DB_PASSWORD=${db_password}
 CLOUDWATCH_LOG_GROUP=${cloudwatch_log_group}
-AWS_REGION=${aws_region}' | tee .env
+AWS_REGION=${aws_region}
+VERSION=${docker_images_version}' | tee .env
 chmod 400 .env
 
 # Pull the latest images and start the containers with production config
@@ -105,19 +109,6 @@ echo '{
   "agent": {
     "metrics_collection_interval": 60,
     "run_as_user": "root"
-  },
-  "logs": {
-    "logs_collected": {
-      "files": {
-        "collect_list": [
-          {
-            "file_path": "/var/log/caddy/access.log",
-            "log_group_name": "${cloudwatch_log_group}",
-            "log_stream_name": "caddy-access"
-          }
-        ]
-      }
-    }
   },
   "metrics": {
     "metrics_collected": {
