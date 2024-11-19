@@ -1,7 +1,5 @@
 # TODO
 
-- Check if logs appear in Cloudwatch
-
 - Test with more examples
 
 - Include conclusion outcomes in map card (and include aggregate of all outcomes ("50% false"))
