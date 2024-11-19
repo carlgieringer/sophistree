@@ -3,7 +3,7 @@ const { result } = concurrently(
   [
     {
       command: "npm run dev --workspace packages/web-app",
-      name: "backend",
+      name: "web-app",
     },
     {
       command: "npm run watch-all --workspace packages/browser-extension",

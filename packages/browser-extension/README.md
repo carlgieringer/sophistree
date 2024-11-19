@@ -29,6 +29,12 @@ of CUJs.
 
 ## Development Workflow
 
+### Env file
+
+```sh
+cp .env.example .env
+```
+
 ### Running development build
 
 This continuously builds the javascript:
@@ -78,27 +84,6 @@ Where `<suitePattern>` matches the test file name and `<testPattern>` matches th
 ```sh
 npm run check-all
 ```
-
-### Environment Variables
-
-The extension supports environment variables through `.env` files. To get started:
-
-1. Copy the example environment file:
-
-   ```bash
-   cp .env.example .env
-   ```
-
-2. Modify the variables in `.env` as needed:
-
-   ```env
-   NEXT_PUBLIC_API_URL=http://localhost:3000  # URL of your backend API
-   NODE_ENV=development                       # or production
-   ```
-
-3. For production builds, you can create a `.env.production` file with production-specific values.
-
-The build system will automatically apply the appropriate environment file based on NODE_ENV.
 
 ## Using the extension
 
@@ -163,7 +148,10 @@ This section briefly describes why the extensions requires certain scripts and p
 
 ## Publishing to Chrome Web Store
 
-Ensure the version in `package.json` is up-to-date.
+Ensure:
+
+- the version in `package.json` is up-to-date.
+- You have an `.env.production` file with the intended values.
 
 ```sh
 npm run build-prod

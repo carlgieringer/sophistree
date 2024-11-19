@@ -1,8 +1,12 @@
 import { useEffect } from "react";
+import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
+import type { RootState, AppDispatch } from "./store";
 
-import { useAppDispatch } from "./store";
 import * as appLogger from "../logging/appLogging";
 import { refreshAuth } from "./authSlice";
+
+export const useAppDispatch = () => useDispatch<AppDispatch>();
+export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
 
 export function useRefreshAuth() {
   const dispatch = useAppDispatch();

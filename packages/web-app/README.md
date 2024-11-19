@@ -1,4 +1,6 @@
-# Backend Service
+# Sophistree web app
+
+This package is a Next.js web app providing a web UI and REST API for Sophistree.
 
 ## Database Setup
 
@@ -15,7 +17,7 @@ The backend uses PostgreSQL as its database, running in Docker.
 
 ```bash
 cd packages/web-app
-docker compose -p sophistree-backend up -d
+docker compose up -d sophistree-db
 ```
 
 This will start PostgreSQL on port 5432. The database data is persisted in a Docker volume named 'sophistree_data'.
@@ -121,10 +123,9 @@ and for the application on the next port (`9230`). So attach a debugger to `loca
 
 The test database is automatically handled:
 
-- Uses a separate database named `sophistree_test`
+- Uses a separate database per test file for isolation
 - Migrations are applied automatically before tests run
 - Database is cleaned between tests
-- Connection string: `postgresql://postgres:postgres@localhost:5432/sophistree_test`
 
 No manual database setup is required - the test infrastructure handles creating and migrating the test database automatically.
 
@@ -132,12 +133,6 @@ No manual database setup is required - the test infrastructure handles creating 
 
 ```shell
 aws-vault exec <profile> -- tofu apply
-```
-
-To update the EC2 instance:
-
-```shell
-aws-vault exec <profile> -- ./packages/web-app/infrastructure/update-os.sh "YOUR_DB_PASSWORD"
 ```
 
 ### Logs

@@ -1,6 +1,6 @@
 import React from "react";
 import { useSelector } from "react-redux";
-import { RootState, useAppDispatch } from "../store/store";
+import { RootState, useAppDispatch } from "../store";
 import { signIn, signOut } from "../store/authSlice";
 import * as appLogger from "../logging/appLogging";
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "../../../../db/client";
+import prismaPromise from "../../../../db/client";
 import { getOrCreateUserFromAuth } from "../../../../auth/authUser";
 
 export async function GET(
@@ -7,6 +7,7 @@ export async function GET(
   { params }: { params: { id: string } },
 ) {
   try {
+    const prisma = await prismaPromise;
     const map = await prisma.argumentMap.findUnique({
       where: { id: params.id },
       include: {
@@ -44,6 +45,7 @@ export async function PUT(
     }
     const { id: userId } = result;
 
+    const prisma = await prismaPromise;
     const existingMap = await prisma.argumentMap.findUnique({
       where: { id: params.id },
       include: {
@@ -193,6 +195,7 @@ export async function DELETE(
     }
     const { id: userId } = result;
 
+    const prisma = await prismaPromise;
     const map = await prisma.argumentMap.findUnique({
       where: { id: params.id },
     });

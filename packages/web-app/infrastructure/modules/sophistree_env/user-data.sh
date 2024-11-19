@@ -85,15 +85,25 @@ ${domain_name} {
 echo '${docker_compose_content}' | tee docker-compose.yml
 echo '${docker_compose_prod_content}' | tee docker-compose.prod.yml
 
-# Fetch DB password from SSM Parameter Store
-db_password=$(aws ssm get-parameter --name "${db_password_parameter_arn}" --with-decryption --query "Parameter.Value" --output text)
-
 # Create .env file for docker-compose
-echo "DB_PASSWORD=$db_password
+echo "NODE_ENV=production
+DB_PASSWORD_PARAMETER_ARN=${db_password_parameter_arn}
 CLOUDWATCH_LOG_GROUP=${cloudwatch_log_group}
 AWS_REGION=${aws_region}
+# Use IAM role credentials from the EC2 instance
+AWS_SDK_LOAD_CONFIG=1
 VERSION=${docker_images_version}" | tee .env
 chmod 400 .env
+
+# If Postgres requires initialization, provide the password
+if [[ ! -e /mnt/postgres_data/PG_VERSION ]]; then
+  # Ensure cleanup even on script failure
+  trap 'rm -f .db-env' EXIT
+
+  db_password=$(aws ssm get-parameter --name "${db_password_parameter_arn}" --with-decryption --query "Parameter.Value" --output text)
+  echo "DB_PASSWORD=${db_password}" | tee .db-env
+  chmod 400 .db-env
+fi
 
 # Pull the latest images and start the containers with production config
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml pull

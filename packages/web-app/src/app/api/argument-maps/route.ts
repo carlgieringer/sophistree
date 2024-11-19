@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "../../../db/client";
+import prismaPromise from "../../../db/client";
 import { getOrCreateUserFromAuth } from "../../../auth/authUser";
 
 export async function GET(request: NextRequest) {
   try {
+    const prisma = await prismaPromise;
     const maps = await prisma.argumentMap.findMany({
       orderBy: {
         updatedAt: "desc",
@@ -55,6 +56,7 @@ export async function POST(request: NextRequest) {
     // Remove the createdBy object since we're setting userId directly
     delete transformedData.createdBy;
 
+    const prisma = await prismaPromise;
     const map = await prisma.argumentMap.create({
       data: transformedData,
       include: {

@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { GET, PUT, DELETE } from "./route";
-import prisma from "../../../../db/client";
+import prismaPromise from "../../../../db/client";
 import { ArgumentMap, User } from "@prisma/client";
 import { verifyToken } from "../../../../auth/verify";
 
@@ -23,6 +23,7 @@ describe("Argument maps individual resource", () => {
   let otherUser: User;
 
   beforeEach(async () => {
+    const prisma = await prismaPromise;
     // Clean up database
     await prisma.conclusion.deleteMany();
     await prisma.entity.deleteMany();
@@ -176,6 +177,7 @@ describe("Argument maps individual resource", () => {
       expect(data.name).toBe(updateData.name);
 
       // Verify the update in the database
+      const prisma = await prismaPromise;
       const updatedMap = await prisma.argumentMap.findUnique({
         where: { id: testMap.id },
       });
@@ -221,6 +223,7 @@ describe("Argument maps individual resource", () => {
       expect(data.name).toBe(updateDataWithEntities.name);
 
       // Verify the entities were updated
+      const prisma = await prismaPromise;
       const updatedMap = await prisma.argumentMap.findUnique({
         where: { id: testMap.id },
         include: { entities: true },
@@ -290,6 +293,7 @@ describe("Argument maps individual resource", () => {
       expect(data.name).toBe(updateDataWithConclusions.name);
 
       // Verify the conclusions were updated
+      const prisma = await prismaPromise;
       const updatedMap = await prisma.argumentMap.findUnique({
         where: { id: testMap.id },
         include: { conclusions: true },
@@ -361,6 +365,7 @@ describe("Argument maps individual resource", () => {
       expect(data.name).toBe(updateDataWithBoth.name);
 
       // Verify both entities and conclusions were updated
+      const prisma = await prismaPromise;
       const updatedMap = await prisma.argumentMap.findUnique({
         where: { id: testMap.id },
         include: {
@@ -512,6 +517,7 @@ describe("Argument maps individual resource", () => {
       expect(response.status).toBe(204);
 
       // Verify the map was deleted
+      const prisma = await prismaPromise;
       const deletedMap = await prisma.argumentMap.findUnique({
         where: { id: testMap.id },
       });

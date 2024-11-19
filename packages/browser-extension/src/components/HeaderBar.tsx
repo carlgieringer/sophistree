@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { Appbar, Divider, Menu, Portal, Tooltip } from "react-native-paper";
 import { useSelector } from "react-redux";
-import { useAppDispatch } from "../store/store";
+import { useAppDispatch } from "../store";
 
-import { deleteMap, syncMap } from "../store/entitiesSlice";
+import { deleteMap } from "../store/entitiesSlice";
+import { syncMap } from "../store/apiSlice";
 import NewMapDialog from "./NewMapDialog";
 import ActivateMapDialog from "./ActivateMapDialog";
 import DownloadMapsDialog from "./DownloadMapsDialog";

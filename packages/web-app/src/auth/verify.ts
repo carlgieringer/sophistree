@@ -1,4 +1,4 @@
-import prisma from "../db/client";
+import prismaPromise from "../db/client";
 
 interface AuthUserInfo {
   email: string;
@@ -62,6 +62,7 @@ export async function getOrCreateUser(
   authUserInfo: AuthUserInfo,
   provider: string,
 ) {
+  const prisma = await prismaPromise;
   let user = await prisma.user.findFirst({
     where: {
       authExternalId: authUserInfo.authId,

@@ -1,4 +1,5 @@
-# Build stage
+# Multistage docker file building the Sophistree web app and then copying runtime files.
+
 FROM node:18-alpine AS builder
 WORKDIR /app
 COPY package*.json ./

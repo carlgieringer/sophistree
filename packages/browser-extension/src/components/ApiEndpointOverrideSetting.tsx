@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
 import { saveApiEndpointOverride } from "../store/apiConfigSlice";
-import { RootState, useAppDispatch } from "../store/store";
+import { RootState, useAppDispatch } from "../store";
 import * as appLogger from "../logging/appLogging";
 
 export function ApiEndpointOverrideSetting() {

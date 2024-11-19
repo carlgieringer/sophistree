@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import prisma from "../../../db/client";
+import prismaPromise from "../../../db/client";
 import { POST, GET } from "./route";
 
 // Mock only verifyToken from the verify module
@@ -17,6 +17,7 @@ jest.mock("../../../auth/verify", () => ({
 
 // Reset database before each test
 beforeEach(async () => {
+  const prisma = await prismaPromise;
   await prisma.conclusion.deleteMany();
   await prisma.entity.deleteMany();
   await prisma.argumentMap.deleteMany();
@@ -41,6 +42,7 @@ describe("Argument maps collection resource", () => {
     });
 
     it("should return all maps ordered by updatedAt desc", async () => {
+      const prisma = await prismaPromise;
       // Create a test user
       const user = await prisma.user.create({
         data: {
@@ -86,6 +88,7 @@ describe("Argument maps collection resource", () => {
 
   describe("POST /api/argument-maps", () => {
     it("should create an argument map in the database", async () => {
+      const prisma = await prismaPromise;
       // Create a test user first
       const user = await prisma.user.create({
         data: {

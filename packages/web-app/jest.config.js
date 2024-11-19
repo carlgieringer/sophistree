@@ -6,7 +6,6 @@ const config = {
   transform: {
     "^.+\\.(t|j)sx?$": ["@swc/jest"],
   },
-  // maxWorkers removed to allow parallel test execution
 };
 
 module.exports = config;

@@ -1,3 +1,5 @@
+# Multistage docker file providing Caddy with S3 storage
+
 FROM caddy:2.8.4-builder AS builder
 
 RUN xcaddy build \

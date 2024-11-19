@@ -1,5 +1,14 @@
 # TODO
 
+- Rename main.ts to sidebar.ts
+- Respond to OAuth verification
+  - Document sophistree
+- Use RTK query instead of async thunk directly?
+- Update OptionsPage, ApiEndpointOverrideSetting, AuthenticationCard to use react-native-paper
+- Separate options and sidebar redux store/reducers.
+- Move user auth into separate table (multiple auth methods for single user)
+- Look into SSR
+
 - Test with more examples
 
 - Include conclusion outcomes in map card (and include aggregate of all outcomes ("50% false"))

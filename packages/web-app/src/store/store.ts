@@ -1,9 +1,9 @@
 import { configureStore } from "@reduxjs/toolkit";
-import argumentMapsReducer from "./argumentMapsSlice";
+import argumentMaps from "./argumentMapsSlice";
 
 export const store = configureStore({
   reducer: {
-    argumentMaps: argumentMapsReducer,
+    argumentMaps,
   },
 });
 

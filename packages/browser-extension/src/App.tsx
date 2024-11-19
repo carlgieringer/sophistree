@@ -30,7 +30,7 @@ import * as appLogger from "./logging/appLogging";
 import { catchErrors } from "./extension/callbacks";
 import { useRefreshAuth } from "./store/hooks";
 import { refreshAuth } from "./store/authSlice";
-import { useAppDispatch } from "./store/store";
+import { useAppDispatch } from "./store";
 import { loadApiEndpointOverride } from "./store/apiConfigSlice";
 
 const App: React.FC = () => {

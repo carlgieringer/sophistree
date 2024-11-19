@@ -1,11 +1,11 @@
 import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import { persistStore, persistReducer, createMigrate } from "redux-persist";
 import storage from "redux-persist/lib/storage";
-import { useDispatch } from "react-redux";
 
 import entities from "./entitiesSlice";
 import { persistedStateVersion, reduxPersistMigrations } from "./migrations";
 import ui from "./uiSlice";
+import api from "./apiSlice";
 import auth from "./authSlice";
 import apiConfig from "./apiConfigSlice";
 
@@ -20,10 +20,11 @@ const persistConfig = {
 };
 
 const rootReducer = combineReducers({
+  api,
+  apiConfig,
   auth,
   entities,
   ui,
-  apiConfig,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -40,5 +41,3 @@ export const persistor = persistStore(store);
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
-
-export const useAppDispatch: () => AppDispatch = useDispatch;

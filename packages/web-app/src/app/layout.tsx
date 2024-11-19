@@ -1,6 +1,5 @@
 import React from "react";
 import { Providers } from "./providers";
-import { GoogleOAuthProvider } from "@react-oauth/google";
 
 export const metadata = {
   title: "Sophistree",
@@ -22,9 +21,7 @@ export default function RootLayout({
         />
       </head>
       <body style={{ margin: 0 }}>
-        <GoogleOAuthProvider clientId={process.env.GOOGLE_CLIENT_ID ?? ""}>
-          <Providers>{children}</Providers>
-        </GoogleOAuthProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

@@ -7,8 +7,6 @@ services:
     container_name: sophistree-web-app
     env_file:
       - ./.env
-    environment:
-      - DATABASE_URL=postgresql://sophistree:${DB_PASSWORD}@db:5432/sophistree
     ports:
       - "3000:3000"
     depends_on:
