@@ -50,6 +50,9 @@ chmod +x /usr/local/bin/docker-compose
 mkdir -p /web-app
 cd /web-app
 
+# Create logs directory for Caddy
+mkdir -p /var/log/caddy
+
 # Create Caddyfile in the same directory as docker-compose files
 echo -e '{
   # Uncomment the acme_ca line when testing Caddy settings to to avoid rate limiting
@@ -70,6 +73,12 @@ echo -e '{
 
 ${domain_name} {
   reverse_proxy sophistree-web-app:3000
+  log {
+    output file /var/log/caddy/access.log {
+      roll_size 10mb
+      roll_keep 10
+    }
+  }
 }' | tee Caddyfile
 
 # Create docker-compose files
@@ -121,6 +130,21 @@ echo '{
       "disk": {
         "measurement": ["disk_used_percent"],
         "resources": ["/"]
+      }
+    }
+  },
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/var/log/caddy/access.log",
+            "log_group_name": "${cloudwatch_log_group}",
+            "log_stream_name": "caddy-access",
+            "timestamp_format": "%Y-%m-%dT%H:%M:%S.%f%z",
+            "timezone": "UTC"
+          }
+        ]
       }
     }
   }
