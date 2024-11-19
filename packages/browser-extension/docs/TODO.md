@@ -1,7 +1,6 @@
 # TODO
 
-- Rename tf and package to web-app
-- Test recreate instance data persistence
+- Read DB password from SSM?
 - Check if logs appear in Cloudwatch
 
 - Test with more examples

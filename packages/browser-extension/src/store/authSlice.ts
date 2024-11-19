@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import * as appLogger from "../logging/appLogging";
 
 interface User {
   email: string;
@@ -40,6 +41,14 @@ async function authenticate(details: chrome.identity.TokenDetails) {
   return (await response.json()) as User;
 }
 
+async function broadcastAuthChange() {
+  try {
+    await chrome.runtime.sendMessage({ action: "authStateChanged" });
+  } catch (error) {
+    appLogger.warn("Failed to broadcast auth state change", error);
+  }
+}
+
 export const refreshAuth = createAsyncThunk(
   "auth/refreshAuth",
   async (_, { rejectWithValue }) => {
@@ -55,7 +64,9 @@ export const signIn = createAsyncThunk(
   "auth/signIn",
   async (_, { rejectWithValue }) => {
     try {
-      return await authenticate({ interactive: true });
+      const user = await authenticate({ interactive: true });
+      await broadcastAuthChange();
+      return user;
     } catch (error) {
       if (error instanceof Error) {
         return rejectWithValue(error.message);
@@ -70,6 +81,7 @@ export const signOut = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       await chrome.identity.clearAllCachedAuthTokens();
+      await broadcastAuthChange();
     } catch (error) {
       if (error instanceof Error) {
         return rejectWithValue(error.message);

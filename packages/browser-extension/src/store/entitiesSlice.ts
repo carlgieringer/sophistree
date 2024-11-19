@@ -6,6 +6,7 @@ import merge from "lodash.merge";
 
 import * as appLogger from "../logging/appLogging";
 import { notifyTabsOfDeletedMediaExcerpt } from "../extension/messages";
+import { selectApiEndpoint } from "./apiConfigSlice";
 
 type BaseEntity = {
   id: string;
@@ -134,7 +135,7 @@ export interface AddMediaExcerptData {
 export const syncMap = createAsyncThunk(
   "entities/syncMap",
   async (_, { getState }) => {
-    const state = getState() as { entities: State };
+    const state = getState();
     const activeMapId = state.entities.activeMapId;
     if (!activeMapId) {
       throw new Error("No active map to sync");
@@ -158,9 +159,12 @@ export const syncMap = createAsyncThunk(
       "X-Auth-Provider": "google",
     };
 
+    const apiEndpoint =
+      selectApiEndpoint(state) || process.env.NEXT_PUBLIC_API_URL;
+
     // Check if map exists
     const checkResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/argument-maps/${activeMapId}`,
+      `${apiEndpoint}/api/argument-maps/${activeMapId}`,
       {
         headers: authHeaders,
       },
@@ -169,8 +173,8 @@ export const syncMap = createAsyncThunk(
     const mapExists = checkResponse.ok;
     const method = mapExists ? "PUT" : "POST";
     const url = mapExists
-      ? `${process.env.NEXT_PUBLIC_API_URL}/api/argument-maps/${activeMapId}`
-      : `${process.env.NEXT_PUBLIC_API_URL}/api/argument-maps`;
+      ? `${apiEndpoint}/api/argument-maps/${activeMapId}`
+      : `${apiEndpoint}/api/argument-maps`;
 
     const response = await fetch(url, {
       method,

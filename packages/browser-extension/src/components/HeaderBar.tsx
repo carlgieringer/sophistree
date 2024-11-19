@@ -47,6 +47,12 @@ function HeaderBar({ id }: { id?: string }) {
     chrome.runtime.reload();
   };
 
+  const handleOpenOptions = () => {
+    chrome.runtime.openOptionsPage().catch((error) => {
+      appLogger.error("Failed to open options page", error);
+    });
+  };
+
   function deleteActiveMap() {
     if (!activeMapId) {
       appLogger.warn("No active map to delete");
@@ -149,6 +155,17 @@ function HeaderBar({ id }: { id?: string }) {
         key="import-maps"
         onPress={() => {
           setUploadMapsDialogVisible(true);
+          hideMenu();
+        }}
+      />,
+    ],
+    [
+      <Menu.Item
+        title="Options"
+        leadingIcon="cog"
+        key="options"
+        onPress={() => {
+          handleOpenOptions();
           hideMenu();
         }}
       />,

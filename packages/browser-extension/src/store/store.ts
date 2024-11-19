@@ -1,12 +1,13 @@
-import { configureStore } from "@reduxjs/toolkit";
+import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import { persistStore, persistReducer, createMigrate } from "redux-persist";
 import storage from "redux-persist/lib/storage";
 import { useDispatch } from "react-redux";
 
-import entitiesReducer from "./entitiesSlice";
+import entities from "./entitiesSlice";
 import { persistedStateVersion, reduxPersistMigrations } from "./migrations";
 import ui from "./uiSlice";
 import auth from "./authSlice";
+import apiConfig from "./apiConfigSlice";
 
 const persistConfig = {
   key: "root",
@@ -15,16 +16,20 @@ const persistConfig = {
   migrate: createMigrate(reduxPersistMigrations, {
     debug: process.env.NODE_ENV !== "production",
   }),
+  whitelist: ["entities", "apiConfig"],
 };
 
-const persistedReducer = persistReducer(persistConfig, entitiesReducer);
+const rootReducer = combineReducers({
+  auth,
+  entities,
+  ui,
+  apiConfig,
+});
+
+const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 export const store = configureStore({
-  reducer: {
-    auth,
-    entities: persistedReducer,
-    ui,
-  },
+  reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: false,
