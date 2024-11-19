@@ -173,13 +173,14 @@ docker compose push
 To deploy the images on EC2:
 
 ```shell
+cd /web-app/
 # Pull and run with specific version
-VERSION=1.0.0 docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
-VERSION=1.0.0 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+VERSION=1.0.0 sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml pull
+VERSION=1.0.0 sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 # Or use 'latest' tag (if VERSION not specified)
-docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml pull
+sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --force-recreate -d
 ```
 
 The docker-compose files are configured to:
