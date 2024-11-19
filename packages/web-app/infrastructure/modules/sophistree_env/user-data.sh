@@ -76,11 +76,14 @@ ${domain_name} {
 echo '${docker_compose_content}' | tee docker-compose.yml
 echo '${docker_compose_prod_content}' | tee docker-compose.prod.yml
 
+# Fetch DB password from SSM Parameter Store
+db_password=$(aws ssm get-parameter --name "${db_password_parameter_arn}" --with-decryption --query "Parameter.Value" --output text)
+
 # Create .env file for docker-compose
-echo 'DB_PASSWORD=${db_password}
+echo "DB_PASSWORD=$db_password
 CLOUDWATCH_LOG_GROUP=${cloudwatch_log_group}
 AWS_REGION=${aws_region}
-VERSION=${docker_images_version}' | tee .env
+VERSION=${docker_images_version}" | tee .env
 chmod 400 .env
 
 # Pull the latest images and start the containers with production config

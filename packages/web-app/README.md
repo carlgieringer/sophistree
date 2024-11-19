@@ -131,7 +131,7 @@ No manual database setup is required - the test infrastructure handles creating 
 ## Infrastructure
 
 ```shell
-aws-vault exec <profile> -- tofu apply -var-file=dev.tfvars
+aws-vault exec <profile> -- tofu apply
 ```
 
 To update the EC2 instance:

@@ -1,6 +1,5 @@
 # TODO
 
-- Read DB password from SSM?
 - Check if logs appear in Cloudwatch
 
 - Test with more examples

@@ -13,12 +13,6 @@ variable "key_name" {
   type        = string
 }
 
-variable "db_password" {
-  description = "PostgreSQL database password"
-  type        = string
-  sensitive   = true
-}
-
 variable "subnet_id" {
   description = "ID of the subnet to launch the instance in"
   type        = string
@@ -53,5 +47,10 @@ variable "docker_images_version" {
 
 variable "caddy_email" {
   description = "Email address for Let's Encrypt certificate generation"
+  type        = string
+}
+
+variable "db_password_parameter_arn" {
+  description = "ARN of the SSM parameter containing the database password"
   type        = string
 }

@@ -104,11 +104,30 @@ resource "aws_iam_role_policy" "cloudwatch" {
   })
 }
 
+resource "aws_iam_role_policy" "ssm_access" {
+  name = "ssm-access-${var.environment}"
+  role = aws_iam_role.web_app.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:GetParameter"
+        ]
+        Resource = [
+          var.db_password_parameter_arn
+        ]
+      }
+    ]
+  })
+}
+
 data "template_file" "user_data" {
   template = file("${path.module}/user-data.sh")
   vars = {
     domain_name                 = var.environment == "prod" ? var.domain_name : "${var.environment}.${var.domain_name}"
-    db_password                 = var.db_password
     backup_bucket               = aws_s3_bucket.postgres_backups.id
     cloudwatch_log_group        = aws_cloudwatch_log_group.web_app.name
     aws_region                  = var.aws_region
@@ -119,6 +138,7 @@ data "template_file" "user_data" {
     caddy_certs_bucket          = aws_s3_bucket.caddy_certs.bucket
     caddy_certs_bucket_host     = aws_s3_bucket.caddy_certs.bucket_regional_domain_name
     caddy_email                 = var.caddy_email
+    db_password_parameter_arn  = var.db_password_parameter_arn
   }
 }
 
@@ -145,7 +165,7 @@ resource "aws_instance" "web_app" {
   iam_instance_profile        = aws_iam_instance_profile.web_app.name
 
   root_block_device {
-    volume_size = 20
+    volume_size = 30
     volume_type = "gp3"
     encrypted   = true
   }
