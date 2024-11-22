@@ -134,11 +134,12 @@ data "template_file" "user_data" {
     device_name                 = "/dev/sdf"
     docker_compose_content      = file("${path.root}/../docker/docker-compose.yml")
     docker_compose_prod_content = file("${path.root}/../docker/docker-compose.prod.yml")
-    docker_images_version       = var.docker_images_version
+    web_app_image_version       = var.web_app_image_version
+    caddy_image_version         = var.caddy_image_version
     caddy_certs_bucket          = aws_s3_bucket.caddy_certs.bucket
     caddy_certs_bucket_host     = aws_s3_bucket.caddy_certs.bucket_regional_domain_name
     caddy_email                 = var.caddy_email
-    db_password_parameter_arn  = var.db_password_parameter_arn
+    db_password_parameter_arn   = var.db_password_parameter_arn
   }
 }
 

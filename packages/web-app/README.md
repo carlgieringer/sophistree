@@ -154,9 +154,13 @@ To build and push Docker images locally:
 ```shell
 cd packages/web-app/docker
 
+docker build -t sophistree/web-app-base -f web-app-base.dockerfile ..
+
 # Build and push with specific version
-VERSION=1.0.0 docker compose build
-VERSION=1.0.0 docker compose push
+WEB_APP_IMAGE_VERSION=1.0.0 CADDY_IMAGE_VERSION=1.0.0\
+ docker compose build
+WEB_APP_IMAGE_VERSION=1.0.0 CADDY_IMAGE_VERSION=1.0.0\
+ docker compose push
 
 # Or use 'latest' tag (if VERSION not specified)
 docker compose build
@@ -170,8 +174,10 @@ To deploy the images on EC2:
 ```shell
 cd /web-app/
 # Pull and run with specific version
-VERSION=1.0.0 sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml pull
-VERSION=1.0.0 sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+WEB_APP_IMAGE_VERSION=1.0.0 CADDY_IMAGE_VERSION=1.0.0\
+ sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml pull
+WEB_APP_IMAGE_VERSION=1.0.0 CADDY_IMAGE_VERSION=1.0.0\
+ sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 # Or use 'latest' tag (if VERSION not specified)
 sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml pull

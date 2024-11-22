@@ -39,8 +39,14 @@ variable "availability_zone" {
   type        = string
 }
 
-variable "docker_images_version" {
-  description = "Version tag for Docker images"
+variable "web_app_image_version" {
+  description = "Version tag for the web app Docker image"
+  type        = string
+  default     = "latest"
+}
+
+variable "caddy_image_version" {
+  description = "Version tag for the Caddy Docker image"
   type        = string
   default     = "latest"
 }

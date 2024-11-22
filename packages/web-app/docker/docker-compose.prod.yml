@@ -1,32 +1,32 @@
 services:
   web-app:
-    image: sophistree/web-app:${VERSION:-latest}
+    image: sophistree/web-app:${WEB_APP_IMAGE_VERSION:-latest}
     build: null
+    env_file: web-app.env
     logging:
-      driver: awslogs
       options:
-        awslogs-group: ${CLOUDWATCH_LOG_GROUP}
-        awslogs-region: ${AWS_REGION}
         awslogs-stream: web-app
 
-  db:
+  migrator:
+    env_file: migrator.env
     logging:
-      driver: awslogs
       options:
-        awslogs-group: ${CLOUDWATCH_LOG_GROUP}
-        awslogs-region: ${AWS_REGION}
+        awslogs-stream: migrator
+
+  db:
+    env_file: db.env
+    logging:
+      options:
         awslogs-stream: postgres
     volumes:
       - /mnt/postgres_data:/var/lib/postgresql/data
 
   caddy:
-    image: sophistree/caddy:${VERSION:-latest}
+    env_file: caddy.env
+    image: sophistree/caddy:${CADDY_IMAGE_VERSION:-latest}
     build: null
     logging:
-      driver: awslogs
       options:
-        awslogs-group: ${CLOUDWATCH_LOG_GROUP}
-        awslogs-region: ${AWS_REGION}
         awslogs-stream: caddy
     volumes:
       - /var/log/caddy:/var/log/caddy

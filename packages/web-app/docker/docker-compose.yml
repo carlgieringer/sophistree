@@ -3,22 +3,28 @@ services:
     build:
       context: ..
       dockerfile: docker/web-app.dockerfile
-    image: sophistree/web-app:${VERSION:-latest}
+    image: sophistree/web-app:${WEB_APP_IMAGE_VERSION:-latest}
     container_name: sophistree-web-app
-    env_file:
-      - ./.env
-    ports:
-      - "3000:3000"
     depends_on:
       db:
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
     restart: always
+
+  migrator:
+    build:
+      context: ..
+      dockerfile: docker/migrator.dockerfile
+    image: sophistree/migrator:${WEB_APP_IMAGE_VERSION:-latest}
+    container_name: sophistree-migrator
+    depends_on:
+      db:
+        condition: service_healthy
 
   db:
     image: postgres:16
     container_name: sophistree-db
-    env_file:
-      - ./.env
     environment:
       POSTGRES_USER: sophistree
       POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -26,7 +32,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sophistree"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -35,7 +41,7 @@ services:
   caddy:
     build:
       dockerfile: caddy.dockerfile
-    image: sophistree/caddy:${VERSION:-latest}
+    image: sophistree/caddy:${CADDY_IMAGE_VERSION:-latest}
     container_name: sophistree-caddy
     restart: unless-stopped
     ports:
