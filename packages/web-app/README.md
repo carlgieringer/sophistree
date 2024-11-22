@@ -154,17 +154,18 @@ To build and push Docker images locally:
 ```shell
 cd packages/web-app/docker
 
+# Build base image
 docker build -t sophistree/web-app-base -f web-app-base.dockerfile ..
+
+# Build and push 'latest' tag
+docker compose build
+docker compose push
 
 # Build and push with specific version
 WEB_APP_IMAGE_VERSION=1.0.0 CADDY_IMAGE_VERSION=1.0.0\
  docker compose build
 WEB_APP_IMAGE_VERSION=1.0.0 CADDY_IMAGE_VERSION=1.0.0\
  docker compose push
-
-# Or use 'latest' tag (if VERSION not specified)
-docker compose build
-docker compose push
 ```
 
 #### Deploying to EC2
