@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { StyleSheet, View, ScrollView } from "react-native";
 import { Button, Text } from "react-native-paper";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 
 import "./App.scss";
 import EntityEditor from "./components/EntityEditor";
@@ -28,13 +28,24 @@ import {
 import { serializeMap } from "./extension/serialization";
 import * as appLogger from "./logging/appLogging";
 import { catchErrors } from "./extension/callbacks";
+import { useRefreshAuth } from "./store/hooks";
+import { refreshAuth } from "./store/authSlice";
+import { useAppDispatch } from "./store";
+import { loadApiEndpointOverride } from "./store/apiConfigSlice";
 
 const App: React.FC = () => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   useRefreshContentPageMediaExcerptsWhenActiveMapChanges();
   useSendUpdatedMediaExcerptOutcomes();
   useHandleChromeRuntimeMessage();
   useContentScriptKeepAliveConnection();
+  useRefreshAuth();
+  useSyncApiConfig();
+
+  // Load initial API config
+  useEffect(() => {
+    void dispatch(loadApiEndpointOverride());
+  }, [dispatch]);
 
   const activeMapId = useSelector(selectors.activeMapId);
   const graphView = activeMapId ? (
@@ -153,7 +164,7 @@ function useSendUpdatedMediaExcerptOutcomes() {
 }
 
 function useHandleChromeRuntimeMessage() {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const entities = useSelector(selectors.activeMapEntities);
   const mediaExcerptOutcomes = useSelector(
     selectors.activeMapMediaExcerptOutcomes,
@@ -166,6 +177,18 @@ function useHandleChromeRuntimeMessage() {
     ) => {
       catchErrors(() => {
         switch (message.action) {
+          case "authStateChanged":
+            void (async () => {
+              try {
+                await dispatch(refreshAuth()).unwrap();
+              } catch (error) {
+                appLogger.error(
+                  "Failed to refresh auth after state change",
+                  error,
+                );
+              }
+            })();
+            break;
           case "addMediaExcerpt":
             dispatch(addMediaExcerpt(message.data));
             void notifyTabsOfNewMediaExcerpt(sender.tab, message.data);
@@ -222,6 +245,27 @@ async function notifyTabsOfNewMediaExcerpt(
     }
     await notifyTabOfNewMediaExcerpt(tab, data);
   }
+}
+
+function useSyncApiConfig() {
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    const handleStorageChange = (
+      changes: Record<string, chrome.storage.StorageChange>,
+      areaName: string,
+    ) => {
+      if (areaName === "local" && "apiEndpointOverride" in changes) {
+        // Load the new value into the store
+        void dispatch(loadApiEndpointOverride());
+      }
+    };
+
+    chrome.storage.onChanged.addListener(handleStorageChange);
+    return () => {
+      chrome.storage.onChanged.removeListener(handleStorageChange);
+    };
+  }, [dispatch]);
 }
 
 const styles = StyleSheet.create({

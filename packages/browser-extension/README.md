@@ -29,6 +29,12 @@ of CUJs.
 
 ## Development Workflow
 
+### Env file
+
+```sh
+cp .env.example .env
+```
+
 ### Running development build
 
 This continuously builds the javascript:
@@ -142,7 +148,10 @@ This section briefly describes why the extensions requires certain scripts and p
 
 ## Publishing to Chrome Web Store
 
-Ensure the version in `package.json` is up-to-date.
+Ensure:
+
+- the version in `package.json` is up-to-date.
+- You have an `.env.production` file with the intended values.
 
 ```sh
 npm run build-prod

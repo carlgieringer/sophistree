@@ -1,5 +1,5 @@
 {
-  "name": "sophistree-browser-extension",
+  "name": "@sophistree/browser-extension",
   "version": "0.1.5",
   "description": "A browser extension for mapping arguments appearing in web pages",
   "main": "index.js",
@@ -73,6 +73,7 @@
     "@typescript-eslint/parser": "^8.8.0",
     "babel-jest": "^29.7.0",
     "chokidar": "^4.0.1",
+    "dotenv": "^16.4.5",
     "esbuild": "^0.23.1",
     "esbuild-plugin-clean": "^1.0.1",
     "esbuild-plugin-copy": "^2.1.1",

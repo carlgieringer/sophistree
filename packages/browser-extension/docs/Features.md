@@ -120,3 +120,20 @@ Data guidelines:
 Guidelines for excerpt creation from already open tabs:
 
 - The user must open the sidebar and activate a map first.
+
+## Social Features
+
+- Authentication
+
+- Publish a map (saves online)
+- View a feed of maps (eventually filter by following)
+
+- Extension button badge for maps on current page
+- View maps appearing on current page
+
+- Derive maps from another user's map (copy to new map with immutable history)
+- Message on derived map for when base map is updated
+- Notifications for when base map is updated
+- Notification when derived map is created
+
+- Follow users

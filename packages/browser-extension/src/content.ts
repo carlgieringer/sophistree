@@ -435,11 +435,16 @@ interface GetMediaExcerptsMessage {
   };
 }
 
+interface AuthStateChangedMessage {
+  action: "authStateChanged";
+}
+
 export type ChromeRuntimeMessage =
   | AddMediaExcerptMessage
   | SelectMediaExcerptMessage
   | GetMediaExcerptMessage
-  | GetMediaExcerptsMessage;
+  | GetMediaExcerptsMessage
+  | AuthStateChangedMessage;
 
 declare global {
   interface Window {

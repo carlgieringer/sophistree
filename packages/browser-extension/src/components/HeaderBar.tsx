@@ -1,8 +1,10 @@
 import React, { useState } from "react";
-import { Appbar, Divider, Menu, Portal } from "react-native-paper";
-import { useDispatch, useSelector } from "react-redux";
+import { Appbar, Divider, Menu, Portal, Tooltip } from "react-native-paper";
+import { useSelector } from "react-redux";
+import { useAppDispatch } from "../store";
 
 import { deleteMap } from "../store/entitiesSlice";
+import { syncMap } from "../store/apiSlice";
 import NewMapDialog from "./NewMapDialog";
 import ActivateMapDialog from "./ActivateMapDialog";
 import DownloadMapsDialog from "./DownloadMapsDialog";
@@ -18,7 +20,7 @@ import {
 import * as appLogger from "../logging/appLogging";
 
 function HeaderBar({ id }: { id?: string }) {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
 
   const [isMenuVisible, setMenuVisible] = useState(false);
   const hideMenu = () => setMenuVisible(false);
@@ -38,11 +40,18 @@ function HeaderBar({ id }: { id?: string }) {
 
   const activeMapId = useSelector(selectors.activeMapId);
   const activeMapName = useSelector(selectors.activeMapName);
+  const isAuthenticated = useSelector(selectors.isAuthenticated);
 
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const handleReload = () => {
     chrome.runtime.reload();
+  };
+
+  const handleOpenOptions = () => {
+    chrome.runtime.openOptionsPage().catch((error) => {
+      appLogger.error("Failed to open options page", error);
+    });
   };
 
   function deleteActiveMap() {
@@ -66,6 +75,21 @@ function HeaderBar({ id }: { id?: string }) {
     />
   );
 
+  const syncMenuItem = (
+    <Menu.Item
+      title="Sync map"
+      key="sync-map"
+      onPress={() => {
+        dispatch(syncMap()).catch((reason) =>
+          appLogger.error("Failed to sync map", reason),
+        );
+        hideMenu();
+      }}
+      leadingIcon="cloud-upload"
+      disabled={!activeMapId || !isAuthenticated}
+    />
+  );
+
   const menuItemGroups = [
     [
       <Menu.Item
@@ -78,6 +102,13 @@ function HeaderBar({ id }: { id?: string }) {
         }}
         disabled={!activeMapId}
       />,
+      isAuthenticated ? (
+        syncMenuItem
+      ) : (
+        <Tooltip title="You must be logged in to sync maps" key="sync-map">
+          {syncMenuItem}
+        </Tooltip>
+      ),
       <Menu.Item
         key="delete-map"
         onPress={() => {
@@ -125,6 +156,17 @@ function HeaderBar({ id }: { id?: string }) {
         key="import-maps"
         onPress={() => {
           setUploadMapsDialogVisible(true);
+          hideMenu();
+        }}
+      />,
+    ],
+    [
+      <Menu.Item
+        title="Options"
+        leadingIcon="cog"
+        key="options"
+        onPress={() => {
+          handleOpenOptions();
           hideMenu();
         }}
       />,

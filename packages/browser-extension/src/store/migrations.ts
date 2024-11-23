@@ -6,12 +6,15 @@ import {
   updateConclusions,
 } from "./entitiesSlice";
 import { PersistedState } from "redux-persist";
+import { type RootState } from "./store";
 
-export const persistedStateVersion = 6;
+export const persistedStateVersion = 7;
 
 type MapsState =
   | {
       maps: ArgumentMap[];
+      activeMapId: string;
+      selectedEntityIds: string[];
     }
   | undefined;
 
@@ -47,6 +50,18 @@ export const reduxPersistMigrations = {
     state?.maps.forEach((map: ArgumentMap) => {
       mapMigrations[6](map);
     });
+  }),
+  7: produce((s: PersistedState) => {
+    const state = s as MapsState;
+    if (!state) {
+      return;
+    }
+    const { maps, activeMapId, selectedEntityIds } = state;
+    if (s && "maps" in s) delete s.maps;
+    if (s && "activeMapId" in s) delete s.activeMapId;
+    if (s && "selectedEntityIds" in s) delete s.selectedEntityIds;
+    const rootState = s as unknown as RootState;
+    rootState.entities = { maps, activeMapId, selectedEntityIds };
   }),
 };
 

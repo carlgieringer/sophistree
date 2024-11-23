@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String         @id @default(uuid())
+  email          String         @unique
+  authExternalId String         @unique
+  authProvider   String
+  name           String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  argumentMaps   ArgumentMap[]
+
+  @@index([authExternalId, authProvider])
+  @@map("users")
+}
+
+model ArgumentMap {
+  id                  String         @id @default(uuid())
+  name                String
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  userId              String
+  sourceNameOverrides Json           @default("{}")
+  derivedFromId       String?
+  conclusions         Conclusion[]
+  entities            Entity[]
+  derivedFrom         ArgumentMap?   @relation("ArgumentMapDerivation", fields: [derivedFromId], references: [id])
+  derivedMaps         ArgumentMap[]  @relation("ArgumentMapDerivation")
+  createdBy           User           @relation(fields: [userId], references: [id])
+
+  @@map("argument_maps")
+}
+
+model Entity {
+  id                 String      @id
+  mapId              String
+  type               String
+  data               Json
+  explicitVisibility String?
+  autoVisibility     String
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  map                ArgumentMap @relation(fields: [mapId], references: [id])
+
+  @@map("entities")
+}
+
+model Conclusion {
+  id             String      @id @default(uuid())
+  mapId          String
+  propositionIds String[]
+  sourceNames    String[]
+  urls           String[]
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  map            ArgumentMap @relation(fields: [mapId], references: [id])
+
+  @@map("conclusions")
+}

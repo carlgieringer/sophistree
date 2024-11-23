@@ -1,12 +1,22 @@
 {
   "configurations": [
+
     {
       "name": "Attach",
+      "type": "node",
       "port": 9229,
       "request": "attach",
       "skipFiles": ["<node_internals>/**"],
-      "type": "node",
       "continueOnAttach": true
+    },
+    {
+      "name": "Attach (9230)",
+      "type": "node",
+      "port": 9230,
+      "request": "attach",
+      "skipFiles": ["<node_internals>/**"],
+      "continueOnAttach": true,
+      "cwd": "${workspaceFolder}/packages/web-app"
     }
   ]
 }

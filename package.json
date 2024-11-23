@@ -9,10 +9,11 @@
   "private": true,
   "workspaces": [
     "packages/tapestry-highlights",
+    "packages/web-app",
     "packages/browser-extension"
   ],
   "scripts": {
-    "check-all": "time (npm run type-check-all && npm run lint-all && npm run format-check-all && npm run test-all) || { echo 'Checks failed'; exit 1; }",
+    "check-all": "time (npx package-lock-utd && npm run type-check-all && npm run lint-all && npm run format-check-all && npm run test-all) || { echo 'Checks failed'; exit 1; }",
     "format-check-all": "npm run format-check --workspaces --if-present",
     "lint-all": "npm run lint --workspaces --if-present",
     "test-all": "npm run test --workspaces --if-present",

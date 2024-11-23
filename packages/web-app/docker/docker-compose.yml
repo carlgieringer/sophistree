@@ -1,0 +1,61 @@
+services:
+  web-app:
+    build:
+      context: ..
+      dockerfile: docker/web-app.dockerfile
+    image: sophistree/web-app:${WEB_APP_IMAGE_VERSION:-latest}
+    container_name: sophistree-web-app
+    depends_on:
+      db:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+    restart: always
+
+  migrator:
+    build:
+      context: ..
+      dockerfile: docker/migrator.dockerfile
+    image: sophistree/migrator:${WEB_APP_IMAGE_VERSION:-latest}
+    container_name: sophistree-migrator
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16
+    container_name: sophistree-db
+    environment:
+      POSTGRES_USER: sophistree
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: sophistree
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+  caddy:
+    build:
+      dockerfile: caddy.dockerfile
+    image: sophistree/caddy:${CADDY_IMAGE_VERSION:-latest}
+    container_name: sophistree-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./site:/srv
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  postgres_data:
+    name: sophistree_postgres_data
+  caddy_data:
+  caddy_config:

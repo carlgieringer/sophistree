@@ -1,0 +1,32 @@
+services:
+  web-app:
+    image: sophistree/web-app:${WEB_APP_IMAGE_VERSION:-latest}
+    build: null
+    env_file: web-app.env
+    logging:
+      options:
+        awslogs-stream: web-app
+
+  migrator:
+    env_file: migrator.env
+    logging:
+      options:
+        awslogs-stream: migrator
+
+  db:
+    env_file: db.env
+    logging:
+      options:
+        awslogs-stream: postgres
+    volumes:
+      - /mnt/postgres_data:/var/lib/postgresql/data
+
+  caddy:
+    env_file: caddy.env
+    image: sophistree/caddy:${CADDY_IMAGE_VERSION:-latest}
+    build: null
+    logging:
+      options:
+        awslogs-stream: caddy
+    volumes:
+      - /var/log/caddy:/var/log/caddy
