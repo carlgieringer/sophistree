@@ -17,10 +17,9 @@ export function AuthenticationCard() {
       .catch((reason) => appLogger.error("Failed to sign out", reason));
   };
 
-  const { user, isAuthenticated, error } = useSelector(
+  const { user, isAuthenticated, error, isLoading } = useSelector(
     (state: RootState) => state.auth,
   );
-  const isLoading = useSelector((state: RootState) => state.auth.isLoading);
 
   return (
     <div style={styles.card}>

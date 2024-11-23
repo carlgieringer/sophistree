@@ -18,8 +18,6 @@ function HomeContent() {
     error,
   } = useAppSelector((state) => state.argumentMaps);
 
-  // const user = useAppSelector((state) => state.auth.user);
-
   useEffect(() => {
     dispatch(fetchArgumentMaps());
   }, [dispatch]);

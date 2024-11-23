@@ -17,6 +17,7 @@ The backend uses PostgreSQL as its database, running in Docker.
 
 ```bash
 cd packages/web-app
+cp .env.example .env  # update the values as needed
 docker compose up -d sophistree-db
 ```
 
@@ -51,24 +52,9 @@ npx prisma migrate reset
 npx prisma studio
 ```
 
-### Environment Variables
-
-Copy `.env.example` to `.env` and update the values as needed. The default database connection string is:
-
-```sh
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/sophistree"
-```
-
 ## Testing
 
 The backend uses Jest for testing, with automatic database setup and migration handling.
-
-### Test Setup
-
-- Tests run against a separate test database (`sophistree_test`)
-- Migrations are automatically applied before tests run
-- Database is cleaned between each test
-- Safety checks ensure tests only run against the test database
 
 ### Running Tests
 
@@ -110,7 +96,7 @@ describe("POST /api/some-endpoint", () => {
 });
 ```
 
-## Debugging
+### Debugging
 
 ```sh
 npm run dev
@@ -132,6 +118,7 @@ No manual database setup is required - the test infrastructure handles creating 
 ## Infrastructure
 
 ```shell
+cd packages/web-app/infrastructure
 aws-vault exec <profile> -- tofu apply
 ```
 
@@ -176,21 +163,14 @@ To deploy the images on EC2:
 cd /web-app/
 # Pull and run with specific version
 WEB_APP_IMAGE_VERSION=1.0.0 CADDY_IMAGE_VERSION=1.0.0\
- sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml pull
+ sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
 WEB_APP_IMAGE_VERSION=1.0.0 CADDY_IMAGE_VERSION=1.0.0\
- sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+ sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 # Or use 'latest' tag (if VERSION not specified)
-sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml pull
-sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --force-recreate -d
+sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
+sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml up --force-recreate -d
 ```
-
-The docker-compose files are configured to:
-
-- Build images locally with version tags
-- Push to Docker Hub
-- Run on EC2 using the pushed images
-- Support versioning through the VERSION environment variable
 
 ### Removing dev S3 Postgres backup S3 buckets
 

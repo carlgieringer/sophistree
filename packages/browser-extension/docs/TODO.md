@@ -1,5 +1,7 @@
 # TODO
 
+- Toast for failed API sync
+- don't persist apiConfig; truth of source is storage.
 - Rename main.ts to sidebar.ts
 - Respond to OAuth verification
   - Document sophistree

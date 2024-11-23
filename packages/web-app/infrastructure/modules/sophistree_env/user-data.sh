@@ -42,10 +42,6 @@ echo '{
 # Restart Docker to apply logging changes
 systemctl restart docker
 
-# Install Docker Compose
-curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-chmod +x /usr/local/bin/docker-compose
-
 # Create app directory and set up docker-compose files
 mkdir -p /web-app
 cd /web-app
@@ -104,8 +100,8 @@ echo "DATABASE_URL=postgresql://sophistree:$db_password@sophistree-db:5432/sophi
 chmod 400 migrator.env
 
 # Pull the latest images and start the containers with production config
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml pull
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 # Set up backup script
 echo '#!/bin/bash
