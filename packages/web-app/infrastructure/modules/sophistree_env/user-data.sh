@@ -101,7 +101,7 @@ echo "CADDY_IMAGE_VERSION=${caddy_image_version}" | tee caddy.env
 chmod 400 caddy.env
 
 db_password=$(aws ssm get-parameter --name "${db_password_parameter_arn}" --with-decryption --query "Parameter.Value" --output text)
-echo "DB_PASSWORD=$db_password" | tee -a db.env
+echo "POSTGRES_PASSWORD=$db_password" | tee -a db.env
 chmod 400 db.env
 
 echo "DATABASE_URL=postgresql://sophistree:$db_password@sophistree-db:5432/sophistree" | tee -a migrator.env
