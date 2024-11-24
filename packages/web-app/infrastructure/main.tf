@@ -1,8 +1,9 @@
 module "sophistree_dev" {
   source = "./modules/sophistree_env"
+  count  = 1 # Set to 0 to prevent resource creation while keeping the module
 
   aws_region                = var.aws_region
-  environment               = "test"
+  environment               = "dev"
   domain_name               = var.domain_name
   caddy_email               = "sophistree.app@gmail.com"
   key_name                  = "sophistree-dev"

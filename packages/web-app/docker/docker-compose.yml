@@ -27,7 +27,6 @@ services:
     container_name: sophistree-db
     environment:
       POSTGRES_USER: sophistree
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: sophistree
     volumes:
       - postgres_data:/var/lib/postgresql/data
