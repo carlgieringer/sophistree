@@ -17,7 +17,7 @@ done
 actual_device=$(readlink -f ${device_name})
 
 # Check if the device has a filesystem using lsblk
-if ! lsblk --fs "$actual_device" | grep -q "[[:space:]][[:alnum:]]"; then
+if ! lsblk --fs "$actual_device" | tail -n1 | grep -q "[[:space:]][[:alnum:]]"; then
   # No filesystem detected, create one
   mkfs -t xfs "$actual_device"
 fi
@@ -25,6 +25,14 @@ fi
 # Add to fstab for persistent mount using the actual device path
 echo "$actual_device /mnt/postgres_data xfs defaults,nofail 0 2" | tee -a /etc/fstab
 mount -a
+
+# Install docker compose plugin
+docker_compose_version=$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep -o '"tag_name": ".*"' | cut -d'"' -f4)
+docker_arch=$(uname -m)
+mkdir -p /usr/local/lib/docker/cli-plugins
+curl -L https://github.com/docker/compose/releases/download/$docker_compose_version/docker-compose-linux-$docker_arch \
+  -o /usr/local/lib/docker/cli-plugins/docker-compose
+chmod +x-w /usr/local/lib/docker/cli-plugins/docker-compose
 
 # Start and enable Docker
 systemctl enable docker
@@ -93,7 +101,7 @@ echo "CADDY_IMAGE_VERSION=${caddy_image_version}" | tee caddy.env
 chmod 400 caddy.env
 
 db_password=$(aws ssm get-parameter --name "${db_password_parameter_arn}" --with-decryption --query "Parameter.Value" --output text)
-echo "DB_PASSWORD=$db_password" | tee -a db.env
+echo "POSTGRES_PASSWORD=$db_password" | tee -a db.env
 chmod 400 db.env
 
 echo "DATABASE_URL=postgresql://sophistree:$db_password@sophistree-db:5432/sophistree" | tee -a migrator.env
