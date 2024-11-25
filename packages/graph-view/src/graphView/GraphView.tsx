@@ -167,7 +167,7 @@ export default function GraphView({
   useDragEventHandlers(cyRef, onCompleteDrag);
   useLayoutOnceUponInitialLoad(cyRef, layoutGraph);
 
-  useEffect(() => layoutGraph, [layoutGraph, elements]);
+  useEffect(() => layoutGraph(), [layoutGraph, elements]);
 
   return (
     <>
