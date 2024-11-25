@@ -1,5 +1,9 @@
 # TODO
 
+- Fonts not working
+- Add 'creator' to maps
+- Move map card to shared.
+
 - Toast for failed API sync
 - don't persist apiConfig; truth of source is storage.
 - Rename main.ts to sidebar.ts

@@ -14,7 +14,7 @@ import cytoscape, {
   Position,
   SingularElementArgument,
 } from "cytoscape";
-import contextMenus from "cytoscape-context-menus";
+import contextMenus, { MenuItem } from "cytoscape-context-menus";
 import elk from "cytoscape-elk";
 import {
   CSSProperties,
@@ -77,9 +77,9 @@ interface GraphViewProps {
   logger: Logger;
   onSelectEntities: OnSelectEntities;
   onResetSelection: OnResetSelection;
-  onAddNewProposition: OnAddNewProposition;
-  onDeleteEntity: OnDeleteEntity;
-  onCompleteDrag: OnCompleteDrag;
+  onAddNewProposition?: OnAddNewProposition;
+  onDeleteEntity?: OnDeleteEntity;
+  onCompleteDrag?: OnCompleteDrag;
   onFocusMediaExcerpt: OnFocusMediaExcerpt;
 }
 
@@ -548,8 +548,8 @@ function useZoomEventHandlers(
 
 function useContextMenus(
   cyRef: MutableRefObject<cytoscape.Core | undefined>,
-  onDeleteEntity: OnDeleteEntity,
-  onAddNewProposition: OnAddNewProposition,
+  onDeleteEntity: OnDeleteEntity | undefined,
+  onAddNewProposition: OnAddNewProposition | undefined,
   zoomIn: EventHandler,
   zoomOut: EventHandler,
   setDebugElementData: (data: ElementDataDefinition | undefined) => void,
@@ -560,67 +560,65 @@ function useContextMenus(
       return;
     }
     const cy = cyRef.current;
-
+    const menuItems = [
+      onDeleteEntity && {
+        id: "delete",
+        content: "Delete",
+        tooltipText: "Delete node",
+        selector: "node, edge",
+        onClickFunction: function (e: EventObjectNode | EventObjectEdge) {
+          const target = e.target;
+          const id = getEntityId(target);
+          onDeleteEntity(id);
+        },
+        hasTrailingDivider: true,
+      },
+      onAddNewProposition && {
+        id: "add-proposition",
+        content: "Add proposition",
+        tooltipText: "Add a proposition",
+        selector: "",
+        coreAsWell: true,
+        onClickFunction: (event: EventObject) => {
+          if (event.target === cy) {
+            onAddNewProposition();
+          }
+        },
+      },
+      {
+        id: "zoom-out",
+        content: "Zoom out",
+        selector: "*",
+        coreAsWell: true,
+        onClickFunction: zoomOut,
+      },
+      {
+        id: "zoom-in",
+        content: "Zoom in",
+        selector: "*",
+        coreAsWell: true,
+        onClickFunction: zoomIn,
+      },
+      {
+        id: "fit-to-contents",
+        content: "Fit to contents",
+        selector: "*",
+        coreAsWell: true,
+        tooltipText: "Layout the graph to fit to all contents",
+        onClickFunction: () => layoutGraph(true),
+      },
+      {
+        id: "show-element-data",
+        content: "Show element data",
+        selector: "node, edge",
+        tooltipText: "Show element data for debugging",
+        onClickFunction: (e: EventObjectNode | EventObjectEdge) => {
+          setDebugElementData(e.target.data() as ElementDataDefinition);
+        },
+      },
+    ].filter(Boolean) as MenuItem[];
     cy.contextMenus({
-      menuItems: [
-        {
-          id: "delete",
-          content: "Delete",
-          tooltipText: "Delete node",
-          selector: "node, edge",
-          onClickFunction: function (e) {
-            const event = e as EventObjectNode | EventObjectEdge;
-            const target = event.target;
-            const id = getEntityId(target);
-            onDeleteEntity(id);
-          },
-          hasTrailingDivider: true,
-        },
-        {
-          id: "add-proposition",
-          content: "Add proposition",
-          tooltipText: "Add a proposition",
-          selector: "",
-          coreAsWell: true,
-          onClickFunction: (event: EventObject) => {
-            if (event.target === cy) {
-              onAddNewProposition();
-            }
-          },
-        },
-        {
-          id: "zoom-out",
-          content: "Zoom out",
-          selector: "*",
-          coreAsWell: true,
-          onClickFunction: zoomOut,
-        },
-        {
-          id: "zoom-in",
-          content: "Zoom in",
-          selector: "*",
-          coreAsWell: true,
-          onClickFunction: zoomIn,
-        },
-        {
-          id: "fit-to-contents",
-          content: "Fit to contents",
-          selector: "*",
-          coreAsWell: true,
-          tooltipText: "Layout the graph to fit to all contents",
-          onClickFunction: () => layoutGraph(true),
-        },
-        {
-          id: "show-element-data",
-          content: "Show element data",
-          selector: "node, edge",
-          tooltipText: "Show element data for debugging",
-          onClickFunction: (e) => {
-            const event = e as EventObjectNode | EventObjectEdge;
-            setDebugElementData(event.target.data() as ElementDataDefinition);
-          },
-        },
-      ],
+      menuItems,
     });
   }, [
     cyRef,
@@ -672,7 +670,7 @@ function useSelectionEventHandlers(
 
 function useDblTapToCreateNode(
   cyRef: MutableRefObject<cytoscape.Core | undefined>,
-  onAddNewProposition: OnAddNewProposition,
+  onAddNewProposition: OnAddNewProposition | undefined,
 ) {
   useEffect(() => {
     if (!cyRef.current) {
@@ -682,7 +680,7 @@ function useDblTapToCreateNode(
 
     const dbltapHandler = (event: EventObject) => {
       if (event.target === cy) {
-        onAddNewProposition();
+        onAddNewProposition?.();
       }
     };
     cy.on("dbltap", dbltapHandler);
@@ -694,7 +692,7 @@ function useDblTapToCreateNode(
 
 function useDragEventHandlers(
   cyRef: MutableRefObject<cytoscape.Core | undefined>,
-  onCompleteDrag: OnCompleteDrag,
+  onCompleteDrag: OnCompleteDrag | undefined,
 ) {
   useEffect(() => {
     if (!cyRef.current) {
@@ -759,7 +757,7 @@ function useDragEventHandlers(
           dragSource,
         );
         if (dragTarget && isValidDropTarget(dragSource, dragTarget)) {
-          onCompleteDrag({
+          onCompleteDrag?.({
             sourceId: getEntityId(dragSource),
             targetId: getEntityId(dragTarget),
           });

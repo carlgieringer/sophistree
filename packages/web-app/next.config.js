@@ -7,6 +7,8 @@ const nextConfig = {
     "react-native-paper",
     "@react-native-community",
     "react-native",
+    "@sophistree/graph-view",
+    "@sophistree/common",
   ],
   webpack: (config) => {
     // Alias react-native to react-native-web

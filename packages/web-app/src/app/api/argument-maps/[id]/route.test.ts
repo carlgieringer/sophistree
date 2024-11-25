@@ -25,7 +25,6 @@ describe("Argument maps individual resource", () => {
   beforeEach(async () => {
     const prisma = await prismaPromise;
     // Clean up database
-    await prisma.conclusion.deleteMany();
     await prisma.entity.deleteMany();
     await prisma.argumentMap.deleteMany();
     await prisma.user.deleteMany();
@@ -57,46 +56,27 @@ describe("Argument maps individual resource", () => {
           create: [
             {
               id: "entity1",
-              type: "CLAIM",
+              type: "Proposition",
               data: {
+                id: "entity1",
+                type: "Proposition",
                 text: "Test claim",
-                x: 0,
-                y: 0,
               },
-              autoVisibility: "SHOW",
             },
             {
               id: "entity2",
-              type: "CLAIM",
+              type: "Proposition",
               data: {
+                id: "entity2",
+                type: "Proposition",
                 text: "Test claim 2",
-                x: 100,
-                y: 0,
               },
-              autoVisibility: "SHOW",
-            },
-          ],
-        },
-        conclusions: {
-          create: [
-            {
-              id: "conclusion1",
-              propositionIds: ["entity1"],
-              sourceNames: ["source1"],
-              urls: ["http://example.com"],
-            },
-            {
-              id: "conclusion2",
-              propositionIds: ["entity2"],
-              sourceNames: ["source2"],
-              urls: ["http://example2.com"],
             },
           ],
         },
       },
       include: {
         entities: true,
-        conclusions: true,
       },
     });
   });
@@ -118,21 +98,11 @@ describe("Argument maps individual resource", () => {
           entities: expect.arrayContaining([
             expect.objectContaining({
               id: "entity1",
-              type: "CLAIM",
+              type: "Proposition",
             }),
             expect.objectContaining({
               id: "entity2",
-              type: "CLAIM",
-            }),
-          ]),
-          conclusions: expect.arrayContaining([
-            expect.objectContaining({
-              id: "conclusion1",
-              propositionIds: ["entity1"],
-            }),
-            expect.objectContaining({
-              id: "conclusion2",
-              propositionIds: ["entity2"],
+              type: "Proposition",
             }),
           ]),
         }),
@@ -192,13 +162,11 @@ describe("Argument maps individual resource", () => {
             id: "entity1", // Existing entity
             type: "CLAIM",
             text: "Updated claim",
-            autoVisibility: "SHOW",
           },
           {
             id: "new-entity1", // New entity
             type: "Proposition",
             text: "New Proposition 1",
-            autoVisibility: "Visible",
           },
         ],
       };
@@ -236,13 +204,11 @@ describe("Argument maps individual resource", () => {
             id: "entity1",
             type: "CLAIM",
             data: expect.objectContaining({ text: "Updated claim" }),
-            autoVisibility: "SHOW",
           }),
           expect.objectContaining({
             id: "new-entity1",
             type: "Proposition",
             data: expect.objectContaining({ text: "New Proposition 1" }),
-            autoVisibility: "Visible",
           }),
         ]),
       );
@@ -252,160 +218,6 @@ describe("Argument maps individual resource", () => {
         where: { id: "entity2" },
       });
       expect(entity2).toBeNull();
-    });
-
-    it("should update existing conclusions and create new ones", async () => {
-      const updateDataWithConclusions = {
-        name: "Updated Map Name",
-        conclusions: [
-          {
-            id: "conclusion1", // Existing conclusion
-            propositionIds: ["entity1", "entity2"],
-            sourceNames: ["updated-source"],
-            urls: ["http://updated-example.com"],
-          },
-          {
-            id: "new-conclusion", // New conclusion
-            propositionIds: ["entity2"],
-            sourceNames: ["new-source"],
-            urls: ["http://new-example.com"],
-          },
-        ],
-      };
-
-      const request = new NextRequest(
-        `http://localhost/api/argument-maps/${testMap.id}`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: "Bearer fake-token",
-            "x-auth-provider": "google",
-            "content-type": "application/json",
-          },
-          body: JSON.stringify({ data: updateDataWithConclusions }),
-        },
-      );
-
-      const response = await PUT(request, { params: { id: testMap.id } });
-      const data = await response.json();
-
-      expect(response.status).toBe(200);
-      expect(data.name).toBe(updateDataWithConclusions.name);
-
-      // Verify the conclusions were updated
-      const prisma = await prismaPromise;
-      const updatedMap = await prisma.argumentMap.findUnique({
-        where: { id: testMap.id },
-        include: { conclusions: true },
-      });
-
-      expect(updatedMap?.conclusions).toHaveLength(2);
-      expect(updatedMap?.conclusions).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            id: "conclusion1",
-            propositionIds: ["entity1", "entity2"],
-            sourceNames: ["updated-source"],
-            urls: ["http://updated-example.com"],
-          }),
-          expect.objectContaining({
-            id: "new-conclusion",
-            propositionIds: ["entity2"],
-            sourceNames: ["new-source"],
-            urls: ["http://new-example.com"],
-          }),
-        ]),
-      );
-
-      // Verify conclusion2 was deleted
-      const conclusion2 = await prisma.conclusion.findUnique({
-        where: { id: "conclusion2" },
-      });
-      expect(conclusion2).toBeNull();
-    });
-
-    it("should update both entities and conclusions together", async () => {
-      const updateDataWithBoth = {
-        name: "Updated Map Name",
-        entities: [
-          {
-            id: "entity1",
-            type: "CLAIM",
-            text: "Updated claim",
-            autoVisibility: "SHOW",
-          },
-        ],
-        conclusions: [
-          {
-            id: "conclusion1",
-            propositionIds: ["entity1"],
-            sourceNames: ["updated-source"],
-            urls: ["http://updated-example.com"],
-          },
-        ],
-      };
-
-      const request = new NextRequest(
-        `http://localhost/api/argument-maps/${testMap.id}`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: "Bearer fake-token",
-            "x-auth-provider": "google",
-            "content-type": "application/json",
-          },
-          body: JSON.stringify({ data: updateDataWithBoth }),
-        },
-      );
-
-      const response = await PUT(request, { params: { id: testMap.id } });
-      const data = await response.json();
-
-      expect(response.status).toBe(200);
-      expect(data.name).toBe(updateDataWithBoth.name);
-
-      // Verify both entities and conclusions were updated
-      const prisma = await prismaPromise;
-      const updatedMap = await prisma.argumentMap.findUnique({
-        where: { id: testMap.id },
-        include: {
-          entities: true,
-          conclusions: true,
-        },
-      });
-
-      // Check entities
-      expect(updatedMap?.entities).toHaveLength(1);
-      expect(updatedMap?.entities[0]).toEqual(
-        expect.objectContaining({
-          id: "entity1",
-          type: "CLAIM",
-          data: expect.objectContaining({ text: "Updated claim" }),
-          autoVisibility: "SHOW",
-        }),
-      );
-
-      // Check conclusions
-      expect(updatedMap?.conclusions).toHaveLength(1);
-      expect(updatedMap?.conclusions[0]).toEqual(
-        expect.objectContaining({
-          id: "conclusion1",
-          propositionIds: ["entity1"],
-          sourceNames: ["updated-source"],
-          urls: ["http://updated-example.com"],
-        }),
-      );
-
-      // Verify removed items were deleted
-      const entity2 = await prisma.entity.findUnique({
-        where: { id: "entity2" },
-      });
-      expect(entity2).toBeNull();
-
-      const conclusion2 = await prisma.conclusion.findUnique({
-        where: { id: "conclusion2" },
-      });
-      expect(conclusion2).toBeNull();
     });
 
     it("should return 401 when auth header is missing", async () => {

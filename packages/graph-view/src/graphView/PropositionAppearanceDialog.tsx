@@ -24,7 +24,7 @@ export default function PropositionAppearanceDialog({
   visible: boolean;
   onDismiss: () => void;
   onFocusMediaExcerpt: OnFocusMediaExcerpt;
-  onDeleteEntity: OnDeleteEntity;
+  onDeleteEntity?: OnDeleteEntity;
 }) {
   return (
     <Dialog visible={visible} onDismiss={onDismiss}>

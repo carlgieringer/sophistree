@@ -18,7 +18,6 @@ jest.mock("../../../auth/verify", () => ({
 // Reset database before each test
 beforeEach(async () => {
   const prisma = await prismaPromise;
-  await prisma.conclusion.deleteMany();
   await prisma.entity.deleteMany();
   await prisma.argumentMap.deleteMany();
   await prisma.user.deleteMany();
@@ -99,24 +98,15 @@ describe("Argument maps collection resource", () => {
       });
 
       const entityId = "test-entity-id";
+      const entity = {
+        id: entityId,
+        type: "Proposition",
+        text: "Test Proposition",
+      };
       const requestData = {
         data: {
           name: "Test Map",
-          entities: [
-            {
-              id: entityId,
-              type: "Proposition",
-              text: "Test Proposition",
-              autoVisibility: "Visible",
-            },
-          ],
-          conclusions: [
-            {
-              propositionIds: [entityId],
-              sourceNames: ["Source 1"],
-              urls: ["https://example.com/source1"],
-            },
-          ],
+          entities: [entity],
         },
       };
 
@@ -147,7 +137,6 @@ describe("Argument maps collection resource", () => {
         where: { id: responseData.id },
         include: {
           entities: true,
-          conclusions: true,
         },
       });
       expect(mapInDb).not.toBeNull();
@@ -156,20 +145,11 @@ describe("Argument maps collection resource", () => {
 
       // Verify the entity was created and linked to the map
       expect(mapInDb?.entities).toHaveLength(1);
-      const entity = mapInDb?.entities[0];
-      expect(entity?.id).toBe(entityId);
-      expect(entity?.type).toBe("Proposition");
-      expect(entity?.data).toEqual({ text: "Test Proposition" });
-      expect(entity?.autoVisibility).toBe("Visible");
-      expect(entity?.mapId).toBe(mapInDb?.id);
-
-      // Verify the conclusion was created and linked to the map
-      expect(mapInDb?.conclusions).toHaveLength(1);
-      const conclusion = mapInDb?.conclusions[0];
-      expect(conclusion?.propositionIds).toEqual([entityId]);
-      expect(conclusion?.sourceNames).toEqual(["Source 1"]);
-      expect(conclusion?.urls).toEqual(["https://example.com/source1"]);
-      expect(conclusion?.mapId).toBe(mapInDb?.id);
+      const entityInDb = mapInDb?.entities[0];
+      expect(entityInDb?.id).toBe(entityId);
+      expect(entityInDb?.type).toBe("Proposition");
+      expect(entityInDb?.data).toEqual(entity);
+      expect(entityInDb?.mapId).toBe(mapInDb?.id);
     });
 
     it("should return 401 if auth header is missing", async () => {

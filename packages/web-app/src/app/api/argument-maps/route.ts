@@ -34,34 +34,22 @@ export async function POST(request: NextRequest) {
 
     // Transform the entities and conclusions data to match Prisma's expected format
     const transformedData = {
-      ...data,
+      name: data.name,
       userId,
       entities: {
         create: data.entities?.map((entity: any) => ({
           id: entity.id,
           type: entity.type,
-          data: { text: entity.text }, // Store text in the data JSON field
-          autoVisibility: entity.autoVisibility,
-        })),
-      },
-      conclusions: {
-        create: data.conclusions?.map((conclusion: any) => ({
-          propositionIds: conclusion.propositionIds,
-          sourceNames: conclusion.sourceNames,
-          urls: conclusion.urls,
+          data: entity,
         })),
       },
     };
-
-    // Remove the createdBy object since we're setting userId directly
-    delete transformedData.createdBy;
 
     const prisma = await prismaPromise;
     const map = await prisma.argumentMap.create({
       data: transformedData,
       include: {
         entities: true, // Include the created entities in the response
-        conclusions: true, // Include the created conclusions in the response
       },
     });
 

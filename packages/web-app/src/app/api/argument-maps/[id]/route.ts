@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import prismaPromise from "../../../../db/client";
 import { getOrCreateUserFromAuth } from "../../../../auth/authUser";
 
@@ -12,7 +13,6 @@ export async function GET(
       where: { id: params.id },
       include: {
         entities: true,
-        conclusions: true,
       },
     });
 
@@ -20,18 +20,19 @@ export async function GET(
       return NextResponse.json({ error: "Map not found" }, { status: 404 });
     }
 
-    return NextResponse.json(map);
+    const entities = map.entities.map(({ id, data }) => {
+      if (typeof data !== "object") {
+        console.error("Invalid entity data", { data });
+        return data;
+      }
+      return { ...data, id };
+    });
+
+    return NextResponse.json({ ...map, entities });
   } catch (error) {
     console.error("Error fetching map:", error);
     return NextResponse.json({ error: "Failed to fetch map" }, { status: 500 });
   }
-}
-
-interface Conclusion {
-  id?: string;
-  propositionIds: string[];
-  sourceNames: string[];
-  urls: string[];
 }
 
 export async function PUT(
@@ -50,7 +51,6 @@ export async function PUT(
       where: { id: params.id },
       include: {
         entities: true,
-        conclusions: true,
       },
     });
 
@@ -69,8 +69,8 @@ export async function PUT(
       return NextResponse.json({ error: "Data is required" }, { status: 400 });
     }
 
-    // Extract entities, conclusions and other data
-    const { entities, conclusions, ...restData } = data;
+    // Extract entities and other data
+    const { entities, ...restData } = data;
 
     // Handle entities
     const currentEntityIds = new Set(existingMap.entities.map((e) => e.id));
@@ -80,70 +80,19 @@ export async function PUT(
     );
 
     const formattedEntities = entities?.map((entity: any) => {
-      const { id, type, autoVisibility, explicitVisibility, ...entityData } =
-        entity;
+      const { id, type, explicitVisibility, ...entityData } = entity;
       return {
         where: { id },
         update: {
           type,
-          autoVisibility,
           explicitVisibility,
           data: entityData,
         },
         create: {
           id,
           type,
-          autoVisibility,
           explicitVisibility,
           data: entityData,
-        },
-      };
-    });
-
-    // Handle conclusions
-    // Helper function to compare conclusions
-    const conclusionsAreEqual = (a: Conclusion, b: Conclusion) => {
-      const arraysEqual = (arr1: string[], arr2: string[]) =>
-        arr1.length === arr2.length &&
-        arr1.every((item, index) => item === arr2[index]);
-
-      return (
-        arraysEqual(a.propositionIds, b.propositionIds) &&
-        arraysEqual(a.sourceNames, b.sourceNames) &&
-        arraysEqual(a.urls, b.urls)
-      );
-    };
-
-    // Find conclusions to delete (those in existing but not in updated)
-    const conclusionsToDelete = existingMap.conclusions.filter(
-      (existing) =>
-        !conclusions?.some((updated: Conclusion) =>
-          conclusionsAreEqual(existing, updated),
-        ),
-    );
-
-    // Process conclusions for update/create
-    const formattedConclusions = conclusions?.map((conclusion: Conclusion) => {
-      // Find matching existing conclusion
-      const existingConclusion = existingMap.conclusions.find((existing) =>
-        conclusionsAreEqual(existing, conclusion),
-      );
-
-      // If there's a match, use its ID, otherwise use provided ID or let Prisma generate one
-      const id = existingConclusion?.id || conclusion.id;
-
-      return {
-        where: { id },
-        update: {
-          propositionIds: conclusion.propositionIds,
-          sourceNames: conclusion.sourceNames,
-          urls: conclusion.urls,
-        },
-        create: {
-          id,
-          propositionIds: conclusion.propositionIds,
-          sourceNames: conclusion.sourceNames,
-          urls: conclusion.urls,
         },
       };
     });
@@ -161,16 +110,9 @@ export async function PUT(
               : undefined,
           upsert: formattedEntities,
         },
-        conclusions: {
-          deleteMany: {
-            id: { in: conclusionsToDelete.map((c) => c.id) },
-          },
-          upsert: formattedConclusions,
-        },
       },
       include: {
         entities: true,
-        conclusions: true,
       },
     });
 
@@ -209,9 +151,6 @@ export async function DELETE(
     }
 
     // Delete related records first
-    await prisma.conclusion.deleteMany({
-      where: { mapId: params.id },
-    });
     await prisma.entity.deleteMany({
       where: { mapId: params.id },
     });

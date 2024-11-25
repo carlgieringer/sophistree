@@ -4,6 +4,7 @@ import React, { useEffect } from "react";
 import { View } from "react-native";
 import { Text, Surface, List, ActivityIndicator } from "react-native-paper";
 import { Provider } from "react-redux";
+import { useRouter } from "next/navigation";
 
 import { store } from "../store/store";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
@@ -11,6 +12,7 @@ import { fetchArgumentMaps } from "../store/argumentMapsSlice";
 
 // Wrap the main content in a separate component to use Redux hooks
 function HomeContent() {
+  const router = useRouter();
   const dispatch = useAppDispatch();
   const {
     items: argumentMaps,
@@ -21,6 +23,10 @@ function HomeContent() {
   useEffect(() => {
     dispatch(fetchArgumentMaps());
   }, [dispatch]);
+
+  const handleMapClick = (mapId: string) => {
+    router.push(`/argument-maps/${mapId}`);
+  };
 
   return (
     <View style={{ flex: 1, padding: 20 }}>
@@ -56,6 +62,7 @@ function HomeContent() {
                   title={map.name}
                   description={`Last updated: ${new Date(map.updatedAt).toLocaleDateString()}`}
                   style={{ borderBottomWidth: 1, borderBottomColor: "#eee" }}
+                  onPress={() => handleMapClick(map.id)}
                 />
               ))}
             </View>
