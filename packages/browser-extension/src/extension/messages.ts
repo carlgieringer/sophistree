@@ -1,9 +1,5 @@
-import { BasisOutcome } from "../outcomes/outcomes";
-import {
-  AddMediaExcerptData,
-  MediaExcerpt,
-  UrlInfo,
-} from "../store/entitiesSlice";
+import { BasisOutcome, MediaExcerpt, UrlInfo } from "@sophistree/common";
+import { AddMediaExcerptData } from "../store/entitiesSlice";
 import { serializeMap } from "./serialization";
 import * as appLogger from "../logging/appLogging";
 

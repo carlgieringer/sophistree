@@ -1,0 +1,51 @@
+{
+  "name": "@sophistree/graph-view",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "scripts": {
+    "check-all": "time (npm run type-check && npm run lint && npm run format-check && npm test) || { echo 'Checks failed'; exit 1; }",
+    "format-fix": "prettier --write --ignore-path .gitignore .",
+    "format-check": "prettier --check --ignore-path .gitignore .",
+    "lint": "eslint src/ --ext .js,.jsx,.ts,.tsx",
+    "lint-fix": "eslint src/ --ext .js,.jsx,.ts,.tsx  --fix",
+    "test": "jest",
+    "test-ci": "npm run test",
+    "test-watch": "jest --watch",
+    "test-debug": "node --inspect-brk ../../node_modules/jest/bin/jest.js --runInBand --watch",
+    "type-check": "tsc"
+  },
+  "dependencies": {
+    "@sophistree/common": "file:../common",
+    "classnames": "^2.3.2",
+    "cytoscape": "^3.26.0",
+    "cytoscape-context-menus": "^4.1.0",
+    "cytoscape-elk": "^2.2.0",
+    "lodash.throttle": "^4.1.1",
+    "react": "^18.2.0",
+    "react-cytoscapejs": "^2.0.0",
+    "react-native-paper": "^5.11.1",
+    "react-native-vector-icons": "^10.0.0",
+    "react-redux": "^8.1.3",
+    "type-fest": "^4.6.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.26.0",
+    "@babel/preset-env": "^7.26.0",
+    "@babel/preset-react": "^7.25.9",
+    "@babel/preset-typescript": "^7.26.0",
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@types/cytoscape": "^3.19.11",
+    "@types/lodash.throttle": "^4.1.9",
+    "@types/react": "^18.2.15",
+    "babel-jest": "^29.7.0",
+    "identity-obj-proxy": "^3.0.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "prettier": "^3.3.3",
+    "typescript": "^5.0.2"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0"
+  }
+}

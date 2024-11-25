@@ -1,8 +1,9 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
+import { ArgumentMap } from "@sophistree/common";
+
 import { selectApiEndpoint } from "./apiConfigSlice";
 import * as appLogger from "../logging/appLogging";
-import { ArgumentMap } from "./entitiesSlice";
 
 export const syncMap = createAsyncThunk(
   "entities/syncMap",

@@ -1,8 +1,13 @@
 import { createSelector } from "@reduxjs/toolkit";
 
+import {
+  Appearance,
+  Entity,
+  BasisOutcome,
+  determineOutcomes,
+} from "@sophistree/common";
+
 import { RootState } from "./store";
-import { Appearance, Entity } from "./entitiesSlice";
-import { BasisOutcome, determineOutcomes } from "../outcomes/outcomes";
 import * as appLogger from "../logging/appLogging";
 
 const emptyEntities: Entity[] = [];
@@ -46,9 +51,7 @@ export const allPropositions = createSelector([selectAllMaps], (allMaps) =>
 
 export const activeMapEntitiesOutcomes = createSelector(
   [activeMapEntities],
-  (entities) => {
-    return determineOutcomes(entities);
-  },
+  determineOutcomes,
 );
 
 export const isAuthenticated = (state: RootState) => state.auth.isAuthenticated;

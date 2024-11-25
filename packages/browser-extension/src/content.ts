@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
+
 import {
   DomAnchorHighlightManager,
   DomAnchor,
@@ -9,20 +10,20 @@ import {
   PDFViewerApplication,
 } from "tapestry-highlights";
 import "tapestry-highlights/rotation-colors.css";
-
-import "./highlights/outcome-colors.scss";
 import {
-  AddMediaExcerptData,
   MediaExcerpt,
   UrlInfo,
-} from "./store/entitiesSlice";
+  BasisOutcome,
+  outcomeValence,
+} from "@sophistree/common";
+
+import "./highlights/outcome-colors.scss";
+import { AddMediaExcerptData } from "./store/entitiesSlice";
 import type {
   ContentMessage,
   CreateMediaExcerptMessage,
   GetMediaExcerptsResponse,
 } from "./extension/messages";
-import { BasisOutcome } from "./outcomes/outcomes";
-import { outcomeValence } from "./outcomes/valences";
 import { deserializeMap } from "./extension/serialization";
 import { connectionErrorMessage } from "./extension/errorMessages";
 import * as contentLogger from "./logging/contentLogging";

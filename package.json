@@ -9,6 +9,8 @@
   "private": true,
   "workspaces": [
     "packages/tapestry-highlights",
+    "packages/common",
+    "packages/graph-view",
     "packages/web-app",
     "packages/browser-extension"
   ],

@@ -1,4 +1,4 @@
-import React, { MutableRefObject } from "react";
+import { MutableRefObject } from "react";
 import cn from "classnames";
 import cytoscape, {
   EdgeDataDefinition,
@@ -27,7 +27,6 @@ import {
 import CytoscapeComponent from "react-cytoscapejs";
 import { Portal } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import { useSelector } from "react-redux";
 import { SetRequired } from "type-fest";
 
 import "cytoscape-context-menus/cytoscape-context-menus.css";
@@ -39,34 +38,26 @@ import {
   sunflower,
 } from "../colors";
 import reactNodes from "../cytoscape/reactNodes";
+import DebugElementDialog from "./DebugElementDialog";
+import "./GraphView.scss";
+import PropositionAppearanceDialog, {
+  OnFocusMediaExcerpt,
+} from "./PropositionAppearanceDialog";
 import {
-  addNewProposition,
-  completeDrag,
-  deleteEntity,
+  BasisOutcome,
+  JustificationOutcome,
+  outcomeValence,
   Entity,
   MediaExcerpt,
   preferredUrl,
   Proposition,
-  resetSelection,
-  selectEntities,
   EntityType,
-} from "../store/entitiesSlice";
-import * as selectors from "../store/selectors";
-import { activeMapEntities } from "../store/selectors";
-import DebugElementDialog from "./DebugElementDialog";
-import "./GraphView.scss";
-import PropositionAppearanceDialog, {
-  focusMediaExcerpt,
-} from "./PropositionAppearanceDialog";
-import { BasisOutcome, JustificationOutcome } from "../outcomes/outcomes";
-import { outcomeValence } from "../outcomes/valences";
-import { AppDispatch, useAppDispatch } from "../store";
+} from "@sophistree/common";
 import {
   AppearanceInfo,
   EntityElementData,
   PropositionNodeData,
 } from "./graphTypes";
-import * as appLogger from "../logging/appLogging";
 
 cytoscape.use(elk);
 cytoscape.use(contextMenus);
@@ -80,6 +71,21 @@ const layoutAnimationDuration = 250;
 interface GraphViewProps {
   id?: string;
   style?: CSSProperties;
+  entities: Entity[];
+  selectedEntityIds: string[];
+  outcomes: Outcomes;
+  logger: Logger;
+  onSelectEntities: OnSelectEntities;
+  onResetSelection: OnResetSelection;
+  onAddNewProposition: OnAddNewProposition;
+  onDeleteEntity: OnDeleteEntity;
+  onCompleteDrag: OnCompleteDrag;
+  onFocusMediaExcerpt: OnFocusMediaExcerpt;
+}
+
+interface Outcomes {
+  basisOutcomes: Map<string, BasisOutcome>;
+  justificationOutcomes: Map<string, JustificationOutcome>;
 }
 
 const nodeOutcomeClasses = [
@@ -96,16 +102,33 @@ const edgeOutcomeClasses = [
 const outcomeClasses = [...nodeOutcomeClasses, ...edgeOutcomeClasses];
 const syncClasses = ["hover-highlight", "dragging", ...nodeOutcomeClasses];
 
-export default function GraphView({ id, style }: GraphViewProps) {
-  const { elements, focusedNodeIds } = useElements();
+export default function GraphView({
+  id,
+  style,
+  entities,
+  selectedEntityIds,
+  outcomes,
+  logger,
+  onSelectEntities,
+  onResetSelection,
+  onAddNewProposition,
+  onDeleteEntity,
+  onCompleteDrag,
+  onFocusMediaExcerpt,
+}: GraphViewProps) {
+  const { elements, focusedNodeIds } = useElements(
+    entities,
+    selectedEntityIds,
+    logger,
+  );
 
   const cyRef = useRef<cytoscape.Core | undefined>(undefined);
   if (cyRef.current) {
     correctInvalidNodes(cyRef.current, elements);
   }
 
-  useOutcomes(cyRef);
-  useSelectedNodes(cyRef);
+  useOutcomes(cyRef, outcomes);
+  useSelectedNodes(cyRef, selectedEntityIds);
   usePanToFocusedNodes(cyRef, focusedNodeIds);
 
   const [
@@ -117,27 +140,31 @@ export default function GraphView({ id, style }: GraphViewProps) {
     undefined as ElementDataDefinition | undefined,
   );
 
-  useReactNodes(cyRef, setVisitAppearancesDialogProposition);
+  useReactNodes(
+    cyRef,
+    setVisitAppearancesDialogProposition,
+    onFocusMediaExcerpt,
+    logger,
+  );
 
-  const { zoomIn, zoomOut } = useZoomEventHandlers(cyRef);
+  const { zoomIn, zoomOut } = useZoomEventHandlers(cyRef, logger);
 
   const layoutGraph = useCallback((fit = false) => {
     cyRef.current?.layout(getLayout(fit)).run();
   }, []);
 
-  const dispatch = useAppDispatch();
-
   useContextMenus(
     cyRef,
-    dispatch,
+    onDeleteEntity,
+    onAddNewProposition,
     zoomIn,
     zoomOut,
     setDebugElementData,
     layoutGraph,
   );
-  useSelectionEventHandlers(cyRef, dispatch);
-  useDblTapToCreateNode(cyRef, dispatch);
-  useDragEventHandlers(cyRef, dispatch);
+  useSelectionEventHandlers(cyRef, onSelectEntities, onResetSelection);
+  useDblTapToCreateNode(cyRef, onAddNewProposition);
+  useDragEventHandlers(cyRef, onCompleteDrag);
   useLayoutOnceUponInitialLoad(cyRef, layoutGraph);
 
   useEffect(() => layoutGraph, [layoutGraph, elements]);
@@ -168,6 +195,8 @@ export default function GraphView({ id, style }: GraphViewProps) {
             data={visitAppearancesDialogProposition}
             visible={!!visitAppearancesDialogProposition}
             onDismiss={() => setVisitAppearancesDialogProposition(undefined)}
+            onFocusMediaExcerpt={onFocusMediaExcerpt}
+            onDeleteEntity={onDeleteEntity}
           />
         )}
         {debugElementData && (
@@ -182,19 +211,21 @@ export default function GraphView({ id, style }: GraphViewProps) {
   );
 }
 
-function useElements() {
-  const entities = useSelector(activeMapEntities);
-  const selectedEntityIds = useSelector(selectors.selectedEntityIds);
+function useElements(
+  entities: Entity[],
+  selectedEntityIds: string[],
+  logger: Logger,
+) {
   return useMemo(
-    () => makeElements(entities, selectedEntityIds),
-    [entities, selectedEntityIds],
+    () => makeElements(entities, selectedEntityIds, logger),
+    [entities, selectedEntityIds, logger],
   );
 }
 
-function useOutcomes(cyRef: MutableRefObject<cytoscape.Core | undefined>) {
-  const { basisOutcomes, justificationOutcomes } = useSelector(
-    selectors.activeMapEntitiesOutcomes,
-  );
+function useOutcomes(
+  cyRef: MutableRefObject<cytoscape.Core | undefined>,
+  { basisOutcomes, justificationOutcomes }: Outcomes,
+) {
   useEffect(() => {
     const cy = cyRef.current;
     if (!cy) {
@@ -237,8 +268,10 @@ function useOutcomes(cyRef: MutableRefObject<cytoscape.Core | undefined>) {
   }, [cyRef, basisOutcomes, justificationOutcomes]);
 }
 
-function useSelectedNodes(cyRef: MutableRefObject<cytoscape.Core | undefined>) {
-  const selectedEntityIds = useSelector(selectors.selectedEntityIds);
+function useSelectedNodes(
+  cyRef: MutableRefObject<cytoscape.Core | undefined>,
+  selectedEntityIds: string[],
+) {
   useEffect(() => {
     cyRef.current
       ?.elements()
@@ -313,6 +346,8 @@ function useReactNodes(
   setVisitAppearancesDialogProposition: (
     data: PropositionNodeData | undefined,
   ) => void,
+  onFocusMediaExcerpt: OnFocusMediaExcerpt,
+  logger: Logger,
 ) {
   const reactNodesConfig = useMemo(
     () => [
@@ -366,7 +401,7 @@ function useReactNodes(
                 onClick={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
-                  void focusMediaExcerpt(mediaExcerpt);
+                  onFocusMediaExcerpt(mediaExcerpt);
                   return false;
                 }}
               >
@@ -384,7 +419,7 @@ function useReactNodes(
         },
       },
     ],
-    [setVisitAppearancesDialogProposition],
+    [setVisitAppearancesDialogProposition, onFocusMediaExcerpt],
   );
 
   useEffect(() => {
@@ -394,13 +429,15 @@ function useReactNodes(
       cy.reactNodes({
         layoutOptions: getLayout(false),
         nodes: reactNodesConfig,
+        logger,
       });
     }
-  }, [cyRef, reactNodesConfig]);
+  }, [cyRef, reactNodesConfig, logger]);
 }
 
 function useZoomEventHandlers(
   cyRef: MutableRefObject<cytoscape.Core | undefined>,
+  logger: Logger,
 ) {
   const zoom = useCallback(
     ({
@@ -412,25 +449,25 @@ function useZoomEventHandlers(
     }) => {
       const cy = cyRef.current;
       if (!cy) {
-        appLogger.warn("Cannot zoom because there is no cy ref.");
+        logger.warn("Cannot zoom because there is no cy ref.");
         return;
       }
       cy.zoom({ level, renderedPosition });
     },
-    [cyRef],
+    [cyRef, logger],
   );
 
   const zoomByFactor = useCallback(
     (factor: number, renderedPosition: { x: number; y: number }) => {
       const cy = cyRef.current;
       if (!cy) {
-        appLogger.warn("Cannot zoom because there is no cy ref.");
+        logger.warn("Cannot zoom because there is no cy ref.");
         return;
       }
       const level = cy.zoom() * factor;
       zoom({ level, renderedPosition });
     },
-    [cyRef, zoom],
+    [cyRef, zoom, logger],
   );
 
   const zoomIn = useCallback(
@@ -511,7 +548,8 @@ function useZoomEventHandlers(
 
 function useContextMenus(
   cyRef: MutableRefObject<cytoscape.Core | undefined>,
-  dispatch: AppDispatch,
+  onDeleteEntity: OnDeleteEntity,
+  onAddNewProposition: OnAddNewProposition,
   zoomIn: EventHandler,
   zoomOut: EventHandler,
   setDebugElementData: (data: ElementDataDefinition | undefined) => void,
@@ -534,7 +572,7 @@ function useContextMenus(
             const event = e as EventObjectNode | EventObjectEdge;
             const target = event.target;
             const id = getEntityId(target);
-            dispatch(deleteEntity(id));
+            onDeleteEntity(id);
           },
           hasTrailingDivider: true,
         },
@@ -546,7 +584,7 @@ function useContextMenus(
           coreAsWell: true,
           onClickFunction: (event: EventObject) => {
             if (event.target === cy) {
-              dispatch(addNewProposition());
+              onAddNewProposition();
             }
           },
         },
@@ -584,12 +622,21 @@ function useContextMenus(
         },
       ],
     });
-  }, [cyRef, dispatch, zoomIn, zoomOut, layoutGraph, setDebugElementData]);
+  }, [
+    cyRef,
+    zoomIn,
+    zoomOut,
+    layoutGraph,
+    setDebugElementData,
+    onAddNewProposition,
+    onDeleteEntity,
+  ]);
 }
 
 function useSelectionEventHandlers(
   cyRef: MutableRefObject<cytoscape.Core | undefined>,
-  dispatch: AppDispatch,
+  onSelectEntities: OnSelectEntities,
+  onResetSelection: OnResetSelection,
 ) {
   useEffect(() => {
     if (!cyRef.current) {
@@ -599,19 +646,19 @@ function useSelectionEventHandlers(
 
     const tapNodeHandler = (event: EventObjectNode) => {
       const entityId = getEntityId(event.target);
-      dispatch(selectEntities([entityId]));
+      onSelectEntities([entityId]);
     };
     cy.on("tap", "node", tapNodeHandler);
 
     const tapEdgeHandler = (event: EventObjectNode) => {
       const entityId = getEntityId(event.target);
-      dispatch(selectEntities([entityId]));
+      onSelectEntities([entityId]);
     };
     cy.on("tap", "edge", tapEdgeHandler);
 
     const tapHandler = (event: EventObject) => {
       if (event.target === cy) {
-        dispatch(resetSelection());
+        onResetSelection();
       }
     };
     cy.on("tap", tapHandler);
@@ -625,7 +672,7 @@ function useSelectionEventHandlers(
 
 function useDblTapToCreateNode(
   cyRef: MutableRefObject<cytoscape.Core | undefined>,
-  dispatch: AppDispatch,
+  onAddNewProposition: OnAddNewProposition,
 ) {
   useEffect(() => {
     if (!cyRef.current) {
@@ -635,7 +682,7 @@ function useDblTapToCreateNode(
 
     const dbltapHandler = (event: EventObject) => {
       if (event.target === cy) {
-        dispatch(addNewProposition());
+        onAddNewProposition();
       }
     };
     cy.on("dbltap", dbltapHandler);
@@ -647,7 +694,7 @@ function useDblTapToCreateNode(
 
 function useDragEventHandlers(
   cyRef: MutableRefObject<cytoscape.Core | undefined>,
-  dispatch: AppDispatch,
+  onCompleteDrag: OnCompleteDrag,
 ) {
   useEffect(() => {
     if (!cyRef.current) {
@@ -712,12 +759,10 @@ function useDragEventHandlers(
           dragSource,
         );
         if (dragTarget && isValidDropTarget(dragSource, dragTarget)) {
-          dispatch(
-            completeDrag({
-              sourceId: getEntityId(dragSource),
-              targetId: getEntityId(dragTarget),
-            }),
-          );
+          onCompleteDrag({
+            sourceId: getEntityId(dragSource),
+            targetId: getEntityId(dragTarget),
+          });
           if (
             dragSourceOriginalPosition &&
             getEntityType(dragSource) === "Proposition" &&
@@ -746,7 +791,7 @@ function useDragEventHandlers(
       cy.off("drag", "node", dragNodeHandler);
       cy.off("mouseup", mouseUpHandler);
     };
-  }, [cyRef, dispatch]);
+  }, [cyRef, onCompleteDrag]);
 }
 
 function useLayoutOnceUponInitialLoad(
@@ -779,10 +824,15 @@ function useLayoutOnceUponInitialLoad(
  * @param selectedEntityIds The ids of the entities that are selected
  * @returns The Cytoscape elements and the focused node ids
  */
-function makeElements(entities: Entity[], selectedEntityIds: string[]) {
+function makeElements(
+  entities: Entity[],
+  selectedEntityIds: string[],
+  logger: Logger,
+) {
   const { nodes: nodeDatas, edges: edgeDatas } = getNodesAndEdges(
     entities,
     selectedEntityIds,
+    logger,
   );
   const focusedNodeIds = nodeDatas.reduce((acc, nodeData) => {
     if (selectedEntityIds.includes(nodeData.entity.id)) {
@@ -803,7 +853,11 @@ function makeElements(entities: Entity[], selectedEntityIds: string[]) {
   return { elements, focusedNodeIds };
 }
 
-function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
+function getNodesAndEdges(
+  entities: Entity[],
+  selectedEntityIds: string[],
+  logger: Logger,
+) {
   const {
     visibleEntityIds,
     mediaExcerptsById,
@@ -924,7 +978,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
         case "PropositionCompound": {
           const compoundNodeId = justificationBasisNodeIds.get(entity.id);
           if (!compoundNodeId) {
-            appLogger.error(
+            logger.error(
               `Missing node ID for PropositionCompound ID ${entity.id}`,
             );
             break;
@@ -937,7 +991,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
           entity.atomIds.forEach((atomId) => {
             const proposition = propositionsById.get(atomId);
             if (!proposition) {
-              appLogger.error(
+              logger.error(
                 `No Proposition found for PropositionCompound atom ID ${atomId}. This should be impossible.`,
               );
               return;
@@ -953,7 +1007,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
               .get(atomId)
               ?.get(entity.id);
             if (!atomNodeId) {
-              appLogger.error(
+              logger.error(
                 `No atom node ID found for PropositionCompound atom ID ${atomId}. This should be impossible.`,
               );
               return;
@@ -976,7 +1030,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
           const basisNodeId = justificationBasisNodeIds.get(entity.basisId);
           const targetNodeId = justificationTargetNodeIds.get(entity.targetId);
           if (!basisNodeId || !targetNodeId) {
-            appLogger.error(
+            logger.error(
               `Missing node ID for justification ${entity.id}. Basis: ${entity.basisId}, Target: ${entity.targetId}`,
             );
             break;
@@ -989,7 +1043,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
               entity.id,
             );
             if (!intermediateNodeId) {
-              appLogger.error(
+              logger.error(
                 `Missing intermediate node ID for justification ID ${entity.id}`,
               );
               break;
@@ -1084,7 +1138,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
         case "MediaExcerpt": {
           const id = justificationBasisNodeIds.get(entity.id);
           if (!id) {
-            appLogger.error(
+            logger.error(
               `No node ID found for media excerpt ID ${entity.id}. This should be impossible.`,
             );
             break;
@@ -1115,6 +1169,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
   const { sortedNodes, sortedEdges } = sortNodesByInverseDfs(
     visibleNodes,
     visibleEdges,
+    logger,
   );
 
   return { nodes: sortedNodes, edges: sortedEdges };
@@ -1124,6 +1179,7 @@ function getNodesAndEdges(entities: Entity[], selectedEntityIds: string[]) {
 function sortNodesByInverseDfs(
   nodes: EntityNodeDataDefinition[],
   edges: EntityEdgeDataDefinition[],
+  logger: Logger,
 ) {
   // Start with all nodes potentially roots
   const rootIds = new Set(nodes.map((n) => n.id));
@@ -1180,7 +1236,7 @@ function sortNodesByInverseDfs(
     if (node) {
       sortedNodes.push(node);
     } else {
-      appLogger.error(`Didn't find node ID ${nodeId} during DFS`);
+      logger.error(`Didn't find node ID ${nodeId} during DFS`);
     }
 
     const neighbors = adjacencyList.get(nodeId) || [];
@@ -1661,4 +1717,29 @@ function makeOutcomeClasses(outcome: BasisOutcome | JustificationOutcome) {
   const nodeClass = `node-outcome-${valence}`;
   const edgeClass = `edge-outcome-${valence}`;
   return { nodeClass, edgeClass, valence };
+}
+
+export interface Logger {
+  warn(message: string): void;
+  error(message: string): void;
+}
+
+interface OnDeleteEntity {
+  (entityId: string): void;
+}
+
+interface OnAddNewProposition {
+  (): void;
+}
+
+interface OnSelectEntities {
+  (entityIds: string[]): void;
+}
+
+interface OnResetSelection {
+  (): void;
+}
+
+interface OnCompleteDrag {
+  (ids: { sourceId: string; targetId: string }): void;
 }

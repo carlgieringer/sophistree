@@ -3,22 +3,24 @@ import { StyleSheet, View, ScrollView } from "react-native";
 import { Button, Text } from "react-native-paper";
 import { useSelector } from "react-redux";
 
+import {
+  isMatchingUrlInfo,
+  MediaExcerpt,
+  BasisOutcome,
+} from "@sophistree/common";
+
 import "./App.scss";
 import EntityEditor from "./components/EntityEditor";
-import GraphView from "./components/GraphView";
 import HeaderBar from "./components/HeaderBar";
 import { ChromeRuntimeMessage, sidepanelKeepalivePortName } from "./content";
 import {
   addMediaExcerpt,
   AddMediaExcerptData,
-  isMatchingUrlInfo,
-  MediaExcerpt,
   selectEntities,
 } from "./store/entitiesSlice";
 import EntityList from "./components/EntityList";
 import * as selectors from "./store/selectors";
 import { showNewMapDialog } from "./store/uiSlice";
-import { BasisOutcome } from "./outcomes/outcomes";
 import {
   GetMediaExcerptsResponse,
   notifyTabOfNewMediaExcerpt,
@@ -32,6 +34,7 @@ import { useRefreshAuth } from "./store/hooks";
 import { refreshAuth } from "./store/authSlice";
 import { useAppDispatch } from "./store";
 import { loadApiEndpointOverride } from "./store/apiConfigSlice";
+import ExtensionGraphView from "./graphView/ExtensionGraphView";
 
 const App: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -49,7 +52,7 @@ const App: React.FC = () => {
 
   const activeMapId = useSelector(selectors.activeMapId);
   const graphView = activeMapId ? (
-    <GraphView style={styles.graphView} />
+    <ExtensionGraphView style={styles.graphView} />
   ) : (
     <View style={styles.graphViewPlaceholder}>
       <Text>No active map.</Text>

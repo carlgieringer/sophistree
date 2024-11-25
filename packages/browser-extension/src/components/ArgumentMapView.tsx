@@ -12,7 +12,8 @@ import {
 } from "react-native-paper";
 import { useSelector } from "react-redux";
 
-import { ArgumentMap } from "../store/entitiesSlice";
+import { ArgumentMap } from "@sophistree/common";
+
 import * as selectors from "../store/selectors";
 
 const ArgumentMapView = ({

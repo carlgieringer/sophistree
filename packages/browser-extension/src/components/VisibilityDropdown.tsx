@@ -1,8 +1,10 @@
 import React from "react";
 import { useDispatch } from "react-redux";
+
+import { Entity } from "@sophistree/common";
+
 import {
   automateEntityVisibility,
-  Entity,
   hideEntity,
   showEntity,
 } from "../store/entitiesSlice";

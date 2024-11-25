@@ -4,7 +4,9 @@ import { DataTable, Searchbar } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { StyleProp, ViewStyle, View } from "react-native";
 
-import { Entity, preferredUrl, selectEntities } from "../store/entitiesSlice";
+import { Entity, preferredUrl } from "@sophistree/common";
+
+import { selectEntities } from "../store/entitiesSlice";
 import VisibilityDropdown from "./VisibilityDropdown";
 import * as selectors from "../store/selectors";
 
