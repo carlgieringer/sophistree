@@ -385,6 +385,7 @@ function useReactNodes(
         containerCSS: {
           padding: "1em",
           borderRadius: "8px",
+          fontFamily: "Roboto",
         },
       },
       {
@@ -416,6 +417,7 @@ function useReactNodes(
           padding: "1em",
           backgroundColor: peterRiver,
           borderRadius: "8px",
+          fontFamily: "Roboto",
         },
       },
     ],
