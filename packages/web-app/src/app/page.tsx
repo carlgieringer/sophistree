@@ -2,7 +2,13 @@
 
 import React, { useEffect } from "react";
 import { View } from "react-native";
-import { Text, Surface, List, ActivityIndicator } from "react-native-paper";
+import {
+  Text,
+  Surface,
+  List,
+  ActivityIndicator,
+  useTheme,
+} from "react-native-paper";
 import { Provider } from "react-redux";
 import { useRouter } from "next/navigation";
 
@@ -28,9 +34,19 @@ function HomeContent() {
     router.push(`/argument-maps/${mapId}`);
   };
 
+  const theme = useTheme();
+
   return (
-    <View style={{ flex: 1, padding: 20 }}>
-      <Surface style={{ padding: 20, elevation: 1, borderRadius: 4 }}>
+    <View
+      style={{
+        flex: 1,
+        height: "100%",
+        backgroundColor: theme.colors.backdrop,
+      }}
+    >
+      <Surface
+        style={{ margin: 20, padding: 20, elevation: 1, borderRadius: 4 }}
+      >
         <Text variant="headlineMedium" style={{ marginBottom: 20 }}>
           Sophistree
         </Text>
