@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useMemo, CSSProperties } from "react";
 import { GraphView } from "@sophistree/graph-view";
-import { determineOutcomes, Entity } from "@sophistree/common";
+import { determineOutcomes, Entity, MediaExcerpt } from "@sophistree/common";
 
 const logger = {
   warn: (message: string) => console.warn(message),
@@ -28,8 +28,8 @@ export default function WebGraphView({
     setSelectedEntityIds([]);
   }, []);
 
-  const handleFocusMediaExcerpt = useCallback((mediaExcerpt: any) => {
-    window.open(mediaExcerpt.url, "_blank");
+  const handleFocusMediaExcerpt = useCallback((mediaExcerpt: MediaExcerpt) => {
+    window.open(mediaExcerpt.urlInfo.url, "_blank");
   }, []);
 
   const outcomes = useMemo(() => determineOutcomes(entities), [entities]);
