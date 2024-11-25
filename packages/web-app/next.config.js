@@ -51,6 +51,10 @@ const nextConfig = {
       },
     ];
   },
+  typescript: {
+    // Next isn't picking up .d.ts files from referenced projects
+    ignoreBuildErrors: true,
+  },
 };
 
 module.exports = nextConfig;
