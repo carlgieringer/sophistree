@@ -40,6 +40,7 @@
     "@types/lodash.throttle": "^4.1.9",
     "@types/react": "^18.2.15",
     "babel-jest": "^29.7.0",
+    "canvas": "^2.11.2",
     "identity-obj-proxy": "^3.0.0",
     "jest-environment-jsdom": "^29.7.0",
     "prettier": "^3.3.3",

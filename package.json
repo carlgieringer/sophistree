@@ -19,7 +19,7 @@
     "format-check-all": "npm run format-check --workspaces --if-present",
     "lint-all": "npm run lint --workspaces --if-present",
     "test-all": "npm run test --workspaces --if-present",
-    "rm-node-modules": "rm -rf node_modules && npm exec --workspaces -- rm -rf node_modules",
+    "rm-node-modules": "find . -name node_modules -type d -prune -exec rm -rf {} +",
     "test-ci-all": "npm run test-ci --workspaces --if-present",
     "type-check-all": "npm run type-check --workspaces --if-present",
     "watch-all": "node bin/watchAll.mjs"
