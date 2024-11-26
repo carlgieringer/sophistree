@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useParams } from "next/navigation";
 import { useEffect } from "react";
-import { Surface, Text } from "react-native-paper";
+import { Surface, Text, Banner } from "react-native-paper";
 import { View } from "react-native";
 
 import { Entity } from "@sophistree/common";
@@ -22,6 +22,17 @@ export default function ArgumentMapPage() {
   const [mapName, setMapName] = useState<string>("");
   const [entities, setEntities] = useState<Entity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isWebKit, setIsWebKit] = useState(false);
+
+  useEffect(() => {
+    // Check for WebKit and iOS
+    if (typeof window !== "undefined") {
+      const ua = navigator.userAgent;
+      const isWebKitBrowser = /WebKit/.test(ua) && !/Chrome/.test(ua);
+      const isIOS = /iPad|iPhone|iPod/.test(ua);
+      setIsWebKit(isWebKitBrowser || isIOS);
+    }
+  }, []);
 
   useEffect(() => {
     async function fetchMapData() {
@@ -42,6 +53,21 @@ export default function ArgumentMapPage() {
 
     fetchMapData();
   }, [id]);
+
+  if (isWebKit) {
+    return (
+      <Banner
+        visible={true}
+        style={{ backgroundColor: "#fff3cd", padding: 10, marginBottom: 10 }}
+      >
+        <Text style={{ color: "#856404" }}>
+          Warning: This page does not work correctly in WebKit-based browsers
+          (Safari and iOS browsers). For the best experience, please use Chrome
+          on desktop.
+        </Text>
+      </Banner>
+    );
+  }
 
   return (
     <Surface style={{ width: "100%", height: "100%" }}>
