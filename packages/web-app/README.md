@@ -182,3 +182,9 @@ sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml run migrato
 aws-vault exec <profile> -- aws s3 rm s3://sophistree-postgres-backups-dev --recursive
 aws-vault exec <profile> -- aws s3 rb s3://sophistree-postgres-backups-dev
 ```
+
+### New SSH key:
+
+```shell
+ssh-keygen -t ed25519 -m PEM -f ~/.ssh/sophistree-env
+```
