@@ -1,4 +1,8 @@
-import cytoscape, { EventObjectNode, NodeDataDefinition } from "cytoscape";
+import cytoscape, {
+  EventObjectNode,
+  LayoutOptions,
+  NodeDataDefinition,
+} from "cytoscape";
 import ReactDOM from "react-dom/client";
 import throttle from "lodash.throttle";
 
@@ -16,7 +20,7 @@ export default function register(cs: typeof cytoscape) {
 
 interface ReactNodesOptions {
   nodes: ReactNodeOptions[];
-  layoutOptions: cytoscape.LayoutOptions;
+  layoutOptions: LayoutOptions;
   // The delay before reactNodes applies a layout when one is necessary.
   layoutThrottleDelay?: number;
   logger: Logger;
@@ -65,7 +69,34 @@ function reactNodes(this: cytoscape.Core, options: ReactNodesOptions) {
     makeReactNode(this, options.logger, nodeOptions, layout),
   );
 
+  applyWebkitLayoutWorkaround(this, options.layoutOptions);
+
   return this; // for chaining
+}
+
+// This is a terrible hack to try to get the elements to position correctly in Safari and iOS
+// browsers.
+// TODO: #31 - address the underlying cause.
+function applyWebkitLayoutWorkaround(
+  cy: cytoscape.Core,
+  layoutOptions: LayoutOptions,
+) {
+  const ua = navigator.userAgent;
+  const isWebKitBrowser = /WebKit/.test(ua) && !/Chrome/.test(ua);
+  const isIOS = /iPad|iPhone|iPod/.test(ua);
+  if (isWebKitBrowser || isIOS) {
+    // eslint-disable-next-line no-inner-declarations
+    function oneTimeLayout() {
+      cy.off("layoutstop", oneTimeLayout);
+      setTimeout(() => {
+        cy.layout({
+          layoutOptions,
+          fit: true,
+        } as unknown as LayoutOptions).run();
+      }, 1000);
+    }
+    cy.on("layoutstop", oneTimeLayout);
+  }
 }
 
 /**
@@ -120,21 +151,9 @@ function makeReactNode(
     if (!container) throw new Error("Cytoscape container not found");
     container.appendChild(htmlElement);
 
-    let isLayingOut = false;
-
     window.addEventListener("resize", updateNodeHeightToSurroundHtmlWithLayout);
     cy.on("pan zoom resize", updatePosition);
-    cy.on("layoutstop", function onLayout() {
-      // Don't infinitely recurse on layouts the extension triggered.
-      if (!isLayingOut) {
-        isLayingOut = true;
-        try {
-          updateAfterLayout();
-        } finally {
-          isLayingOut = false;
-        }
-      }
-    });
+    cy.on("layoutstop", onLayoutStop);
     node.on("position", updatePositionWithLayout);
     node.on("remove", function removeHtmlElement() {
       htmlElement.remove();
@@ -158,9 +177,38 @@ function makeReactNode(
       node.on("style", syncNodeClasses);
     }
 
+    function updateNodeHeightToSurroundHtmlWithLayout() {
+      if (updateNodeHeightToSurroundHtml()) {
+        layout();
+      }
+    }
+
+    let isLayingOut = false;
+    function onLayoutStop() {
+      // Don't infinitely recurse on layouts the extension triggered.
+      if (!isLayingOut) {
+        isLayingOut = true;
+        try {
+          updateAfterLayout();
+        } finally {
+          isLayingOut = false;
+        }
+      }
+    }
+
+    function updatePositionWithLayout() {
+      if (updatePosition()) {
+        layout();
+      }
+    }
+
     /** Returns true if the graph requires layout. */
     function updatePosition() {
       const pos = node.position();
+      // TODO: #31 - in Safari sometimes pos has NaN.
+      if (isNaN(pos.x) || isNaN(pos.y)) {
+        return false;
+      }
       const zoom = cy.zoom();
       const pan = cy.pan();
       const nodeWidth = node.width();
@@ -190,18 +238,6 @@ function makeReactNode(
       let isLayoutRequired = updatePosition();
       isLayoutRequired = updateNodeHeightToSurroundHtml() || isLayoutRequired;
       if (isLayoutRequired) {
-        layout();
-      }
-    }
-
-    function updateNodeHeightToSurroundHtmlWithLayout() {
-      if (updateNodeHeightToSurroundHtml()) {
-        layout();
-      }
-    }
-
-    function updatePositionWithLayout() {
-      if (updatePosition()) {
         layout();
       }
     }
