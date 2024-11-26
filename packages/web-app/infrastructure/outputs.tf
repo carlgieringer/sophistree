@@ -3,6 +3,11 @@ output "nameservers" {
   description = "Nameservers for the Route 53 hosted zone"
 }
 
+output "prod_instance_public_ip" {
+  description = "Public IP address of the prod EC2 instance"
+  value       = module.sophistree_prod.instance_public_ip
+}
+
 output "dev_instance_public_ip" {
   description = "Public IP address of the dev EC2 instance"
   value       = length(module.sophistree_dev) > 0 ? module.sophistree_dev[0].instance_public_ip : ""
