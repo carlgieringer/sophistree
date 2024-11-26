@@ -5,16 +5,13 @@ import cytoscape, {
   EdgeSingular,
   ElementDataDefinition,
   ElementDefinition,
-  EventHandler,
   EventObject,
-  EventObjectEdge,
   EventObjectNode,
   NodeDataDefinition,
   NodeSingular,
   Position,
   SingularElementArgument,
 } from "cytoscape";
-import contextMenus, { MenuItem } from "cytoscape-context-menus";
 import elk from "cytoscape-elk";
 import {
   CSSProperties,
@@ -58,9 +55,9 @@ import {
   EntityElementData,
   PropositionNodeData,
 } from "./graphTypes";
+import { useContextMenus } from "./useContextMenus";
 
 cytoscape.use(elk);
-cytoscape.use(contextMenus);
 cytoscape.use(reactNodes);
 
 const zoomFactor = 0.03;
@@ -153,7 +150,7 @@ export default function GraphView({
     cyRef.current?.layout(getLayout(fit)).run();
   }, []);
 
-  useContextMenus(
+  const contextMenu = useContextMenus({
     cyRef,
     onDeleteEntity,
     onAddNewProposition,
@@ -161,7 +158,7 @@ export default function GraphView({
     zoomOut,
     setDebugElementData,
     layoutGraph,
-  );
+  });
   useSelectionEventHandlers(cyRef, onSelectEntities, onResetSelection);
   useDblTapToCreateNode(cyRef, onAddNewProposition);
   useDragEventHandlers(cyRef, onCompleteDrag);
@@ -206,6 +203,7 @@ export default function GraphView({
             onDismiss={() => setDebugElementData(undefined)}
           />
         )}
+        {contextMenu}
       </Portal>
     </>
   );
@@ -546,91 +544,6 @@ function useZoomEventHandlers(
   }, [cyRef, handleWheel, handleGesture]);
 
   return { zoomIn, zoomOut };
-}
-
-function useContextMenus(
-  cyRef: MutableRefObject<cytoscape.Core | undefined>,
-  onDeleteEntity: OnDeleteEntity | undefined,
-  onAddNewProposition: OnAddNewProposition | undefined,
-  zoomIn: EventHandler,
-  zoomOut: EventHandler,
-  setDebugElementData: (data: ElementDataDefinition | undefined) => void,
-  layoutGraph: (fit?: boolean) => void,
-) {
-  useEffect(() => {
-    if (!cyRef.current) {
-      return;
-    }
-    const cy = cyRef.current;
-    const menuItems = [
-      onDeleteEntity && {
-        id: "delete",
-        content: "Delete",
-        tooltipText: "Delete node",
-        selector: "node, edge",
-        onClickFunction: function (e: EventObjectNode | EventObjectEdge) {
-          const target = e.target;
-          const id = getEntityId(target);
-          onDeleteEntity(id);
-        },
-        hasTrailingDivider: true,
-      },
-      onAddNewProposition && {
-        id: "add-proposition",
-        content: "Add proposition",
-        tooltipText: "Add a proposition",
-        selector: "",
-        coreAsWell: true,
-        onClickFunction: (event: EventObject) => {
-          if (event.target === cy) {
-            onAddNewProposition();
-          }
-        },
-      },
-      {
-        id: "zoom-out",
-        content: "Zoom out",
-        selector: "*",
-        coreAsWell: true,
-        onClickFunction: zoomOut,
-      },
-      {
-        id: "zoom-in",
-        content: "Zoom in",
-        selector: "*",
-        coreAsWell: true,
-        onClickFunction: zoomIn,
-      },
-      {
-        id: "fit-to-contents",
-        content: "Fit to contents",
-        selector: "*",
-        coreAsWell: true,
-        tooltipText: "Layout the graph to fit to all contents",
-        onClickFunction: () => layoutGraph(true),
-      },
-      {
-        id: "show-element-data",
-        content: "Show element data",
-        selector: "node, edge",
-        tooltipText: "Show element data for debugging",
-        onClickFunction: (e: EventObjectNode | EventObjectEdge) => {
-          setDebugElementData(e.target.data() as ElementDataDefinition);
-        },
-      },
-    ].filter(Boolean) as MenuItem[];
-    cy.contextMenus({
-      menuItems,
-    });
-  }, [
-    cyRef,
-    zoomIn,
-    zoomOut,
-    layoutGraph,
-    setDebugElementData,
-    onAddNewProposition,
-    onDeleteEntity,
-  ]);
 }
 
 function useSelectionEventHandlers(
