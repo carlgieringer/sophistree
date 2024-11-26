@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
 
     // Transform the entities and conclusions data to match Prisma's expected format
     const transformedData = {
+      id: data.id,
       name: data.name,
       userId,
       entities: {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import prismaPromise from "../../../../db/client";
 import { getOrCreateUserFromAuth } from "../../../../auth/authUser";
+import { Entity } from "@sophistree/common";
 
 export async function GET(
   request: NextRequest,
@@ -12,7 +13,11 @@ export async function GET(
     const map = await prisma.argumentMap.findUnique({
       where: { id: params.id },
       include: {
-        entities: true,
+        entities: {
+          orderBy: {
+            createdAt: "desc",
+          },
+        },
       },
     });
 
@@ -20,12 +25,12 @@ export async function GET(
       return NextResponse.json({ error: "Map not found" }, { status: 404 });
     }
 
-    const entities = map.entities.map(({ id, data }) => {
-      if (typeof data !== "object") {
+    const entities = map.entities.flatMap(({ id, data }) => {
+      if (!data || typeof data !== "object") {
         console.error("Invalid entity data", { data });
-        return data;
+        return [];
       }
-      return { ...data, id };
+      return { ...data, id } as Entity;
     });
 
     return NextResponse.json({ ...map, entities });
@@ -70,7 +75,7 @@ export async function PUT(
     }
 
     // Extract entities and other data
-    const { entities, ...restData } = data;
+    const { entities, name } = data;
 
     // Handle entities
     const currentEntityIds = new Set(existingMap.entities.map((e) => e.id));
@@ -84,15 +89,14 @@ export async function PUT(
       return {
         where: { id },
         update: {
-          type,
           explicitVisibility,
-          data: entityData,
+          data: { id, type, explicitVisibility, ...entityData },
         },
         create: {
           id,
           type,
           explicitVisibility,
-          data: entityData,
+          data: { id, type, explicitVisibility, ...entityData },
         },
       };
     });
@@ -100,7 +104,7 @@ export async function PUT(
     const map = await prisma.argumentMap.update({
       where: { id: params.id },
       data: {
-        ...restData,
+        name,
         entities: {
           deleteMany:
             entityIdsToDelete.length > 0
