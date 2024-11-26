@@ -1,4 +1,4 @@
-import React, { CSSProperties } from "react";
+import React, { CSSProperties, useEffect, useState } from "react";
 
 import { GraphView } from "@sophistree/graph-view";
 
@@ -20,6 +20,18 @@ export default function ExtensionGraphView({
 }: {
   style?: CSSProperties;
 }) {
+  // TODO: #31: remove if we can get cytoscape-context-menus to work with WebKit
+  const [isWebKit, setIsWebKit] = useState(true);
+  useEffect(() => {
+    // Check for WebKit and iOS
+    if (typeof window !== "undefined") {
+      const ua = navigator.userAgent;
+      const isWebKitBrowser = /WebKit/.test(ua) && !/Chrome/.test(ua);
+      const isIOS = /iPad|iPhone|iPod/.test(ua);
+      setIsWebKit(isWebKitBrowser || isIOS);
+    }
+  }, []);
+
   const dispatch = useAppDispatch();
   const entities = useSelector(selectors.activeMapEntities);
   const selectedEntityIds = useSelector(selectors.selectedEntityIds);
@@ -31,6 +43,7 @@ export default function ExtensionGraphView({
       selectedEntityIds={selectedEntityIds}
       outcomes={outcomes}
       logger={appLogger}
+      withContextMenus={!isWebKit}
       onFocusMediaExcerpt={(me) => void focusMediaExcerpt(me)}
       onSelectEntities={(ids) => dispatch(selectEntities(ids))}
       onResetSelection={() => dispatch(resetSelection())}

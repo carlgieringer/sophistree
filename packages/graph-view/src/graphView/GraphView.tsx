@@ -75,6 +75,7 @@ interface GraphViewProps {
   selectedEntityIds: string[];
   outcomes: Outcomes;
   logger: Logger;
+  withContextMenus?: boolean;
   onSelectEntities: OnSelectEntities;
   onResetSelection: OnResetSelection;
   onAddNewProposition?: OnAddNewProposition;
@@ -109,6 +110,7 @@ export default function GraphView({
   selectedEntityIds,
   outcomes,
   logger,
+  withContextMenus,
   onSelectEntities,
   onResetSelection,
   onAddNewProposition,
@@ -161,6 +163,7 @@ export default function GraphView({
     zoomOut,
     setDebugElementData,
     layoutGraph,
+    withContextMenus ?? true,
   );
   useSelectionEventHandlers(cyRef, onSelectEntities, onResetSelection);
   useDblTapToCreateNode(cyRef, onAddNewProposition);
@@ -556,9 +559,10 @@ function useContextMenus(
   zoomOut: EventHandler,
   setDebugElementData: (data: ElementDataDefinition | undefined) => void,
   layoutGraph: (fit?: boolean) => void,
+  withContextMenus: boolean,
 ) {
   useEffect(() => {
-    if (!cyRef.current) {
+    if (!withContextMenus || !cyRef.current) {
       return;
     }
     const cy = cyRef.current;
