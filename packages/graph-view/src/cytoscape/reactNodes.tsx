@@ -1,4 +1,8 @@
-import cytoscape, { EventObjectNode, NodeDataDefinition } from "cytoscape";
+import cytoscape, {
+  EventObjectNode,
+  LayoutOptions,
+  NodeDataDefinition,
+} from "cytoscape";
 import ReactDOM from "react-dom/client";
 import throttle from "lodash.throttle";
 
@@ -64,6 +68,28 @@ function reactNodes(this: cytoscape.Core, options: ReactNodesOptions) {
   options.nodes.forEach((nodeOptions) =>
     makeReactNode(this, options.logger, nodeOptions, layout),
   );
+
+  // This is a terrible hack to try to get the elements to position correctly in Safari and iOS
+  // browsers.
+  // TODO: #31 - address the underlying cause.
+  const ua = navigator.userAgent;
+  const isWebKitBrowser = /WebKit/.test(ua) && !/Chrome/.test(ua);
+  const isIOS = /iPad|iPhone|iPod/.test(ua);
+  if (isWebKitBrowser || isIOS) {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const cy = this;
+    // eslint-disable-next-line no-inner-declarations
+    function oneTimeLayout() {
+      cy.off("layoutstop", oneTimeLayout);
+      setTimeout(() => {
+        cy.layout({
+          ...options.layoutOptions,
+          fit: true,
+        } as unknown as LayoutOptions).run();
+      }, 1000);
+    }
+    this.on("layoutstop", oneTimeLayout);
+  }
 
   return this; // for chaining
 }
@@ -174,6 +200,10 @@ function makeReactNode(
     /** Returns true if the graph requires layout. */
     function updatePosition() {
       const pos = node.position();
+      // TODO: #31 - in Safari sometimes pos has NaN.
+      if (isNaN(pos.x) || isNaN(pos.y)) {
+        return false;
+      }
       const zoom = cy.zoom();
       const pan = cy.pan();
       const nodeWidth = node.width();
