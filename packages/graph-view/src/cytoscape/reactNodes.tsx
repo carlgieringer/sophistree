@@ -90,7 +90,7 @@ function applyWebkitLayoutWorkaround(
       cy.off("layoutstop", oneTimeLayout);
       setTimeout(() => {
         cy.layout({
-          layoutOptions,
+          ...layoutOptions,
           fit: true,
         } as unknown as LayoutOptions).run();
       }, 1000);

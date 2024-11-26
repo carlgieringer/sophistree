@@ -1,10 +1,19 @@
 # TODO
 
+- Use use-gesture instead of bespoke
+- Add edge start to help indicate where they start
+
 - Publish extension (with syncing)
 - Add 'creator' to maps
 - Move map card to shared.
 - Add nav menus etc.
 - Many to many between maps and entities?
+
+- Walkthrough of operations
+- Indicate agreement/disagreement with a point
+- Define how hide/emphasize things based on social consensus
+- Hiding of things
+- User relationships: following, trusting
 
 - don't persist apiConfig; truth of source is storage.
 - Rename main.ts to sidebar.ts
