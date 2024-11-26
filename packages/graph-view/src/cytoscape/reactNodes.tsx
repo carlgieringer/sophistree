@@ -120,21 +120,9 @@ function makeReactNode(
     if (!container) throw new Error("Cytoscape container not found");
     container.appendChild(htmlElement);
 
-    let isLayingOut = false;
-
     window.addEventListener("resize", updateNodeHeightToSurroundHtmlWithLayout);
     cy.on("pan zoom resize", updatePosition);
-    cy.on("layoutstop", function onLayout() {
-      // Don't infinitely recurse on layouts the extension triggered.
-      if (!isLayingOut) {
-        isLayingOut = true;
-        try {
-          updateAfterLayout();
-        } finally {
-          isLayingOut = false;
-        }
-      }
-    });
+    cy.on("layoutstop", onLayoutStop);
     node.on("position", updatePositionWithLayout);
     node.on("remove", function removeHtmlElement() {
       htmlElement.remove();
@@ -156,6 +144,31 @@ function makeReactNode(
     });
     if (options.syncClasses) {
       node.on("style", syncNodeClasses);
+    }
+
+    function updateNodeHeightToSurroundHtmlWithLayout() {
+      if (updateNodeHeightToSurroundHtml()) {
+        layout();
+      }
+    }
+
+    let isLayingOut = false;
+    function onLayoutStop() {
+      // Don't infinitely recurse on layouts the extension triggered.
+      if (!isLayingOut) {
+        isLayingOut = true;
+        try {
+          updateAfterLayout();
+        } finally {
+          isLayingOut = false;
+        }
+      }
+    }
+
+    function updatePositionWithLayout() {
+      if (updatePosition()) {
+        layout();
+      }
     }
 
     /** Returns true if the graph requires layout. */
@@ -190,18 +203,6 @@ function makeReactNode(
       let isLayoutRequired = updatePosition();
       isLayoutRequired = updateNodeHeightToSurroundHtml() || isLayoutRequired;
       if (isLayoutRequired) {
-        layout();
-      }
-    }
-
-    function updateNodeHeightToSurroundHtmlWithLayout() {
-      if (updateNodeHeightToSurroundHtml()) {
-        layout();
-      }
-    }
-
-    function updatePositionWithLayout() {
-      if (updatePosition()) {
         layout();
       }
     }
