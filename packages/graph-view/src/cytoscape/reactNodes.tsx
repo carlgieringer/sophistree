@@ -1,10 +1,8 @@
-import React from "react";
 import cytoscape, { EventObjectNode, NodeDataDefinition } from "cytoscape";
 import ReactDOM from "react-dom/client";
 import throttle from "lodash.throttle";
 
 import { sunflower } from "../colors";
-import * as appLogger from "../logging/appLogging";
 
 declare module "cytoscape" {
   interface Core {
@@ -21,6 +19,7 @@ interface ReactNodesOptions {
   layoutOptions: cytoscape.LayoutOptions;
   // The delay before reactNodes applies a layout when one is necessary.
   layoutThrottleDelay?: number;
+  logger: Logger;
 }
 
 export interface ReactNodeOptions {
@@ -63,7 +62,7 @@ function reactNodes(this: cytoscape.Core, options: ReactNodesOptions) {
   }, options.layoutThrottleDelay ?? defaultOptions.layoutThrottleDelay);
 
   options.nodes.forEach((nodeOptions) =>
-    makeReactNode(this, nodeOptions, layout),
+    makeReactNode(this, options.logger, nodeOptions, layout),
   );
 
   return this; // for chaining
@@ -80,6 +79,7 @@ function reactNodes(this: cytoscape.Core, options: ReactNodesOptions) {
  */
 function makeReactNode(
   cy: cytoscape.Core,
+  logger: Logger,
   options: ReactNodeOptions,
   layout: () => void,
 ) {
@@ -99,7 +99,7 @@ function makeReactNode(
         node.style("opacity", 0);
         break;
       default:
-        appLogger.error(`reactNodes doesnt' support mode ${options.mode}`);
+        logger.error(`reactNodes doesnt' support mode ${options.mode}`);
     }
 
     const htmlElement = document.createElement("div");
@@ -131,7 +131,7 @@ function makeReactNode(
         try {
           updateAfterLayout();
         } finally {
-          isLayingOut = true;
+          isLayingOut = false;
         }
       }
     });
@@ -235,4 +235,8 @@ function getInnerHorizontalSpacing(element: HTMLElement) {
 
 function getHeight(node: cytoscape.NodeSingular) {
   return node.data("height") as number | undefined;
+}
+
+export interface Logger {
+  error(message: string): void;
 }

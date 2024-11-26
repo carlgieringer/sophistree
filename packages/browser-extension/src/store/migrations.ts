@@ -1,10 +1,8 @@
 import { produce } from "immer";
-import {
-  ArgumentMap,
-  Entity,
-  MediaExcerpt,
-  updateConclusions,
-} from "./entitiesSlice";
+
+import { ArgumentMap, Entity, MediaExcerpt } from "@sophistree/common";
+
+import { updateConclusions } from "./entitiesSlice";
 import { PersistedState } from "redux-persist";
 import { type RootState } from "./store";
 

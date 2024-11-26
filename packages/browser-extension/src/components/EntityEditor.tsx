@@ -4,13 +4,16 @@ import { TextInput, Text } from "react-native-paper";
 import { View } from "react-native";
 
 import {
-  updateJustification,
   Polarity,
   Entity,
   Proposition,
-  updateProposition,
   Justification,
   MediaExcerpt,
+} from "@sophistree/common";
+
+import {
+  updateJustification,
+  updateProposition,
   updateMediaExerpt,
 } from "../store/entitiesSlice";
 import * as selectors from "../store/selectors";

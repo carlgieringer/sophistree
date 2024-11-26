@@ -12,9 +12,9 @@ const hash = crypto
 const uniqueTestDbName = `sophistree_test_${hash}`;
 
 // Set unique test database URL for this test file
-const baseUrl =
-  process.env.TEST_DATABASE_URL ||
-  "postgresql://postgres:postgres@localhost:5432";
+const url = new URL(process.env.DATABASE_URL);
+url.pathname = "";
+const baseUrl = url.toString();
 process.env.DATABASE_URL = `${baseUrl}/${uniqueTestDbName}`;
 
 // Create a new Prisma client for this test file's database
@@ -25,7 +25,7 @@ beforeAll(async () => {
   const rootPrisma = new PrismaClient({
     datasources: {
       db: {
-        url: baseUrl + "/postgres", // Connect to default postgres database to create new DB
+        url: `${baseUrl}/postgres`, // Connect to default postgres database to create new DB
       },
     },
   });
@@ -77,7 +77,7 @@ afterAll(async () => {
   const rootPrisma = new PrismaClient({
     datasources: {
       db: {
-        url: baseUrl + "/postgres",
+        url: `${baseUrl}/postgres`,
       },
     },
   });

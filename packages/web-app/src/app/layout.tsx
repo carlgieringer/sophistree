@@ -12,7 +12,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" style={{ height: "100%" }}>
       <head>
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
@@ -20,7 +20,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body style={{ margin: 0 }}>
+      <body style={{ height: "100%", margin: 0 }}>
         <Providers>{children}</Providers>
       </body>
     </html>

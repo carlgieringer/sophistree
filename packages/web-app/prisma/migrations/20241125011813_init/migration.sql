@@ -30,25 +30,10 @@ CREATE TABLE "entities" (
     "mapId" TEXT NOT NULL,
     "type" TEXT NOT NULL,
     "data" JSONB NOT NULL,
-    "explicitVisibility" TEXT,
-    "autoVisibility" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "entities_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "conclusions" (
-    "id" TEXT NOT NULL,
-    "mapId" TEXT NOT NULL,
-    "propositionIds" TEXT[],
-    "sourceNames" TEXT[],
-    "urls" TEXT[],
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "conclusions_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -68,6 +53,3 @@ ALTER TABLE "argument_maps" ADD CONSTRAINT "argument_maps_userId_fkey" FOREIGN K
 
 -- AddForeignKey
 ALTER TABLE "entities" ADD CONSTRAINT "entities_mapId_fkey" FOREIGN KEY ("mapId") REFERENCES "argument_maps"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "conclusions" ADD CONSTRAINT "conclusions_mapId_fkey" FOREIGN KEY ("mapId") REFERENCES "argument_maps"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

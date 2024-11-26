@@ -6,7 +6,7 @@ import {
   PropositionCompound,
   MediaExcerpt,
   Appearance,
-} from "../store/entitiesSlice";
+} from "../entities";
 
 describe("determineOutcomes", () => {
   const defaultProps = { autoVisibility: "Visible" as const };

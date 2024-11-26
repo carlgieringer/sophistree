@@ -18,7 +18,7 @@ The backend uses PostgreSQL as its database, running in Docker.
 ```bash
 cd packages/web-app
 cp .env.example .env  # update the values as needed
-docker compose up -d sophistree-db
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.local.yml --env-file .env -p sophistree up -d db
 ```
 
 This will start PostgreSQL on port 5432. The database data is persisted in a Docker volume named 'sophistree_data'.
@@ -142,17 +142,15 @@ To build and push Docker images locally:
 cd packages/web-app/docker
 
 # Build base image
-docker build -t sophistree/web-app-base -f web-app-base.dockerfile ..
+docker build -t sophistree/web-app-base -f web-app-base.dockerfile ../../..
 
 # Build and push 'latest' tag
 docker compose build
 docker compose push
 
 # Build and push with specific version
-WEB_APP_IMAGE_VERSION=1.0.0 CADDY_IMAGE_VERSION=1.0.0\
- docker compose build
-WEB_APP_IMAGE_VERSION=1.0.0 CADDY_IMAGE_VERSION=1.0.0\
- docker compose push
+WEB_APP_IMAGE_VERSION=1.0.0 CADDY_IMAGE_VERSION=1.0.0 docker compose build
+WEB_APP_IMAGE_VERSION=1.0.0 CADDY_IMAGE_VERSION=1.0.0 docker compose push
 ```
 
 #### Deploying to EC2
@@ -170,6 +168,12 @@ WEB_APP_IMAGE_VERSION=1.0.0 CADDY_IMAGE_VERSION=1.0.0\
 # Or use 'latest' tag (if VERSION not specified)
 sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
 sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml up --force-recreate -d
+```
+
+Running commands on the containers:
+
+```shell
+sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml run migrator npx prisma migrate reset
 ```
 
 ### Removing dev S3 Postgres backup S3 buckets

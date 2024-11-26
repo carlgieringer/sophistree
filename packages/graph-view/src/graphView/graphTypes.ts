@@ -1,4 +1,4 @@
-import { Entity, MediaExcerpt, Proposition } from "../store/entitiesSlice";
+import { Entity, MediaExcerpt, Proposition } from "@sophistree/common";
 
 export interface AppearanceInfo {
   id: string;

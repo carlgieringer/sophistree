@@ -7,6 +7,8 @@ const nextConfig = {
     "react-native-paper",
     "@react-native-community",
     "react-native",
+    "@sophistree/graph-view",
+    "@sophistree/common",
   ],
   webpack: (config) => {
     // Alias react-native to react-native-web
@@ -22,6 +24,15 @@ const nextConfig = {
       ".web.tsx",
       ...config.resolve.extensions,
     ];
+
+    // Add rule for font files
+    config.module.rules.push({
+      test: /\.(woff|woff2|eot|ttf|otf)$/i,
+      type: "asset/resource",
+      generator: {
+        filename: "static/fonts/[hash][ext][query]",
+      },
+    });
 
     return config;
   },
@@ -48,6 +59,10 @@ const nextConfig = {
         ],
       },
     ];
+  },
+  typescript: {
+    // Next isn't picking up .d.ts files from referenced projects
+    ignoreBuildErrors: true,
   },
 };
 

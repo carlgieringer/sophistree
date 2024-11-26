@@ -1,8 +1,20 @@
 import React, { useState } from "react";
-import { Appbar, Divider, Menu, Portal, Tooltip } from "react-native-paper";
+import Icon from "react-native-vector-icons/MaterialIcons";
+import { View } from "react-native";
+import {
+  Appbar,
+  Divider,
+  Menu,
+  Portal,
+  Snackbar,
+  Text,
+  Tooltip,
+  useTheme,
+} from "react-native-paper";
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "../store";
 
+import * as colors from "../colors";
 import { deleteMap } from "../store/entitiesSlice";
 import { syncMap } from "../store/apiSlice";
 import NewMapDialog from "./NewMapDialog";
@@ -44,6 +56,15 @@ function HeaderBar({ id }: { id?: string }) {
 
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
+  const theme = useTheme();
+
+  const [isSnackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarDuration, setSnackbarDuration] = useState(3000);
+  const [snackbarIcon, setSnackbarIcon] = useState<
+    "success" | "failure" | undefined
+  >(undefined);
+
   const handleReload = () => {
     chrome.runtime.reload();
   };
@@ -80,9 +101,23 @@ function HeaderBar({ id }: { id?: string }) {
       title="Sync map"
       key="sync-map"
       onPress={() => {
-        dispatch(syncMap()).catch((reason) =>
-          appLogger.error("Failed to sync map", reason),
-        );
+        dispatch(syncMap())
+          .unwrap()
+          .then(
+            () => {
+              setSnackbarMessage("Successfully synced map");
+              setSnackbarIcon("success");
+              setSnackbarDuration(3_000);
+              setSnackbarVisible(true);
+            },
+            (reason) => {
+              setSnackbarMessage("Failed to sync map");
+              setSnackbarIcon("failure");
+              setSnackbarDuration(10_000);
+              setSnackbarVisible(true);
+              appLogger.error("Failed to sync map", reason);
+            },
+          );
         hideMenu();
       }}
       leadingIcon="cloud-upload"
@@ -199,6 +234,27 @@ function HeaderBar({ id }: { id?: string }) {
         </Menu>
       </Appbar.Header>
       <Portal>
+        <Snackbar
+          visible={isSnackbarVisible}
+          onDismiss={() => setSnackbarVisible(false)}
+          duration={snackbarDuration}
+          action={{
+            label: "Dismiss",
+            onPress: () => setSnackbarVisible(false),
+          }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            {snackbarIcon === "success" && (
+              <Icon name="check-circle-outline" color={colors.nephritis} />
+            )}
+            {snackbarIcon === "failure" && (
+              <Icon name="error" color={colors.pomegranate} />
+            )}
+            <Text style={{ color: theme.colors.inverseOnSurface }}>
+              {snackbarMessage}
+            </Text>
+          </View>
+        </Snackbar>
         {activeMapName && (
           <RenameMapDialog
             mapName={activeMapName}

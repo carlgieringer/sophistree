@@ -3,7 +3,7 @@ import {
   Justification,
   Polarity,
   PropositionCompound,
-} from "../store/entitiesSlice";
+} from "../entities";
 
 export type BasisOutcome =
   // A leaf node added by the user is presumed to be tru

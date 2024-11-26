@@ -20,7 +20,10 @@ export const loadApiEndpointOverride = createAsyncThunk(
 export const saveApiEndpointOverride = createAsyncThunk(
   "apiConfig/saveApiEndpointOverride",
   async (apiEndpointOverride: string | undefined) => {
-    await chrome.storage.local.set({ apiEndpointOverride });
+    await chrome.storage.local.set({
+      // events only fire for null, not undefined.
+      apiEndpointOverride: apiEndpointOverride ?? null,
+    });
     return apiEndpointOverride;
   },
 );
@@ -32,7 +35,8 @@ export const apiConfigSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(loadApiEndpointOverride.fulfilled, (state, action) => {
-        state.apiEndpointOverride = action.payload;
+        // Convert nulls back to undefined.
+        state.apiEndpointOverride = action.payload ?? undefined;
       })
       .addCase(saveApiEndpointOverride.fulfilled, (state, action) => {
         state.apiEndpointOverride = action.payload;

@@ -1,7 +1,10 @@
 import React, { useState } from "react";
 import { Dialog, Button } from "react-native-paper";
 import { useDispatch } from "react-redux";
-import { ArgumentMap, createMap } from "../store/entitiesSlice";
+
+import { ArgumentMap } from "@sophistree/common";
+
+import { createMap } from "../store/entitiesSlice";
 import { sophistreeMapFileVersion } from "./DownloadMapsDialog";
 import { MapMigrationIndex, migrateMap } from "../store/migrations";
 

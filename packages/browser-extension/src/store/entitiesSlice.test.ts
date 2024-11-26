@@ -1,5 +1,7 @@
 /** @jest-environment jsdom */
 
+import { Proposition, MediaExcerpt } from "@sophistree/common";
+
 import entitiesReducer, {
   createMap,
   addNewProposition,
@@ -11,9 +13,7 @@ import entitiesReducer, {
   showEntity,
   hideEntity,
   automateEntityVisibility,
-  Proposition,
   updateMediaExerpt,
-  MediaExcerpt,
 } from "./entitiesSlice";
 import { v4 as uuidv4 } from "uuid";
 

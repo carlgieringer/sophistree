@@ -2,8 +2,9 @@ import React from "react";
 import { Button, Dialog } from "react-native-paper";
 import { useSelector } from "react-redux";
 
+import { ArgumentMap } from "@sophistree/common";
+
 import * as selectors from "../store/selectors";
-import { ArgumentMap } from "../store/entitiesSlice";
 import { persistedStateVersion } from "../store/migrations";
 
 export const sophistreeMapFileVersion = persistedStateVersion;
