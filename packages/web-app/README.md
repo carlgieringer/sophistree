@@ -18,7 +18,7 @@ The backend uses PostgreSQL as its database, running in Docker.
 ```bash
 cd packages/web-app
 cp .env.example .env  # update the values as needed
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml --env-file .env -p sophistree up -d db
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.local.yml --env-file .env -p sophistree up -d db
 ```
 
 This will start PostgreSQL on port 5432. The database data is persisted in a Docker volume named 'sophistree_data'.

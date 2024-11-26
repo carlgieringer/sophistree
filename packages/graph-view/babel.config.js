@@ -5,7 +5,7 @@ module.exports = {
     [
       "@babel/preset-react",
       {
-        runtime: "automatic", // Enable the new JSX transform
+        runtime: "automatic",
       },
     ],
   ],

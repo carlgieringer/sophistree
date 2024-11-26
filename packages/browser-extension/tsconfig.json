@@ -16,7 +16,7 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["src", "../graph-view/src/graphView/DebugElementDialog.tsx"],
+  "include": ["src"],
   "references": [
     { "path": "../tapestry-highlights/tsconfig-dist.json" },
     { "path": "../graph-view/tsconfig.json" }

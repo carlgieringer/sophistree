@@ -4,18 +4,22 @@ import { getPrismaDatabaseUrl } from "./config";
 async function makePrismaClient() {
   // Locally, we should provide a DATABASE_URL
   if (process.env.DATABASE_URL) {
-    const prisma = new PrismaClient({
-      log: [
-        {
-          emit: "event",
-          level: "query",
-        },
-      ],
-    });
-    prisma.$on("query", async (e) => {
-      console.log(`${e.query} ${e.params}`);
-    });
-    return prisma;
+    if (process.env.DEBUG_PRINT_QUERIES) {
+      console.log("Debugging enabled");
+      const prisma = new PrismaClient({
+        log: [
+          {
+            emit: "event",
+            level: "query",
+          },
+        ],
+      });
+      prisma.$on("query", async (e) => {
+        console.log(`${e.query} ${e.params}`);
+      });
+      return prisma;
+    }
+    return new PrismaClient();
   }
 
   if (process.env.NODE_ENV !== "production") {

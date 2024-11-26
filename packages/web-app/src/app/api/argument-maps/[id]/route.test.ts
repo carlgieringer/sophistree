@@ -202,7 +202,7 @@ describe("Argument maps individual resource", () => {
         expect.arrayContaining([
           expect.objectContaining({
             id: "entity1",
-            type: "CLAIM",
+            type: "Proposition",
             data: expect.objectContaining({ text: "Updated claim" }),
           }),
           expect.objectContaining({

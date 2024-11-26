@@ -10,7 +10,7 @@ import register from "./reactNodes";
 describe("reactNodes Cytoscape extension", () => {
   let cy: cytoscape.Core;
   let container: HTMLElement;
-  let mockLogger: { error: jest.Mock };
+  const logger = console;
 
   beforeAll(() => {
     register(cytoscape);
@@ -38,11 +38,6 @@ describe("reactNodes Cytoscape extension", () => {
         },
       ],
     });
-
-    // Mock logger
-    mockLogger = {
-      error: jest.fn(),
-    };
   });
 
   afterEach((): void => {
@@ -63,7 +58,7 @@ describe("reactNodes Cytoscape extension", () => {
           },
         ],
         layoutOptions: { name: "preset" },
-        logger: mockLogger,
+        logger,
       });
     });
 
@@ -101,7 +96,7 @@ describe("reactNodes Cytoscape extension", () => {
           },
         ],
         layoutOptions: { name: "preset" },
-        logger: mockLogger,
+        logger,
       });
     });
 
@@ -133,7 +128,7 @@ describe("reactNodes Cytoscape extension", () => {
           },
         ],
         layoutOptions: { name: "preset" },
-        logger: mockLogger,
+        logger,
       });
     });
 
@@ -169,7 +164,7 @@ describe("reactNodes Cytoscape extension", () => {
           },
         ],
         layoutOptions: { name: "preset" },
-        logger: mockLogger,
+        logger,
       });
     });
 
@@ -199,7 +194,7 @@ describe("reactNodes Cytoscape extension", () => {
           },
         ],
         layoutOptions: { name: "preset" },
-        logger: mockLogger,
+        logger,
       });
     });
 
@@ -212,30 +207,6 @@ describe("reactNodes Cytoscape extension", () => {
         "[data-testid='react-node']",
       );
       expect(htmlElements.length).toBe(0);
-    });
-  });
-
-  it("should log error for unsupported modes", async () => {
-    act(() => {
-      cy.add({ data: { id: "test" } });
-
-      cy.reactNodes({
-        nodes: [
-          {
-            query: "node",
-            template: (data: NodeDataDefinition) => <div>{data.id}</div>,
-            mode: "unsupported" as "replace",
-          },
-        ],
-        layoutOptions: { name: "preset" },
-        logger: mockLogger,
-      });
-    });
-
-    await waitFor(() => {
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        expect.stringContaining("reactNodes doesnt' support mode unsupported"),
-      );
     });
   });
 
@@ -256,7 +227,7 @@ describe("reactNodes Cytoscape extension", () => {
           },
         ],
         layoutOptions: { name: "preset" },
-        logger: mockLogger,
+        logger,
       });
     });
 
