@@ -1,4 +1,4 @@
-import { MutableRefObject } from "react";
+import { MutableRefObject, UIEvent } from "react";
 import cn from "classnames";
 import cytoscape, {
   EdgeDataDefinition,
@@ -63,6 +63,7 @@ const zoomFactor = 0.03;
 const zoomInFactor = 1 + zoomFactor;
 const zoomOutFactor = 1 - zoomFactor;
 const layoutAnimationDuration = 250;
+const pinchZoomDampeningFactor = 0.15;
 
 interface GraphViewProps {
   id?: string;
@@ -355,6 +356,11 @@ function useReactNodes(
           const appearanceCount = nodeData.appearances?.length;
           const appearanceNoun =
             "appearance" + (appearanceCount === 1 ? "" : "s");
+          function onClick<T extends UIEvent>(event: T) {
+            event.preventDefault();
+            event.stopPropagation();
+            setVisitAppearancesDialogProposition(nodeData);
+          }
           return (
             <>
               {appearanceCount ? (
@@ -363,11 +369,8 @@ function useReactNodes(
                   className={cn("appearances-icon", {
                     selected: nodeData.isAnyAppearanceSelected,
                   })}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    setVisitAppearancesDialogProposition(nodeData);
-                  }}
+                  onClick={onClick}
+                  onTouchEnd={onClick}
                 >
                   <Icon name="crosshairs-gps" />
                   {appearanceCount}
@@ -510,17 +513,55 @@ function useZoomEventHandlers(
     [cyRef, zoomByFactor],
   );
 
+  const touchPoints: Touch[] = useMemo(() => [], []);
+
+  const handleTouchStart = useCallback(
+    (e: TouchEvent) => {
+      touchPoints.splice(0, touchPoints.length, ...e.touches);
+    },
+    [touchPoints],
+  );
+
+  const handleTouchMove = useCallback(
+    (e: TouchEvent) => {
+      touchPoints.splice(0, touchPoints.length, ...e.touches);
+    },
+    [touchPoints],
+  );
+
+  const handleTouchEnd = useCallback(() => {
+    touchPoints.splice(0, touchPoints.length);
+  }, [touchPoints]);
+
   const handleGesture = useCallback(
     (e: Event) => {
       const event = e as GestureEvent;
+      if (!cyRef.current) {
+        return;
+      }
+      if (touchPoints.length !== 2) {
+        logger.info("Not a two-finger gesture");
+        return;
+      }
+      const container = cyRef.current.container();
+      if (!container) {
+        logger.warn("Cannot zoom because there is no cytoscape container.");
+        return;
+      }
       event.preventDefault();
-      if (!cyRef.current) return;
 
-      const scale = event.scale;
+      // Calculate the midpoint between touch points
+      const rect = container.getBoundingClientRect();
+      const x =
+        (touchPoints[0].clientX + touchPoints[1].clientX) / 2 - rect.left;
+      const y =
+        (touchPoints[0].clientY + touchPoints[1].clientY) / 2 - rect.top;
 
-      zoomByFactor(scale, { x: event.offsetX, y: event.offsetY });
+      // Apply dampening to the scale value
+      const scale = 1 + (event.scale - 1) * pinchZoomDampeningFactor;
+      zoomByFactor(scale, { x, y });
     },
-    [cyRef, zoomByFactor],
+    [cyRef, zoomByFactor, logger, touchPoints],
   );
 
   useEffect(() => {
@@ -530,6 +571,9 @@ function useZoomEventHandlers(
       container.addEventListener("gesturestart", handleGesture);
       container.addEventListener("gesturechange", handleGesture);
       container.addEventListener("gestureend", handleGesture);
+      container.addEventListener("touchstart", handleTouchStart);
+      container.addEventListener("touchmove", handleTouchMove);
+      container.addEventListener("touchend", handleTouchEnd);
     }
 
     return () => {
@@ -538,9 +582,19 @@ function useZoomEventHandlers(
         container.removeEventListener("gesturestart", handleGesture);
         container.removeEventListener("gesturechange", handleGesture);
         container.removeEventListener("gestureend", handleGesture);
+        container.removeEventListener("touchstart", handleTouchStart);
+        container.removeEventListener("touchmove", handleTouchMove);
+        container.removeEventListener("touchend", handleTouchEnd);
       }
     };
-  }, [cyRef, handleWheel, handleGesture]);
+  }, [
+    cyRef,
+    handleWheel,
+    handleGesture,
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd,
+  ]);
 
   return { zoomIn, zoomOut };
 }
@@ -1595,8 +1649,10 @@ function getLayout(fit = false) {
 
 type GestureEvent = Event & {
   scale: number;
-  offsetX: number;
-  offsetY: number;
+  offsetX?: number;
+  offsetY?: number;
+  clientX: number;
+  clientY: number;
 };
 
 function getEntityId(element: SingularElementArgument): string {
@@ -1632,6 +1688,7 @@ function makeOutcomeClasses(outcome: BasisOutcome | JustificationOutcome) {
 }
 
 export interface Logger {
+  info(message: string): void;
   warn(message: string): void;
   error(message: string): void;
 }

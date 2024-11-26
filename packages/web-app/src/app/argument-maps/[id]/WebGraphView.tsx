@@ -5,6 +5,7 @@ import { GraphView } from "@sophistree/graph-view";
 import { determineOutcomes, Entity, MediaExcerpt } from "@sophistree/common";
 
 const logger = {
+  info: (message: string) => console.info(message),
   warn: (message: string) => console.warn(message),
   error: (message: string) => console.error(message),
 };
