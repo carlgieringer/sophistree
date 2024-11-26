@@ -1,6 +1,11 @@
 # TODO
 
-- Toast for failed API sync
+- Publish extension (with syncing)
+- Add 'creator' to maps
+- Move map card to shared.
+- Add nav menus etc.
+- Many to many between maps and entities?
+
 - don't persist apiConfig; truth of source is storage.
 - Rename main.ts to sidebar.ts
 - Respond to OAuth verification

@@ -20,7 +20,7 @@ export default function register(cs: typeof cytoscape) {
 
 interface ReactNodesOptions {
   nodes: ReactNodeOptions[];
-  layoutOptions: cytoscape.LayoutOptions;
+  layoutOptions: LayoutOptions;
   // The delay before reactNodes applies a layout when one is necessary.
   layoutThrottleDelay?: number;
   logger: Logger;
@@ -69,29 +69,34 @@ function reactNodes(this: cytoscape.Core, options: ReactNodesOptions) {
     makeReactNode(this, options.logger, nodeOptions, layout),
   );
 
-  // This is a terrible hack to try to get the elements to position correctly in Safari and iOS
-  // browsers.
-  // TODO: #31 - address the underlying cause.
+  applyWebkitLayoutWorkaround(this, options.layoutOptions);
+
+  return this; // for chaining
+}
+
+// This is a terrible hack to try to get the elements to position correctly in Safari and iOS
+// browsers.
+// TODO: #31 - address the underlying cause.
+function applyWebkitLayoutWorkaround(
+  cy: cytoscape.Core,
+  layoutOptions: LayoutOptions,
+) {
   const ua = navigator.userAgent;
   const isWebKitBrowser = /WebKit/.test(ua) && !/Chrome/.test(ua);
   const isIOS = /iPad|iPhone|iPod/.test(ua);
   if (isWebKitBrowser || isIOS) {
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    const cy = this;
     // eslint-disable-next-line no-inner-declarations
     function oneTimeLayout() {
       cy.off("layoutstop", oneTimeLayout);
       setTimeout(() => {
         cy.layout({
-          ...options.layoutOptions,
+          layoutOptions,
           fit: true,
         } as unknown as LayoutOptions).run();
       }, 1000);
     }
-    this.on("layoutstop", oneTimeLayout);
+    cy.on("layoutstop", oneTimeLayout);
   }
-
-  return this; // for chaining
 }
 
 /**

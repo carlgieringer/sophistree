@@ -26,7 +26,6 @@ import { Portal } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { SetRequired } from "type-fest";
 
-import "cytoscape-context-menus/cytoscape-context-menus.css";
 import {
   carrot,
   nephritis,
