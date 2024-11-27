@@ -1,7 +1,5 @@
 # TODO
 
-- Add edge start to help indicate where they start
-
 - Add 'creator' to maps
 - Move map card to shared.
 - Add nav menus etc.
