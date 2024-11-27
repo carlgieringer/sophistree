@@ -7,7 +7,8 @@ import { GraphViewLogger } from "./graphTypes";
 const zoomFactor = 0.03;
 const zoomInFactor = 1 + zoomFactor;
 const zoomOutFactor = 1 - zoomFactor;
-const pinchZoomDampeningFactor = 0.02;
+const pinchZoomInDampeningFactor = 0.015;
+const pinchZoomOutDampeningFactor = 0.05;
 
 export function useZoomEventHandlers(
   cyRef: MutableRefObject<cytoscape.Core | undefined>,
@@ -145,7 +146,11 @@ export function useZoomEventHandlers(
         (touchPoints[0].clientY + touchPoints[1].clientY) / 2 - rect.top;
 
       // Apply dampening to the scale value
-      const scale = 1 + (event.scale - 1) * pinchZoomDampeningFactor;
+      const factor =
+        event.scale > 1
+          ? pinchZoomInDampeningFactor
+          : pinchZoomOutDampeningFactor;
+      const scale = 1 + (event.scale - 1) * factor;
       zoomByFactor(scale, { x, y });
     },
     [cyRef, zoomByFactor, logger, touchPoints],
