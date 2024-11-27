@@ -75,8 +75,10 @@ export function useContextMenus({
     }
 
     cy.on("cxttap", handleContextMenu);
+    cy.on("taphold", handleContextMenu);
     return () => {
       cy.off("cxttap", handleContextMenu);
+      cy.off("taphold", handleContextMenu);
     };
   }, [cyRef, handleContextMenu]);
 
