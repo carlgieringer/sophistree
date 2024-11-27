@@ -16,7 +16,7 @@ export type PropositionNodeData = {
 };
 
 export interface GraphViewLogger {
-  info(message: string): void;
-  warn(message: string): void;
-  error(message: string): void;
+  info(message: string, ...args: unknown[]): void;
+  warn(message: string, ...args: unknown[]): void;
+  error(message: string, ...args: unknown[]): void;
 }

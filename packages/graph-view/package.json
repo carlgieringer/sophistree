@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@sophistree/common": "file:../common",
+    "@use-gesture/react": "^10.3.1",
     "classnames": "^2.3.2",
     "cytoscape": "^3.26.0",
     "cytoscape-elk": "^2.2.0",

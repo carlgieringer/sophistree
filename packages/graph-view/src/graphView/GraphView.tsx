@@ -19,7 +19,7 @@ import { useSelectedNodes } from "./useSelectedNodes";
 import { usePanToFocusedNodes } from "./usePanToFocusedNodes";
 import { useReactNodes } from "./useReactNodes";
 import { getLayout } from "./layout";
-import { useZoomEventHandlers } from "./useZoomEventHandlers";
+import { useGestureZoom } from "./useGestureZoom";
 import {
   OnResetSelection,
   OnSelectEntities,
@@ -96,7 +96,7 @@ export default function GraphView({
     logger,
   );
 
-  const { zoomIn, zoomOut } = useZoomEventHandlers(cyRef, logger);
+  const { zoomIn, zoomOut } = useGestureZoom(cyRef, logger);
 
   const layoutGraph = useCallback((fit = false) => {
     cyRef.current?.layout(getLayout(fit)).run();
