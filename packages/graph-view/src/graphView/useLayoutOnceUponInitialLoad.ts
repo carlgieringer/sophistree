@@ -1,8 +1,6 @@
 import cytoscape from "cytoscape";
 import { useCallback, useEffect } from "react";
 
-import "./GraphView.scss";
-
 export function useLayoutOnceUponInitialLoad(
   cyRef: React.MutableRefObject<cytoscape.Core | undefined>,
   layoutGraph: (fit?: boolean) => void,

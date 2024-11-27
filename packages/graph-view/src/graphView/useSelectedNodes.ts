@@ -1,7 +1,6 @@
 import { MutableRefObject } from "react";
 import { useEffect } from "react";
 
-import "./GraphView.scss";
 import { getEntityId } from "./entityIds";
 
 export function useSelectedNodes(

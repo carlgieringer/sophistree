@@ -1,8 +1,6 @@
 import { MutableRefObject } from "react";
 import { useCallback, useEffect } from "react";
 
-import "./GraphView.scss";
-
 export function usePanToFocusedNodes(
   cyRef: MutableRefObject<cytoscape.Core | undefined>,
   focusedNodeIds: string[],
