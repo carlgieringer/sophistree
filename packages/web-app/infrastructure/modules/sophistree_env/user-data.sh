@@ -84,10 +84,12 @@ ${domain_name} {
     }
   }
 }' | tee Caddyfile
+chmod 400 Caddyfile
 
 # Create docker-compose files
 echo '${docker_compose_content}' | tee docker-compose.yml
 echo '${docker_compose_prod_content}' | tee docker-compose.prod.yml
+chmod 400 docker-compose.yml docker-compose.prod.yml
 
 echo "NODE_ENV=production
 DB_PASSWORD_PARAMETER_ARN=${db_password_parameter_arn}
@@ -106,13 +108,11 @@ chmod 400 db.env
 echo "DATABASE_URL=postgresql://sophistree:$db_password@sophistree-db:5432/sophistree" | tee -a migrator.env >/dev/null
 chmod 400 migrator.env
 
-# Environment variables affecting the compose files seem to need to be in a file named .env.
-echo "WEB_APP_IMAGE_VERSION=${web_app_image_version}
-CADDY_IMAGE_VERSION=${caddy_image_version}" | tee .env
-
 # Pull the latest images and start the containers with production config
-docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+WEB_APP_IMAGE_VERSION=${web_app_image_version} CADDY_IMAGE_VERSION=${caddy_image_version}\
+ docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
+WEB_APP_IMAGE_VERSION=${web_app_image_version} CADDY_IMAGE_VERSION=${caddy_image_version}\
+ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 # Set up backup script
 echo '#!/bin/bash

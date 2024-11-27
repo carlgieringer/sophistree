@@ -164,10 +164,10 @@ To deploy the images on EC2:
 ```shell
 cd /web-app/
 # Pull and run with specific version
-WEB_APP_IMAGE_VERSION=1.0.0 CADDY_IMAGE_VERSION=1.0.0\
- sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
-WEB_APP_IMAGE_VERSION=1.0.0 CADDY_IMAGE_VERSION=1.0.0\
- sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+sudo WEB_APP_IMAGE_VERSION=1.0.0 CADDY_IMAGE_VERSION=1.0.0\
+ docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
+sudo WEB_APP_IMAGE_VERSION=1.0.0 CADDY_IMAGE_VERSION=1.0.0\
+ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 # Or use 'latest' tag (if VERSION not specified)
 sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
