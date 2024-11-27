@@ -46,6 +46,7 @@ export default function PropositionAppearanceDialog({
                 </Tooltip>
                 <View key={appearance.id} style={styles.row}>
                   <Button
+                    mode="contained"
                     style={styles.goButtonCell}
                     onPress={() => onFocusMediaExcerpt(appearance.mediaExcerpt)}
                   >

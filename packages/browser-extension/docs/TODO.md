@@ -1,6 +1,9 @@
 # TODO
 
 - Use use-gesture instead of bespoke
+- iOS:
+  - panning doesn't work
+  - Long press instead of double tap for context menu?
 - Add edge start to help indicate where they start
 
 - Publish extension (with syncing)
