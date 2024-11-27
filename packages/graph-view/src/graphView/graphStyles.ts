@@ -47,6 +47,7 @@ export const stylesheet: Stylesheet[] = [
     style: {
       width: 2,
       "line-color": "#ccc",
+      "source-arrow-shape": "circle",
       "target-arrow-color": "#ccc",
       "target-arrow-shape": (edge) =>
         edge.data("polarity") === "Positive" ? "triangle-backcurve" : "tee",
@@ -60,7 +61,13 @@ export const stylesheet: Stylesheet[] = [
     },
   },
   {
-    selector: `edge[arrow="none"]`,
+    selector: `edge[sourceArrow="none"]`,
+    style: {
+      "source-arrow-shape": "none",
+    },
+  },
+  {
+    selector: `edge[targetArrow="none"]`,
     style: {
       "target-arrow-shape": "none",
     },
@@ -90,6 +97,7 @@ export const stylesheet: Stylesheet[] = [
     style: {
       width: 2,
       "line-color": nephritis,
+      "source-arrow-color": nephritis,
       "target-arrow-color": nephritis,
     },
   },
@@ -98,6 +106,7 @@ export const stylesheet: Stylesheet[] = [
     style: {
       width: 2,
       "line-color": pomegranate,
+      "source-arrow-color": pomegranate,
       "target-arrow-color": pomegranate,
     },
   },
@@ -106,6 +115,7 @@ export const stylesheet: Stylesheet[] = [
     selector: `edge[polarity="Positive"]:selected, edge[polarity="Negative"]:selected`,
     style: {
       "line-color": sunflower,
+      "source-arrow-color": sunflower,
       "target-arrow-color": sunflower,
       width: 4,
     },

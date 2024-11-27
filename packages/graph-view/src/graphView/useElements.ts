@@ -273,7 +273,7 @@ function getNodesAndEdges(
               entityId: entity.id,
               entityType: entity.type,
               polarity: entity.polarity,
-              arrow: "none",
+              targetArrow: "none",
             });
 
             acc.edges.push({
@@ -284,6 +284,7 @@ function getNodesAndEdges(
               entityId: entity.id,
               entityType: entity.type,
               polarity: entity.polarity,
+              sourceArrow: "none",
             });
           } else {
             acc.edges.push({
