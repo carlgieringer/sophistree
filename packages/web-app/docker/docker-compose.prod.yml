@@ -1,6 +1,5 @@
 services:
   web-app:
-    image: sophistree/web-app:${WEB_APP_IMAGE_VERSION:-latest}
     build: null
     env_file: web-app.env
     logging:
@@ -23,7 +22,6 @@ services:
 
   caddy:
     env_file: caddy.env
-    image: sophistree/caddy:${CADDY_IMAGE_VERSION:-latest}
     build: null
     logging:
       options:

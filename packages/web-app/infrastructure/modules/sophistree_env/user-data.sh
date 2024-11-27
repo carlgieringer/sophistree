@@ -91,21 +91,24 @@ echo '${docker_compose_prod_content}' | tee docker-compose.prod.yml
 
 echo "NODE_ENV=production
 DB_PASSWORD_PARAMETER_ARN=${db_password_parameter_arn}
-# Use IAM role credentials from the EC2 instance
 AWS_REGION=${aws_region}
-AWS_SDK_LOAD_CONFIG=1
-WEB_APP_IMAGE_VERSION=${web_app_image_version}" | tee web-app.env
+# Use IAM role credentials from the EC2 instance
+AWS_SDK_LOAD_CONFIG=1" | tee web-app.env
 chmod 400 web-app.env
 
 echo "CADDY_IMAGE_VERSION=${caddy_image_version}" | tee caddy.env
 chmod 400 caddy.env
 
 db_password=$(aws ssm get-parameter --name "${db_password_parameter_arn}" --with-decryption --query "Parameter.Value" --output text)
-echo "POSTGRES_PASSWORD=$db_password" | tee -a db.env
+echo "POSTGRES_PASSWORD=$db_password" | tee -a db.env >/dev/null
 chmod 400 db.env
 
-echo "DATABASE_URL=postgresql://sophistree:$db_password@sophistree-db:5432/sophistree" | tee -a migrator.env
+echo "DATABASE_URL=postgresql://sophistree:$db_password@sophistree-db:5432/sophistree" | tee -a migrator.env >/dev/null
 chmod 400 migrator.env
+
+# Environment variables affecting the compose files seem to need to be in a file named .env.
+echo "WEB_APP_IMAGE_VERSION=${web_app_image_version}
+CADDY_IMAGE_VERSION=${caddy_image_version}" | tee .env
 
 # Pull the latest images and start the containers with production config
 docker compose -f docker-compose.yml -f docker-compose.prod.yml pull

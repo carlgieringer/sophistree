@@ -1,4 +1,5 @@
-FROM sophistree/web-app-base AS builder
+ARG BASE_VERSION=latest
+FROM sophistree/web-app-base:${BASE_VERSION} AS builder
 
 FROM node:18-alpine
 

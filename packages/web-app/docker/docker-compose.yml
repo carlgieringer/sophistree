@@ -3,6 +3,8 @@ services:
     build:
       context: ..
       dockerfile: docker/web-app.dockerfile
+      args:
+        BASE_VERSION: ${BASE_IMAGE_VERSION:-latest}
     image: sophistree/web-app:${WEB_APP_IMAGE_VERSION:-latest}
     container_name: sophistree-web-app
     depends_on:
@@ -16,6 +18,8 @@ services:
     build:
       context: ..
       dockerfile: docker/migrator.dockerfile
+      args:
+        BASE_VERSION: ${BASE_IMAGE_VERSION:-latest}
     image: sophistree/migrator:${WEB_APP_IMAGE_VERSION:-latest}
     container_name: sophistree-migrator
     depends_on:

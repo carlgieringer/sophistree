@@ -13,6 +13,7 @@ module "sophistree_prod" {
   vpc_id                    = aws_vpc.main.id
   zone_id                   = aws_route53_zone.main.zone_id
   availability_zone         = aws_subnet.public.availability_zone
+  web_app_image_version     = "0.1.0"
 }
 
 module "sophistree_dev" {
@@ -29,6 +30,7 @@ module "sophistree_dev" {
   vpc_id                    = aws_vpc.main.id
   zone_id                   = aws_route53_zone.main.zone_id
   availability_zone         = aws_subnet.public.availability_zone
+  web_app_image_version     = "0.1.0"
 }
 
 

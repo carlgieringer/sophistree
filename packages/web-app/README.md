@@ -149,8 +149,12 @@ docker compose build
 docker compose push
 
 # Build and push with specific version
-WEB_APP_IMAGE_VERSION=1.0.0 CADDY_IMAGE_VERSION=1.0.0 docker compose build
-WEB_APP_IMAGE_VERSION=1.0.0 CADDY_IMAGE_VERSION=1.0.0 docker compose push
+web_app_version=$(node -p "require('../package.json').version")
+docker build -t sophistree/web-app-base:$web_app_version -f web-app-base.dockerfile ../../..
+BASE_IMAGE_VERSION=$web_app_version WEB_APP_IMAGE_VERSION=$web_app_version CADDY_IMAGE_VERSION=$web_app_version\
+ docker compose build
+BASE_IMAGE_VERSION=$web_app_version WEB_APP_IMAGE_VERSION=$web_app_version CADDY_IMAGE_VERSION=$web_app_version\
+ docker compose push
 ```
 
 #### Deploying to EC2
