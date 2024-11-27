@@ -5,10 +5,9 @@ import { useEffect, useMemo } from "react";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 import { peterRiver } from "../colors";
-import "./GraphView.scss";
 import { OnFocusMediaExcerpt } from "./PropositionAppearanceDialog";
 import { MediaExcerpt, preferredUrl } from "@sophistree/common";
-import { Logger as GraphViewLogger, PropositionNodeData } from "./graphTypes";
+import { GraphViewLogger, PropositionNodeData } from "./graphTypes";
 import { nodeOutcomeClasses } from "./useOutcomes";
 import { getLayout } from "./layout";
 

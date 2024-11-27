@@ -9,7 +9,6 @@ import cytoscape, {
 } from "cytoscape";
 import { useEffect } from "react";
 
-import "./GraphView.scss";
 import { EntityType } from "@sophistree/common";
 import { getEntityId } from "./entityIds";
 

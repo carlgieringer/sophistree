@@ -2,7 +2,6 @@ import { MutableRefObject } from "react";
 import cytoscape, { SingularElementArgument } from "cytoscape";
 import { useEffect } from "react";
 
-import "./GraphView.scss";
 import {
   BasisOutcome,
   JustificationOutcome,

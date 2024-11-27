@@ -2,8 +2,6 @@ import { MutableRefObject } from "react";
 import cytoscape, { EventObject } from "cytoscape";
 import { useEffect } from "react";
 
-import "./GraphView.scss";
-
 export interface OnAddNewProposition {
   (): void;
 }

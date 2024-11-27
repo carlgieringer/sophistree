@@ -2,7 +2,6 @@ import { MutableRefObject } from "react";
 import cytoscape, { EventObject, EventObjectNode } from "cytoscape";
 import { useEffect } from "react";
 
-import "./GraphView.scss";
 import { getEntityId } from "./entityIds";
 
 export interface OnSelectEntities {

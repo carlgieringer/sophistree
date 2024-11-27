@@ -2,8 +2,7 @@ import { MutableRefObject } from "react";
 import cytoscape, { EventObject } from "cytoscape";
 import { useCallback, useEffect, useMemo } from "react";
 
-import "./GraphView.scss";
-import { Logger as GraphViewLogger } from "./graphTypes";
+import { GraphViewLogger } from "./graphTypes";
 
 const zoomFactor = 0.03;
 const zoomInFactor = 1 + zoomFactor;

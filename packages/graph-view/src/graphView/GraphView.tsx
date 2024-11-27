@@ -11,7 +11,7 @@ import PropositionAppearanceDialog, {
   OnFocusMediaExcerpt,
 } from "./PropositionAppearanceDialog";
 import { Entity } from "@sophistree/common";
-import { Logger as GraphViewLogger, PropositionNodeData } from "./graphTypes";
+import { GraphViewLogger, PropositionNodeData } from "./graphTypes";
 import { OnDeleteEntity, useContextMenus } from "./useContextMenus";
 import { useElements } from "./useElements";
 import { Outcomes, useOutcomes } from "./useOutcomes";

@@ -6,14 +6,17 @@ import {
 import { useMemo } from "react";
 import { SetRequired } from "type-fest";
 
-import "./GraphView.scss";
 import { Entity, MediaExcerpt, Proposition } from "@sophistree/common";
-import { AppearanceInfo, EntityElementData, Logger } from "./graphTypes";
+import {
+  AppearanceInfo,
+  EntityElementData,
+  GraphViewLogger,
+} from "./graphTypes";
 
 export function useElements(
   entities: Entity[],
   selectedEntityIds: string[],
-  logger: Logger,
+  logger: GraphViewLogger,
 ) {
   return useMemo(
     () => makeElements(entities, selectedEntityIds, logger),
@@ -31,7 +34,7 @@ export function useElements(
 function makeElements(
   entities: Entity[],
   selectedEntityIds: string[],
-  logger: Logger,
+  logger: GraphViewLogger,
 ) {
   const { nodes: nodeDatas, edges: edgeDatas } = getNodesAndEdges(
     entities,
@@ -60,7 +63,7 @@ function makeElements(
 function getNodesAndEdges(
   entities: Entity[],
   selectedEntityIds: string[],
-  logger: Logger,
+  logger: GraphViewLogger,
 ) {
   const {
     visibleEntityIds,
@@ -383,7 +386,7 @@ function getNodesAndEdges(
 function sortNodesByInverseDfs(
   nodes: EntityNodeDataDefinition[],
   edges: EntityEdgeDataDefinition[],
-  logger: Logger,
+  logger: GraphViewLogger,
 ) {
   // Start with all nodes potentially roots
   const rootIds = new Set(nodes.map((n) => n.id));
