@@ -24,7 +24,10 @@ module.exports = {
     },
   },
   rules: {
+    // This rule obfuscates TypeScript errors.
+    "t@typescript-eslint/no-unsafe-assignment": "off",
     "@typescript-eslint/switch-exhaustiveness-check": "error",
-    "react/react-in-jsx-scope": "off", // Disable the React import requirement since we're using the new JSX transform
+    // Disable the React import requirement since we're using the new JSX transform
+    "react/react-in-jsx-scope": "off",
   },
 };

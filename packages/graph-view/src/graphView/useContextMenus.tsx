@@ -16,12 +16,16 @@ type ContextMenuEvent = EventObjectNode | EventObjectEdge | EventObjectCore;
 
 interface UseContextMenusProps {
   cyRef: RefObject<Core | undefined>;
-  onDeleteEntity?: (entityId: string) => void;
+  onDeleteEntity?: OnDeleteEntity;
   onAddNewProposition?: () => void;
   zoomIn: (event: EventObject) => void;
   zoomOut: (event: EventObject) => void;
   setDebugElementData: (data: ElementDataDefinition | undefined) => void;
   layoutGraph: (fit?: boolean) => void;
+}
+
+export interface OnDeleteEntity {
+  (entityId: string): void;
 }
 
 export function useContextMenus({
