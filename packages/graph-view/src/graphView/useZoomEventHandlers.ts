@@ -7,7 +7,7 @@ import { GraphViewLogger } from "./graphTypes";
 const zoomFactor = 0.03;
 const zoomInFactor = 1 + zoomFactor;
 const zoomOutFactor = 1 - zoomFactor;
-const pinchZoomDampeningFactor = 0.15;
+const pinchZoomDampeningFactor = 0.02;
 
 export function useZoomEventHandlers(
   cyRef: MutableRefObject<cytoscape.Core | undefined>,
@@ -89,6 +89,7 @@ export function useZoomEventHandlers(
 
   const handleTouchStart = useCallback(
     (e: TouchEvent) => {
+      e.preventDefault();
       touchPoints.splice(0, touchPoints.length, ...e.touches);
     },
     [touchPoints],
@@ -96,9 +97,23 @@ export function useZoomEventHandlers(
 
   const handleTouchMove = useCallback(
     (e: TouchEvent) => {
+      e.preventDefault();
+      if (!cyRef.current) {
+        touchPoints.splice(0, touchPoints.length, ...e.touches);
+        return;
+      }
+
+      if (e.touches.length === 1) {
+        // Single finger pan
+        const deltaX = e.touches[0].clientX - touchPoints[0].clientX;
+        const deltaY = e.touches[0].clientY - touchPoints[0].clientY;
+        cyRef.current.panBy({ x: deltaX, y: deltaY });
+      }
+
+      // Update touch points for next move event
       touchPoints.splice(0, touchPoints.length, ...e.touches);
     },
-    [touchPoints],
+    [cyRef, touchPoints],
   );
 
   const handleTouchEnd = useCallback(() => {

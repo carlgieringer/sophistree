@@ -6,7 +6,6 @@ import { Portal } from "react-native-paper";
 
 import reactNodes from "../cytoscape/reactNodes";
 import DebugElementDialog from "./DebugElementDialog";
-import "./GraphView.scss";
 import PropositionAppearanceDialog, {
   OnFocusMediaExcerpt,
 } from "./PropositionAppearanceDialog";
@@ -32,6 +31,8 @@ import {
 import { OnCompleteDrag, useDragHandlers } from "./useDragHandlers";
 import { useLayoutOnceUponInitialLoad } from "./useLayoutOnceUponInitialLoad";
 import { stylesheet } from "./graphStyles";
+
+import "./GraphView.scss";
 
 cytoscape.use(elk);
 cytoscape.use(reactNodes);
