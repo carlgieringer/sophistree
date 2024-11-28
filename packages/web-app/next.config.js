@@ -1,4 +1,5 @@
 /** @type {import('next').NextConfig} */
+
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: [
@@ -24,15 +25,6 @@ const nextConfig = {
       ".web.tsx",
       ...config.resolve.extensions,
     ];
-
-    // Add rule for font files
-    config.module.rules.push({
-      test: /\.(woff|woff2|eot|ttf|otf)$/i,
-      type: "asset/resource",
-      generator: {
-        filename: "static/fonts/[hash][ext][query]",
-      },
-    });
 
     return config;
   },
