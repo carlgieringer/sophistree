@@ -1,5 +1,5 @@
 @use "sass:color";
-@import "../colors";
+@use "../colors" as c;
 
 p {
   margin: 0;
@@ -7,14 +7,14 @@ p {
 
 .hover-highlight {
   border-width: 3px;
-  border-color: $carrot;
+  border-color: c.$carrot;
   border-style: solid;
   transition: border 0.1s ease;
 }
 
 .selected {
   border-width: 3px;
-  border-color: $sunflower;
+  border-color: c.$sunflower;
   border-style: solid;
   transition: border 0.1s ease;
 }
@@ -32,8 +32,8 @@ p {
   cursor: pointer;
 }
 
-$positive-color: color.scale($nephritis, $lightness: 40%);
-$negative-color: color.scale($pomegranate, $lightness: 60%);
+$positive-color: color.scale(c.$nephritis, $lightness: 40%);
+$negative-color: color.scale(c.$pomegranate, $lightness: 60%);
 
 .node-outcome-positive {
   background-color: $positive-color;
@@ -42,7 +42,7 @@ $negative-color: color.scale($pomegranate, $lightness: 60%);
   background-color: $negative-color;
 }
 .node-outcome-neutral {
-  background-color: color.scale($belizeHole, $lightness: 80%);
+  background-color: color.scale(c.$belizeHole, $lightness: 80%);
 }
 .node-outcome-contradictory {
   background-image: linear-gradient(

@@ -41,7 +41,9 @@ jobs:
       - name: Build Dev
         run: npm run build-dev --workspace=packages/browser-extension
       - name: Build Prod
-        run: npm run build-prod --workspace=packages/browser-extension
+        run: |
+          npm run build-prod --workspace=packages/browser-extension
+          npm run build --workspace=packages/web-app
   playwright:
     runs-on: ubuntu-latest
     container:

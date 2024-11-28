@@ -5,7 +5,7 @@
   "scripts": {
     "connect-db-local": "psql -h localhost -p 5432 -U sophistree -d sophistree",
     "dev": "npm run prisma:generate && NODE_OPTIONS=--inspect next dev",
-    "build": "next build",
+    "build": "npm run prisma:generate && next build",
     "start": "next start",
     "check-all": "time (npm run type-check && npm run lint && npm run format-check && npm test) || { echo 'Checks failed'; exit 1; }",
     "format-fix": "prettier --write .",
