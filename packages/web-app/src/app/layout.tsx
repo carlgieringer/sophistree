@@ -1,10 +1,17 @@
+"use client";
+
 import React from "react";
 import { Providers } from "./providers";
+import { Roboto } from "next/font/google";
+import localFont from "next/font/local";
 
-export const metadata = {
-  title: "Sophistree",
-  description: "Argument mapping platform",
-};
+const roboto = Roboto({ weight: ["400", "500", "700"], subsets: ["latin"] });
+const materialIcons = localFont({
+  src: "../../public/fonts/MaterialIcons.ttf",
+});
+const materialCommunityIcons = localFont({
+  src: "../../public/fonts/MaterialCommunityIcons.ttf",
+});
 
 export default function RootLayout({
   children,
@@ -13,13 +20,18 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" style={{ height: "100%" }}>
-      <head>
-        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-        <link
-          href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+      <style jsx global>{`
+        html {
+          font-family: ${roboto.style.fontFamily};
+        }
+        // Override react-native-vector-icons font-family with next.js's local fonts
+        [style*="font-family: MaterialIcons;"] {
+          font-family: ${materialIcons.style.fontFamily} !important;
+        }
+        [style*="font-family: MaterialCommunityIcons;"] {
+          font-family: ${materialCommunityIcons.style.fontFamily} !important;
+        }
+      `}</style>
       <body style={{ height: "100%", margin: 0 }}>
         <Providers>{children}</Providers>
       </body>
