@@ -93,6 +93,12 @@ export const stylesheet: Stylesheet[] = [
     },
   },
   {
+    selector: `node[entity.type="Justification"][polarity="Positive"]:selected, node[entity.type="Justification"][polarity="Negative"]:selected`,
+    style: {
+      "background-color": sunflower,
+    },
+  },
+  {
     selector: `edge[polarity="Positive"]`,
     style: {
       width: 2,

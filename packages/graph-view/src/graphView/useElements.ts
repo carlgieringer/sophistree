@@ -12,6 +12,7 @@ import {
   EntityElementData,
   GraphViewLogger,
 } from "./graphTypes";
+import { getCollapseInfo } from "./collapsing";
 
 export function useElements(
   entities: Entity[],
@@ -70,6 +71,7 @@ function getNodesAndEdges(
     mediaExcerptsById,
     propositionsById,
     justificationTargetIds,
+    collapsedEntityIds,
   } = entities.reduce(
     (acc, e) => {
       switch (e.type) {
@@ -92,6 +94,9 @@ function getNodesAndEdges(
       ) {
         acc.visibleEntityIds.add(e.id);
       }
+      if (e.isCollapsed) {
+        acc.collapsedEntityIds.add(e.id);
+      }
       return acc;
     },
     {
@@ -99,6 +104,7 @@ function getNodesAndEdges(
       propositionsById: new Map<string, Proposition>(),
       visibleEntityIds: new Set<string>(),
       justificationTargetIds: new Set<string>(),
+      collapsedEntityIds: new Set<string>(),
     },
   );
 
@@ -176,9 +182,15 @@ function getNodesAndEdges(
     },
   );
 
+  const { collapsedDescendantIds, collapsedDescendantCounts } =
+    getCollapseInfo(entities);
+
   const { nodes: visibleNodes, edges: allEdges } = entities.reduce(
     (acc, entity) => {
-      if (!visibleEntityIds.has(entity.id)) {
+      if (
+        !visibleEntityIds.has(entity.id) ||
+        collapsedDescendantIds.has(entity.id)
+      ) {
         return acc;
       }
       switch (entity.type) {
@@ -219,8 +231,13 @@ function getNodesAndEdges(
               );
               return;
             }
+
+            const isAtomCollapsed = collapsedEntityIds.has(atomId);
+            const collapsedCounts = isAtomCollapsed
+              ? collapsedDescendantCounts.get(atomId)
+              : undefined;
+
             acc.nodes.push({
-              ...proposition,
               id: atomNodeId,
               parent: compoundNodeId,
               entity: proposition,
@@ -229,11 +246,18 @@ function getNodesAndEdges(
               entityType: proposition.type,
               appearances,
               isAnyAppearanceSelected,
+              collapsedChildCount: collapsedCounts?.childCount,
+              collapsedDescendantCount: collapsedCounts?.descendantCount,
             });
           });
           break;
         }
         case "Justification": {
+          if (collapsedDescendantIds.has(entity.basisId)) {
+            // Don't draw justifications if their bases are collapsed descendants.
+            break;
+          }
+
           const basisNodeId = justificationBasisNodeIds.get(entity.basisId);
           const targetNodeId = justificationTargetNodeIds.get(entity.targetId);
           if (!basisNodeId || !targetNodeId) {
@@ -333,6 +357,11 @@ function getNodesAndEdges(
           const id =
             justificationTargetNodeIds.get(entity.id) ||
             makeEntityNodeId(entity);
+
+          const collapsedCounts = entity.isCollapsed
+            ? collapsedDescendantCounts.get(entity.id)
+            : undefined;
+
           acc.nodes.push({
             id,
             entity,
@@ -340,6 +369,8 @@ function getNodesAndEdges(
             entityType: entity.type,
             appearances,
             isAnyAppearanceSelected,
+            collapsedChildCount: collapsedCounts?.childCount,
+            collapsedDescendantCount: collapsedCounts?.descendantCount,
           });
           break;
         }

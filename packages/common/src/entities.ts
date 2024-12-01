@@ -5,6 +5,7 @@ type BaseEntity = {
   // if explicitVisibility is missing, falls back to autoVisibility
   explicitVisibility?: Visibility | undefined;
   autoVisibility: Visibility;
+  isCollapsed?: boolean;
 };
 
 export type Visibility = "Visible" | "Hidden";

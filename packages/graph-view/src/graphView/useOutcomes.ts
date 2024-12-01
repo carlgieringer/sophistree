@@ -1,5 +1,8 @@
 import { MutableRefObject } from "react";
-import cytoscape, { SingularElementArgument } from "cytoscape";
+import cytoscape, {
+  ElementDefinition,
+  SingularElementArgument,
+} from "cytoscape";
 import { useEffect } from "react";
 
 import {
@@ -29,6 +32,7 @@ export const outcomeClasses = [...nodeOutcomeClasses, ...edgeOutcomeClasses];
 
 export function useOutcomes(
   cyRef: MutableRefObject<cytoscape.Core | undefined>,
+  elements: ElementDefinition[],
   { basisOutcomes, justificationOutcomes }: Outcomes,
 ) {
   useEffect(() => {
@@ -70,7 +74,13 @@ export function useOutcomes(
         });
       });
     });
-  }, [cyRef, basisOutcomes, justificationOutcomes]);
+  }, [
+    cyRef,
+    // elements must be a dependency so that outcomes are synced when elements are uncollapsed.
+    elements,
+    basisOutcomes,
+    justificationOutcomes,
+  ]);
 }
 
 function makeOutcomeClasses(outcome: BasisOutcome | JustificationOutcome) {

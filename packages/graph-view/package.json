@@ -18,7 +18,7 @@
   "dependencies": {
     "@sophistree/common": "file:../common",
     "classnames": "^2.3.2",
-    "cytoscape": "^3.26.0",
+    "cytoscape": "^3.30.4",
     "cytoscape-elk": "^2.2.0",
     "lodash.throttle": "^4.1.1",
     "react": "^18.2.0",
@@ -35,6 +35,7 @@
     "@babel/preset-typescript": "^7.26.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.0.1",
     "@types/cytoscape": "^3.19.11",
     "@types/lodash.throttle": "^4.1.9",
     "@types/react": "^18.2.15",

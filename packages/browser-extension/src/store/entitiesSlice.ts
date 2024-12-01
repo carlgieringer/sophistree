@@ -314,6 +314,23 @@ export const entitiesSlice = createSlice({
     automateEntityVisibility(state, action: PayloadAction<string>) {
       updateEntityVisibility(state, action.payload, undefined);
     },
+    toggleCollapsed(state, action: PayloadAction<string>) {
+      const activeMap = state.maps.find((map) => map.id === state.activeMapId);
+      if (!activeMap) {
+        appLogger.error(
+          "Cannot toggle entity collapsed because there is no active map",
+        );
+        return;
+      }
+      const entity = activeMap.entities.find((e) => e.id === action.payload);
+      if (!entity) {
+        appLogger.error(
+          `Cannot toggle entity collapsed because there is no entity with id ${action.payload}`,
+        );
+        return;
+      }
+      entity.isCollapsed = !entity.isCollapsed;
+    },
   },
 });
 
@@ -807,6 +824,7 @@ export const {
   selectEntities,
   setActiveMap,
   showEntity,
+  toggleCollapsed,
   updateEntity,
   updateJustification,
   updateMediaExerpt,

@@ -11,6 +11,7 @@ import type {
   ElementDataDefinition,
 } from "cytoscape";
 import { RefObject } from "react";
+import { OnToggleCollapse } from "./collapsing";
 
 type ContextMenuEvent = EventObjectNode | EventObjectEdge | EventObjectCore;
 
@@ -18,6 +19,7 @@ interface UseContextMenusProps {
   cyRef: RefObject<Core | undefined>;
   onDeleteEntity?: OnDeleteEntity;
   onAddNewProposition?: () => void;
+  onToggleCollapse: OnToggleCollapse;
   zoomIn: (event: EventObject) => void;
   zoomOut: (event: EventObject) => void;
   setDebugElementData: (data: ElementDataDefinition | undefined) => void;
@@ -32,6 +34,7 @@ export function useContextMenus({
   cyRef,
   onDeleteEntity,
   onAddNewProposition,
+  onToggleCollapse,
   zoomIn,
   zoomOut,
   setDebugElementData,
@@ -82,6 +85,22 @@ export function useContextMenus({
     };
   }, [cyRef, handleContextMenu]);
 
+  // Check if the target node has any incoming edges (children)
+  const isCollapsible = useCallback((target: NodeSingular | EdgeSingular) => {
+    if (target.data("isCollapsed")) {
+      return true;
+    }
+    if (target.isNode()) {
+      if (target.data("entity.type") === "Justification") {
+        // Don't allow collapsing counter justification intermediate nodes.
+        return false;
+      }
+      const incomers = target.incomers();
+      return incomers.length > 0;
+    }
+    return false;
+  }, []);
+
   const MenuComponent = (
     <Menu
       visible={menuVisible}
@@ -98,6 +117,16 @@ export function useContextMenus({
             setMenuVisible(false);
           }}
           title="Delete"
+        />
+      )}
+      {menuTarget?.isNode() && isCollapsible(menuTarget) && (
+        <Menu.Item
+          onPress={() => {
+            const entityId = menuTarget.data("entity.id") as string;
+            onToggleCollapse(entityId);
+            setMenuVisible(false);
+          }}
+          title={menuTarget.data("isCollapsed") ? "Expand" : "Collapse"}
         />
       )}
       {onAddNewProposition && (

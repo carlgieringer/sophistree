@@ -10,6 +10,7 @@ import {
   deleteEntity,
   resetSelection,
   selectEntities,
+  toggleCollapsed,
 } from "../store/entitiesSlice";
 import * as appLogger from "../logging/appLogging";
 import { useSelector } from "react-redux";
@@ -37,6 +38,7 @@ export default function ExtensionGraphView({
       onAddNewProposition={() => dispatch(addNewProposition())}
       onDeleteEntity={(id) => dispatch(deleteEntity(id))}
       onCompleteDrag={(ids) => dispatch(completeDrag(ids))}
+      onToggleCollapse={(id) => dispatch(toggleCollapsed(id))}
     />
   );
 }

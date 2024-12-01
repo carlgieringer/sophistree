@@ -4,12 +4,14 @@ import cytoscape, { NodeDataDefinition } from "cytoscape";
 import { useEffect, useMemo } from "react";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
+import { MediaExcerpt, preferredUrl } from "@sophistree/common";
+
 import { peterRiver } from "../colors";
 import { OnFocusMediaExcerpt } from "./PropositionAppearanceDialog";
-import { MediaExcerpt, preferredUrl } from "@sophistree/common";
 import { GraphViewLogger, PropositionNodeData } from "./graphTypes";
 import { nodeOutcomeClasses } from "./useOutcomes";
 import { getLayout } from "./layout";
+import { OnToggleCollapse } from "./collapsing";
 
 export function useReactNodes(
   cyRef: MutableRefObject<cytoscape.Core | undefined>,
@@ -17,6 +19,7 @@ export function useReactNodes(
     data: PropositionNodeData | undefined,
   ) => void,
   onFocusMediaExcerpt: OnFocusMediaExcerpt,
+  onToggleCollapse: OnToggleCollapse,
   logger: GraphViewLogger,
 ) {
   const reactNodesConfig = useMemo(
@@ -49,6 +52,17 @@ export function useReactNodes(
                 </span>
               ) : undefined}
               <p>{nodeData.entity.text}</p>
+              {nodeData.entity.isCollapsed && (
+                <span
+                  className="collapse-indicator"
+                  title={`${nodeData.collapsedChildCount} direct children and ${nodeData.collapsedDescendantCount} total descendants hidden`}
+                  onClick={() => onToggleCollapse(nodeData.entity.id)}
+                >
+                  <Icon name="chevron-down" />
+                  {nodeData.collapsedChildCount}/
+                  {nodeData.collapsedDescendantCount}
+                </span>
+              )}
             </>
           );
         },
@@ -58,6 +72,7 @@ export function useReactNodes(
           padding: "1em",
           borderRadius: "8px",
           fontFamily: "Roboto",
+          position: "relative",
         },
       },
       {
@@ -93,7 +108,11 @@ export function useReactNodes(
         },
       },
     ],
-    [setVisitAppearancesDialogProposition, onFocusMediaExcerpt],
+    [
+      setVisitAppearancesDialogProposition,
+      onFocusMediaExcerpt,
+      onToggleCollapse,
+    ],
   );
 
   useEffect(() => {
