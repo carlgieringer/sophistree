@@ -20,6 +20,9 @@ export default function WebGraphView({
   entities: Entity[];
 }) {
   const [selectedEntityIds, setSelectedEntityIds] = useState<string[]>([]);
+  const [collapsedEntityIds, setCollapsedEntityIds] = useState<Set<string>>(
+    new Set(),
+  );
 
   const handleSelectEntities = useCallback((entityIds: string[]) => {
     setSelectedEntityIds(entityIds);
@@ -33,20 +36,42 @@ export default function WebGraphView({
     window.open(mediaExcerpt.urlInfo.url, "_blank");
   }, []);
 
+  const handleToggleCollapse = useCallback((entityId: string) => {
+    setCollapsedEntityIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(entityId)) {
+        next.delete(entityId);
+      } else {
+        next.add(entityId);
+      }
+      return next;
+    });
+  }, []);
+
   const outcomes = useMemo(() => determineOutcomes(entities), [entities]);
+
+  const entitiesWithCollapse = useMemo(
+    () =>
+      entities.map((entity) => ({
+        ...entity,
+        isCollapsed: collapsedEntityIds.has(entity.id),
+      })),
+    [entities, collapsedEntityIds],
+  );
 
   return (
     <div style={{ width: "100%", height: "100vh" }}>
       <GraphView
         id={id}
         style={style}
-        entities={entities}
+        entities={entitiesWithCollapse}
         selectedEntityIds={selectedEntityIds}
         outcomes={outcomes}
         logger={logger}
         onSelectEntities={handleSelectEntities}
         onResetSelection={handleResetSelection}
         onFocusMediaExcerpt={handleFocusMediaExcerpt}
+        onToggleCollapse={handleToggleCollapse}
       />
     </div>
   );

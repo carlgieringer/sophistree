@@ -33,6 +33,7 @@ import { useLayoutOnceUponInitialLoad } from "./useLayoutOnceUponInitialLoad";
 import { stylesheet } from "./graphStyles";
 
 import "./GraphView.scss";
+import { OnToggleCollapse } from "./collapsing";
 
 cytoscape.use(elk);
 cytoscape.use(reactNodes);
@@ -50,6 +51,7 @@ interface GraphViewProps {
   onDeleteEntity?: OnDeleteEntity;
   onCompleteDrag?: OnCompleteDrag;
   onFocusMediaExcerpt: OnFocusMediaExcerpt;
+  onToggleCollapse: OnToggleCollapse;
 }
 
 export default function GraphView({
@@ -65,6 +67,7 @@ export default function GraphView({
   onDeleteEntity,
   onCompleteDrag,
   onFocusMediaExcerpt,
+  onToggleCollapse,
 }: GraphViewProps) {
   const { elements, focusedNodeIds } = useElements(
     entities,
@@ -77,7 +80,7 @@ export default function GraphView({
     correctInvalidNodes(cyRef.current, elements);
   }
 
-  useOutcomes(cyRef, outcomes);
+  useOutcomes(cyRef, elements, outcomes);
   useSelectedNodes(cyRef, selectedEntityIds);
   usePanToFocusedNodes(cyRef, focusedNodeIds);
 
@@ -94,6 +97,7 @@ export default function GraphView({
     cyRef,
     setVisitAppearancesDialogProposition,
     onFocusMediaExcerpt,
+    onToggleCollapse,
     logger,
   );
 
@@ -107,6 +111,7 @@ export default function GraphView({
     cyRef,
     onDeleteEntity,
     onAddNewProposition,
+    onToggleCollapse,
     zoomIn,
     zoomOut,
     setDebugElementData,

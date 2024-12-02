@@ -1,5 +1,8 @@
 # TODO
 
+- Critique maps? Or just critique sub-trees?
+- How to handle rephrasings?
+
 - Add 'creator' to maps
 - Move map card to shared.
 - Add nav menus etc.

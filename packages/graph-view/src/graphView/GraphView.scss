@@ -32,6 +32,25 @@ p {
   cursor: pointer;
 }
 
+.collapse-indicator {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  background-color: rgba(0, 0, 0, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+
+  i {
+    font-size: 1.2em;
+    opacity: 0.7;
+  }
+}
+
 $positive-color: color.scale(c.$nephritis, $lightness: 40%);
 $negative-color: color.scale(c.$pomegranate, $lightness: 60%);
 
