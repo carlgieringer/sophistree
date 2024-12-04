@@ -1,6 +1,6 @@
 import React, { CSSProperties } from "react";
 
-import { GraphView } from "@sophistree/graph-view";
+import { GraphView } from "@sophistree/ui-common";
 
 import { focusMediaExcerpt } from "./focusMediaExcerpt";
 import { useAppDispatch } from "../store";

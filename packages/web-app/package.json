@@ -24,7 +24,7 @@
     "@aws-sdk/client-ssm": "^3.693.0",
     "@prisma/client": "^5.0.0",
     "@reduxjs/toolkit": "^2.3.0",
-    "@sophistree/graph-view": "file:../graph-view",
+    "@sophistree/ui-common": "file:../ui-common",
     "deep-equal": "^2.2.3",
     "express": "^4.18.2",
     "next": "^14.0.0",

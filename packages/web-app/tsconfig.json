@@ -26,7 +26,7 @@
   "exclude": ["node_modules"],
   "references": [
     {
-      "path": "../graph-view/tsconfig.json"
+      "path": "../ui-common/tsconfig.json"
     }
   ]
 }

@@ -10,7 +10,7 @@
   "workspaces": [
     "packages/tapestry-highlights",
     "packages/common",
-    "packages/graph-view",
+    "packages/ui-common",
     "packages/web-app",
     "packages/browser-extension"
   ],
