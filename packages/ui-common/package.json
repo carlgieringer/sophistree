@@ -1,5 +1,5 @@
 {
-  "name": "@sophistree/graph-view",
+  "name": "@sophistree/ui-common",
   "version": "0.1.0",
   "private": true,
   "main": "src/index.ts",
@@ -25,7 +25,6 @@
     "react-cytoscapejs": "^2.0.0",
     "react-native-paper": "^5.11.1",
     "react-native-vector-icons": "^10.0.0",
-    "react-redux": "^8.1.3",
     "type-fest": "^4.6.0"
   },
   "devDependencies": {

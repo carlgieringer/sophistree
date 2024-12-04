@@ -8,7 +8,7 @@ const nextConfig = {
     "react-native-paper",
     "@react-native-community",
     "react-native",
-    "@sophistree/graph-view",
+    "@sophistree/ui-common",
     "@sophistree/common",
   ],
   webpack: (config) => {

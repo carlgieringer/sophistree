@@ -37,7 +37,7 @@
     "deep-equal": "^2.2.3",
     "esbuild-plugin-flow": "github:dalcib/esbuild-plugin-flow",
     "@sophistree/common": "file:../common",
-    "@sophistree/graph-view": "file:../graph-view",
+    "@sophistree/ui-common": "file:../ui-common",
     "immer": "^10.1.1",
     "lodash.merge": "^4.6.2",
     "react": "^18.3.1",
