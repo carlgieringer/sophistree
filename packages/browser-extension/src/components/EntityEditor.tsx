@@ -1,7 +1,7 @@
 import React from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { TextInput, Text } from "react-native-paper";
-import { View } from "react-native";
+import { TextInput, Text, Surface } from "react-native-paper";
+import { View, StyleSheet } from "react-native";
 
 import {
   Polarity,
@@ -19,7 +19,7 @@ import {
 import * as selectors from "../store/selectors";
 
 const EntityEditor: React.FC = () => {
-  const selectedEntities = useSelector(selectors.selectedEntities);
+  const selectedEntities = useSelector(selectors.selectedEntitiesForEdit);
   if (selectedEntities.length < 1) {
     return <Text>No entity selected</Text>;
   }
@@ -101,8 +101,36 @@ function MediaExcerptEditor({ entity }: { entity: MediaExcerpt }) {
           )
         }
       />
+      <Surface style={styles.quotationContainer}>
+        <Text style={styles.quotationLabel}>Quotation</Text>
+        <Text style={styles.quotationText}>{entity.quotation}</Text>
+      </Surface>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  quotationContainer: {
+    marginTop: 16,
+    marginBottom: 16,
+    padding: 16,
+    backgroundColor: "#f5f5f5",
+    borderRadius: 4,
+    borderLeftWidth: 4,
+    borderLeftColor: "#757575",
+  },
+  quotationLabel: {
+    fontSize: 12,
+    color: "#757575",
+    marginBottom: 8,
+  },
+  quotationText: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: "#424242",
+    userSelect: "text",
+    fontStyle: "italic",
+  },
+});
 
 export default EntityEditor;
