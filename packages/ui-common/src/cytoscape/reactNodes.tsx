@@ -5,6 +5,7 @@ import cytoscape, {
 } from "cytoscape";
 import ReactDOM from "react-dom/client";
 import throttle from "lodash.throttle";
+import debounce from "lodash.debounce";
 
 import { sunflower } from "../colors";
 
@@ -39,7 +40,7 @@ export interface ReactNodeOptions {
 
 const defaultOptions: Required<Pick<ReactNodesOptions, "layoutThrottleDelay">> =
   {
-    layoutThrottleDelay: 100,
+    layoutThrottleDelay: 500, // Increased from 100ms to 500ms
   };
 
 const defaultReactNodeOptions: ReactNodeOptions = {
@@ -170,9 +171,14 @@ function makeReactNode(
         Object.assign(htmlElement.style, options.unselectedStyle);
       }
     });
-    node.on("data", function renderReactNode() {
+
+    // Debounce the node data event handler to reduce Redux updates
+    const debouncedDataHandler = debounce(function renderReactNode() {
       renderJsxElement(reactRoot);
-    });
+    }, 150); // 150ms debounce delay for text input
+
+    node.on("data", debouncedDataHandler);
+
     if (options.syncClasses) {
       node.on("style", syncNodeClasses);
     }
