@@ -41,6 +41,11 @@ export const selectedEntities = createSelector(
   (entities, selectedIds) => entities.filter((e) => selectedIds.includes(e.id)),
 );
 
+export const selectedEntitiesForEdit = createSelector(
+  [selectedEntities],
+  (selectedEntities) => selectedEntities.filter((e) => e.type !== "Appearance"),
+);
+
 const selectAllMaps = (state: RootState) => state.entities.maps;
 
 export const allPropositions = createSelector([selectAllMaps], (allMaps) =>
