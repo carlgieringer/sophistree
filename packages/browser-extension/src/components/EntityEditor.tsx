@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { TextInput, Text, Surface } from "react-native-paper";
 import { View, StyleSheet } from "react-native";
@@ -58,12 +58,6 @@ function PropositionEditor({ entity }: { entity: Proposition }) {
     [dispatch, entity.id],
   );
 
-  useEffect(() => {
-    return () => {
-      debouncedDispatch.cancel();
-    };
-  }, [debouncedDispatch]);
-
   const handleTextChange = (newText: string) => {
     setText(newText);
     debouncedDispatch(newText);
@@ -118,12 +112,6 @@ function MediaExcerptEditor({ entity }: { entity: MediaExcerpt }) {
       }, 150),
     [dispatch, entity.id],
   );
-
-  useEffect(() => {
-    return () => {
-      debouncedDispatch.cancel();
-    };
-  }, [debouncedDispatch]);
 
   const handleTextChange = (newText: string) => {
     setText(newText);
