@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { TextInput, Text, Surface } from "react-native-paper";
 import { View, StyleSheet } from "react-native";
+import debounce from "lodash.debounce";
 
 import {
   Polarity,
@@ -47,15 +48,28 @@ function chooseEditor(entity: Entity) {
 
 function PropositionEditor({ entity }: { entity: Proposition }) {
   const dispatch = useDispatch();
+  const [text, setText] = useState(entity.text);
+
+  const debouncedDispatch = useMemo(
+    () =>
+      debounce((text: string) => {
+        dispatch(updateProposition({ id: entity.id, updates: { text } }));
+      }, 150),
+    [dispatch, entity.id],
+  );
+
+  const handleTextChange = (newText: string) => {
+    setText(newText);
+    debouncedDispatch(newText);
+  };
+
   return (
     <View>
       <TextInput
-        value={entity.text}
+        value={text}
         multiline={true}
         numberOfLines={1}
-        onChangeText={(text) =>
-          dispatch(updateProposition({ id: entity.id, updates: { text } }))
-        }
+        onChangeText={handleTextChange}
       />
     </View>
   );
@@ -84,22 +98,35 @@ function JustificationEditor({ entity }: { entity: Justification }) {
 
 function MediaExcerptEditor({ entity }: { entity: MediaExcerpt }) {
   const dispatch = useDispatch();
+  const [text, setText] = useState(entity.sourceInfo.name);
+
+  const debouncedDispatch = useMemo(
+    () =>
+      debounce((text: string) => {
+        dispatch(
+          updateMediaExerpt({
+            id: entity.id,
+            updates: { sourceInfo: { name: text } },
+          }),
+        );
+      }, 150),
+    [dispatch, entity.id],
+  );
+
+  const handleTextChange = (newText: string) => {
+    setText(newText);
+    debouncedDispatch(newText);
+  };
+
   return (
     <View>
       <TextInput
         label="Source Title"
         placeholder="“The Title” The Publication (2024-10-01)"
-        value={entity.sourceInfo.name}
+        value={text}
         multiline={true}
         numberOfLines={1}
-        onChangeText={(text) =>
-          dispatch(
-            updateMediaExerpt({
-              id: entity.id,
-              updates: { sourceInfo: { name: text } },
-            }),
-          )
-        }
+        onChangeText={handleTextChange}
       />
       <Surface style={styles.quotationContainer}>
         <Text style={styles.quotationLabel}>Quotation</Text>

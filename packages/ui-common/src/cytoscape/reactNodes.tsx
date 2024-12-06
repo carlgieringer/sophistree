@@ -5,6 +5,7 @@ import cytoscape, {
 } from "cytoscape";
 import ReactDOM from "react-dom/client";
 import throttle from "lodash.throttle";
+import debounce from "lodash.debounce";
 
 import { sunflower } from "../colors";
 
@@ -23,6 +24,8 @@ interface ReactNodesOptions {
   layoutOptions: LayoutOptions;
   // The delay before reactNodes applies a layout when one is necessary.
   layoutThrottleDelay?: number;
+  // The delay before rendering the JSX after the node data changes.
+  nodeDataRenderDelay?: number;
   logger: Logger;
 }
 
@@ -37,10 +40,14 @@ export interface ReactNodeOptions {
   unselectedStyle?: Partial<CSSStyleDeclaration>;
 }
 
-const defaultOptions: Required<Pick<ReactNodesOptions, "layoutThrottleDelay">> =
-  {
-    layoutThrottleDelay: 100,
-  };
+type PassthroughOptions = Pick<ReactNodesOptions, "nodeDataRenderDelay">;
+
+const defaultOptions: Required<
+  Pick<ReactNodesOptions, "layoutThrottleDelay" | "nodeDataRenderDelay">
+> = {
+  layoutThrottleDelay: 500,
+  nodeDataRenderDelay: 150,
+};
 
 const defaultReactNodeOptions: ReactNodeOptions = {
   query: "node", // selector for nodes to apply HTML to
@@ -65,8 +72,14 @@ function reactNodes(this: cytoscape.Core, options: ReactNodesOptions) {
     this.layout(options.layoutOptions).run();
   }, options.layoutThrottleDelay ?? defaultOptions.layoutThrottleDelay);
 
+  const { nodeDataRenderDelay } = options;
   options.nodes.forEach((nodeOptions) =>
-    makeReactNode(this, options.logger, nodeOptions, layout),
+    makeReactNode(
+      this,
+      options.logger,
+      { ...nodeOptions, nodeDataRenderDelay },
+      layout,
+    ),
   );
 
   applyWebkitLayoutWorkaround(this, options.layoutOptions);
@@ -111,7 +124,7 @@ function applyWebkitLayoutWorkaround(
 function makeReactNode(
   cy: cytoscape.Core,
   logger: Logger,
-  options: ReactNodeOptions,
+  options: ReactNodeOptions & PassthroughOptions,
   layout: () => void,
 ) {
   options = Object.assign({}, defaultReactNodeOptions, options);
@@ -170,9 +183,14 @@ function makeReactNode(
         Object.assign(htmlElement.style, options.unselectedStyle);
       }
     });
-    node.on("data", function renderReactNode() {
+
+    // Debounce the node data event handler to reduce Redux updates
+    const debouncedDataHandler = debounce(function renderReactNode() {
       renderJsxElement(reactRoot);
-    });
+    }, options.nodeDataRenderDelay);
+
+    node.on("data", debouncedDataHandler);
+
     if (options.syncClasses) {
       node.on("style", syncNodeClasses);
     }
