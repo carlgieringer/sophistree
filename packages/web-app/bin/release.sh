@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
+# Creates a Github release and deploys a version of the web app to the prod environment.
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'

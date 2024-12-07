@@ -134,15 +134,6 @@ sudo docker logs sophistree-web-app
 
 ### Docker Images and Deployment
 
-#### Building and Pushing Images
-
-To build and push Docker images:
-
-```bash
-# Build and push images using current package version
-npm run build-and-push
-```
-
 #### Deploying to Environments
 
 To deploy to dev environment (includes building and pushing images):
@@ -155,9 +146,8 @@ npm run deploy-dev
 To deploy to production:
 
 ```bash
-# Deploy to production with specific version
-npm run deploy-prod -- <version>
-# Example: npm run deploy-prod -- 0.1.2
+# Deploy to production with the current package version
+npm run deploy-prod -- $(npm run get-current-version)
 ```
 
 The production deployment will:

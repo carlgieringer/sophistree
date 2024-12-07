@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
+# Pulls and starts a version of the Docker containers on an environment of the web app.
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'

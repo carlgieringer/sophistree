@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
+# Builds and pushes a version of the Docker containers
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -20,16 +22,12 @@ success() {
     echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] SUCCESS:${NC} $1"
 }
 
-# Check if we're in the right directory
-if [[ ! -f "package.json" ]]; then
-    error "Please run this script from the packages/web-app directory"
+# Check if version argument is provided
+if [[ $# -ne 1 ]]; then
+    error "Usage: $0 <version>"
 fi
 
-# Get the current version from package.json
-VERSION=$(node -p "require('./package.json').version")
-if [[ -z "$VERSION" ]]; then
-    error "Could not determine version from package.json"
-fi
+VERSION=$1
 
 log "Starting build and push process for version ${VERSION}"
 
