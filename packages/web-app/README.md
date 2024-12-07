@@ -132,49 +132,40 @@ less /var/log/cloud-init-output.log
 sudo docker logs sophistree-web-app
 ```
 
-### Docker Images
+### Docker Images and Deployment
 
 #### Building and Pushing Images
 
-To build and push Docker images locally:
+To build and push Docker images:
 
-```shell
-cd packages/web-app/docker
-
-# Build base image
-docker build -t sophistree/web-app-base -f web-app-base.dockerfile ../../..
-
-# Build and push 'latest' tag
-docker compose build
-docker compose push
-
-# Build and push with specific version
-web_app_version=$(node -p "require('../package.json').version")
-docker build -t sophistree/web-app-base:$web_app_version -f web-app-base.dockerfile ../../..
-BASE_IMAGE_VERSION=$web_app_version WEB_APP_IMAGE_VERSION=$web_app_version CADDY_IMAGE_VERSION=$web_app_version\
- docker compose build
-BASE_IMAGE_VERSION=$web_app_version WEB_APP_IMAGE_VERSION=$web_app_version CADDY_IMAGE_VERSION=$web_app_version\
- docker compose push
+```bash
+# Build and push images using current package version
+npm run build-and-push
 ```
 
-#### Deploying to EC2
+#### Deploying to Environments
 
-To deploy the images on EC2:
+To deploy to dev environment (includes building and pushing images):
 
-```shell
-cd /web-app/
-# Pull and run with specific version
-sudo WEB_APP_IMAGE_VERSION=1.0.0 CADDY_IMAGE_VERSION=1.0.0\
- docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
-sudo WEB_APP_IMAGE_VERSION=1.0.0 CADDY_IMAGE_VERSION=1.0.0\
- docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-
-# Or use 'latest' tag (if VERSION not specified)
-sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
-sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml up --force-recreate -d
+```bash
+# Deploy to dev using current package version
+npm run deploy-dev
 ```
 
-Running commands on the containers:
+To deploy to production:
+
+```bash
+# Deploy to production with specific version
+npm run deploy-prod -- <version>
+# Example: npm run deploy-prod -- 0.1.2
+```
+
+The production deployment will:
+
+1. Create a GitHub release for the specified version
+2. Deploy the specified version to sophistree.app
+
+### Running commands on the containers:
 
 ```shell
 sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml run migrator npx prisma migrate reset
@@ -187,7 +178,7 @@ aws-vault exec <profile> -- aws s3 rm s3://sophistree-postgres-backups-dev --rec
 aws-vault exec <profile> -- aws s3 rb s3://sophistree-postgres-backups-dev
 ```
 
-### New SSH key:
+### New SSH key
 
 ```shell
 ssh-keygen -t ed25519 -m PEM -f ~/.ssh/sophistree-env

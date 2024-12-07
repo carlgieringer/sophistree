@@ -1,6 +1,6 @@
 {
   "name": "@sophistree/web-app",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "scripts": {
     "connect-db-local": "psql -h localhost -p 5432 -U sophistree -d sophistree",
@@ -18,7 +18,10 @@
     "test": "jest",
     "test-watch": "jest --watch",
     "test-debug": "node --inspect-brk ../../node_modules/jest/bin/jest.js --runInBand --watch",
-    "type-check": "npm run prisma:generate && tsc --noEmit"
+    "type-check": "npm run prisma:generate && tsc --noEmit",
+    "build-and-push": "./bin/build-and-push.sh",
+    "deploy-dev": "npm run build-and-push && ./bin/deploy.sh dev $(node -p \"require('./package.json').version\")",
+    "deploy-prod": "./bin/release.sh"
   },
   "dependencies": {
     "@aws-sdk/client-ssm": "^3.693.0",
