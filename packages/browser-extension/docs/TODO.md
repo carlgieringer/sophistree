@@ -1,5 +1,12 @@
 # TODO
 
+- Profile info in list
+- AI fact checking
+- Search (extension badge)
+- PropositionRelations (equivalent), alt-dragging popup
+- Grabbing a node
+- Critiques
+
 - Critique maps? Or just critique sub-trees?
 - How to handle rephrasings?
 
