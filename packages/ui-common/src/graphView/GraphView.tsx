@@ -1,5 +1,4 @@
 import cytoscape, { ElementDataDefinition } from "cytoscape";
-import elk from "cytoscape-elk";
 import { CSSProperties, useCallback, useEffect, useRef, useState } from "react";
 import CytoscapeComponent from "react-cytoscapejs";
 import { Portal } from "react-native-paper";
@@ -31,12 +30,14 @@ import {
 import { OnCompleteDrag, useDragHandlers } from "./useDragHandlers";
 import { useLayoutOnceUponInitialLoad } from "./useLayoutOnceUponInitialLoad";
 import { stylesheet } from "./graphStyles";
-
-import "./GraphView.scss";
 import { OnToggleCollapse } from "./collapsing";
 
-cytoscape.use(elk);
+import "./GraphView.scss";
+
+import sophistreeLayout from "./sophistreeLayout";
+
 cytoscape.use(reactNodes);
+cytoscape.use(sophistreeLayout);
 
 interface GraphViewProps {
   id?: string;
@@ -104,7 +105,8 @@ export default function GraphView({
   const { zoomIn, zoomOut } = useZoomEventHandlers(cyRef, logger);
 
   const layoutGraph = useCallback((fit = false) => {
-    cyRef.current?.layout(getLayout(fit)).run();
+    const layout = cyRef.current?.layout(getLayout(fit));
+    layout?.run();
   }, []);
 
   const contextMenu = useContextMenus({
