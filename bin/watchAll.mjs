@@ -6,6 +6,14 @@ const { result } = concurrently(
       name: "web-app",
     },
     {
+      command: "npm run build-watch --workspace packages/sync-service",
+      name: "sync-service-build",
+    },
+    {
+      command: "npm run start-watch --workspace packages/sync-service",
+      name: "sync-service-run",
+    },
+    {
       command: "npm run watch-all --workspace packages/browser-extension",
       name: "browser-extension",
     },

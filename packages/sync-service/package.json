@@ -1,0 +1,40 @@
+{
+  "name": "@sophistree/sync-service",
+  "version": "0.1.0",
+  "description": "Synchronizes clients for collab editing",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "node esbuild.config.mjs",
+    "build-watch": "node esbuild.config.mjs --watch",
+    "create-table": "node bin/create-table.js",
+    "dev": "concurrently \"npm run build:watch\" \"npm run start:watch\"",
+    "format-check": "prettier --check .",
+    "format-fix": "prettier --write .",
+    "lint": "eslint . --ext .ts",
+    "lint-fix": "eslint . --ext .ts --fix",
+    "start": "env-cmd -f .env -- node dist/index.js",
+    "start-watch": "env-cmd -f .env -- nodemon --watch dist dist/index.js",
+    "test": "echo No tests at the moment.",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@localfirst/auth-syncserver": "file:../../../local-first-auth/packages/auth-syncserver",
+    "automerge-repo-storage-postgres": "^0.0.1",
+    "dotenv": "^16.4.7",
+    "env-cmd": "^10.1.0",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.1.0",
+    "@typescript-eslint/parser": "^7.1.0",
+    "concurrently": "^9.1.2",
+    "esbuild": "^0.19.5",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "nodemon": "^3.1.9",
+    "prettier": "^3.2.5",
+    "typescript": "^5.3.3"
+  }
+}
