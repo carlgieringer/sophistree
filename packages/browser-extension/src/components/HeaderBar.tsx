@@ -16,7 +16,7 @@ import { useAppDispatch } from "../store";
 
 import * as colors from "../colors";
 import { deleteMap } from "../store/entitiesSlice";
-import { syncMap } from "../store/apiSlice";
+import { publishMap as publishMap } from "../store/apiSlice";
 import NewMapDialog from "./NewMapDialog";
 import ActivateMapDialog from "./ActivateMapDialog";
 import DownloadMapsDialog from "./DownloadMapsDialog";
@@ -96,26 +96,26 @@ function HeaderBar({ id }: { id?: string }) {
     />
   );
 
-  const syncMenuItem = (
+  const publishMenuItem = (
     <Menu.Item
-      title="Sync map"
-      key="sync-map"
+      title="Publish map"
+      key="publish-map"
       onPress={() => {
-        dispatch(syncMap())
+        dispatch(publishMap())
           .unwrap()
           .then(
             () => {
-              setSnackbarMessage("Successfully synced map");
+              setSnackbarMessage("Successfully published map");
               setSnackbarIcon("success");
               setSnackbarDuration(3_000);
               setSnackbarVisible(true);
             },
             (reason) => {
-              setSnackbarMessage("Failed to sync map");
+              setSnackbarMessage("Failed to publish map");
               setSnackbarIcon("failure");
               setSnackbarDuration(10_000);
               setSnackbarVisible(true);
-              appLogger.error("Failed to sync map", reason);
+              appLogger.error("Failed to publish map", reason);
             },
           );
         hideMenu();
@@ -137,11 +137,15 @@ function HeaderBar({ id }: { id?: string }) {
         }}
         disabled={!activeMapId}
       />,
+
       isAuthenticated ? (
-        syncMenuItem
+        publishMenuItem
       ) : (
-        <Tooltip title="You must be logged in to sync maps" key="sync-map">
-          {syncMenuItem}
+        <Tooltip
+          title="You must be logged in to publish maps"
+          key="publish-map"
+        >
+          {publishMenuItem}
         </Tooltip>
       ),
       <Menu.Item
