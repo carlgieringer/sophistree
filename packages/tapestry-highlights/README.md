@@ -218,6 +218,14 @@ Here are some key implementation details:
 
 ## Development
 
+### Setup
+
+Install Playwright:
+
+```shell
+npx playwright install
+```
+
 ### Running tests
 
 ```sh
