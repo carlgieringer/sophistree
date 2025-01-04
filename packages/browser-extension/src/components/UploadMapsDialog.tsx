@@ -5,8 +5,8 @@ import { useDispatch } from "react-redux";
 import { ArgumentMap } from "@sophistree/common";
 
 import { createMap } from "../store/entitiesSlice";
-import { sophistreeMapFileVersion } from "./DownloadMapsDialog";
 import { MapMigrationIndex, migrateMap } from "../store/migrations";
+import { sophistreeMapFileVersion } from "../download";
 
 type SophistreeMapFileContents = {
   sophistreeMapFileVersion: number;

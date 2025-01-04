@@ -1,5 +1,14 @@
 # TODO
 
+Automerge:
+
+- Ensure sync occurs between browser windows
+  - Ensure sync works after sync/unsync
+- Ensure sync occurs between browsers
+- Ensure sync is happening at sync-service
+- Deploy sync-service
+- Add option to configure sync service (update repo when changes.)
+
 - Profile info in list
 - AI fact checking
 - Search (extension badge)

@@ -83,6 +83,7 @@ export interface ConclusionInfo {
 
 export interface ArgumentMap {
   id: string;
+  automergeDocumentId: string;
   name: string;
   entities: Entity[];
   /** Conclusions summarize the main points of the argument */

@@ -10,11 +10,10 @@ import {
   Tooltip,
   Chip,
 } from "react-native-paper";
-import { useSelector } from "react-redux";
 
 import { ArgumentMap } from "@sophistree/common";
 
-import * as selectors from "../store/selectors";
+import { usePropositionTexts } from "../sync/hooks";
 
 const ArgumentMapView = ({
   map,
@@ -25,16 +24,12 @@ const ArgumentMapView = ({
   titleButton: ReactNode;
   isActive: boolean;
 }) => {
-  const allPropositions = useSelector(selectors.allPropositions);
+  const neededIds = useMemo(
+    () => Array.from(new Set(map.conclusions.flatMap((c) => c.propositionIds))),
+    [map.conclusions],
+  );
 
-  const propositionTextById = useMemo(() => {
-    const neededIds = new Set(map.conclusions.flatMap((c) => c.propositionIds));
-    return Object.fromEntries(
-      allPropositions
-        .filter((prop) => neededIds.has(prop.id))
-        .map((prop) => [prop.id, prop.text]),
-    );
-  }, [map.conclusions, allPropositions]);
+  const propositionTextById = usePropositionTexts(neededIds);
   return (
     <Card style={{ marginTop: 16 }}>
       <Card.Content>

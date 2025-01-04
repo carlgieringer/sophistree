@@ -15,13 +15,17 @@ import { useSelector } from "react-redux";
 import { useAppDispatch } from "../store";
 
 import * as colors from "../colors";
-import { deleteMap } from "../store/entitiesSlice";
+import {
+  deleteMap,
+  syncActiveMap,
+  unSyncActiveMap,
+  useActiveMapAutomergeDocumentId,
+} from "../store/entitiesSlice";
 import { publishMap as publishMap } from "../store/apiSlice";
 import NewMapDialog from "./NewMapDialog";
 import ActivateMapDialog from "./ActivateMapDialog";
 import DownloadMapsDialog from "./DownloadMapsDialog";
 import UploadMapsDialog from "./UploadMapsDialog";
-import * as selectors from "../store/selectors";
 import RenameMapDialog from "./RenameMapDialog";
 import ConfirmationDialog from "./ConfirmationDialog";
 import {
@@ -30,6 +34,9 @@ import {
   showNewMapDialog,
 } from "../store/uiSlice";
 import * as appLogger from "../logging/appLogging";
+import { isSynced } from "../sync";
+import { useActiveMapName } from "../sync/hooks";
+import { useIsAuthenticated } from "../store/authSlice";
 
 function HeaderBar({ id }: { id?: string }) {
   const dispatch = useAppDispatch();
@@ -50,9 +57,9 @@ function HeaderBar({ id }: { id?: string }) {
   const [isUploadMapsDialogVisible, setUploadMapsDialogVisible] =
     useState(false);
 
-  const activeMapId = useSelector(selectors.activeMapId);
-  const activeMapName = useSelector(selectors.activeMapName);
-  const isAuthenticated = useSelector(selectors.isAuthenticated);
+  const activeMapDocumentId = useActiveMapAutomergeDocumentId();
+  const activeMapName = useActiveMapName();
+  const isAuthenticated = useIsAuthenticated();
 
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
@@ -76,11 +83,11 @@ function HeaderBar({ id }: { id?: string }) {
   };
 
   function deleteActiveMap() {
-    if (!activeMapId) {
+    if (!activeMapDocumentId) {
       appLogger.warn("No active map to delete");
       return;
     }
-    dispatch(deleteMap(activeMapId));
+    dispatch(deleteMap(activeMapDocumentId));
   }
 
   const deleteDialog = (
@@ -121,7 +128,7 @@ function HeaderBar({ id }: { id?: string }) {
         hideMenu();
       }}
       leadingIcon="cloud-upload"
-      disabled={!activeMapId || !isAuthenticated}
+      disabled={!activeMapDocumentId || !isAuthenticated}
     />
   );
 
@@ -135,9 +142,29 @@ function HeaderBar({ id }: { id?: string }) {
           setRenameMapDialogVisible(true);
           hideMenu();
         }}
-        disabled={!activeMapId}
+        disabled={!activeMapDocumentId}
       />,
-
+      !activeMapDocumentId ? null : isSynced(activeMapDocumentId) ? (
+        <Menu.Item
+          title="Un-sync map"
+          leadingIcon="sync"
+          key="unsync-map"
+          onPress={() => {
+            dispatch(unSyncActiveMap());
+            hideMenu();
+          }}
+        />
+      ) : (
+        <Menu.Item
+          title="Sync map"
+          leadingIcon="sync"
+          key="sync-map"
+          onPress={() => {
+            dispatch(syncActiveMap());
+            hideMenu();
+          }}
+        />
+      ),
       isAuthenticated ? (
         publishMenuItem
       ) : (
@@ -156,7 +183,7 @@ function HeaderBar({ id }: { id?: string }) {
         }}
         leadingIcon="delete"
         title={`Delete ${activeMapName}`}
-        disabled={!activeMapId}
+        disabled={!activeMapDocumentId}
       />,
     ],
     [

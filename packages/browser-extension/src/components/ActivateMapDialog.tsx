@@ -1,11 +1,12 @@
 import React from "react";
 import { Button, Dialog } from "react-native-paper";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { ScrollView, StyleSheet } from "react-native";
 
-import { setActiveMap } from "../store/entitiesSlice";
-import * as selectors from "../store/selectors";
+import { setActiveMap, useActiveMapId } from "../store/entitiesSlice";
 import ArgumentMapView from "./ArgumentMapView";
+import { useAllMaps } from "../sync/hooks";
+import { DocumentId } from "@automerge/automerge-repo";
 
 export default function ActiveMapDialog({
   onDismiss,
@@ -16,8 +17,8 @@ export default function ActiveMapDialog({
 }) {
   const dispatch = useDispatch();
 
-  const activeMapId = useSelector(selectors.activeMapId);
-  const maps = useSelector(selectors.allMaps);
+  const activeMapId = useActiveMapId();
+  const maps = useAllMaps();
 
   function hideModal() {
     if (onDismiss) {
@@ -36,7 +37,7 @@ export default function ActiveMapDialog({
           !isActive && (
             <Button
               onPress={() => {
-                dispatch(setActiveMap(map.id));
+                dispatch(setActiveMap(map.id as DocumentId));
                 hideModal();
               }}
             >
