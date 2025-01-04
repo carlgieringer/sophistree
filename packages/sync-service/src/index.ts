@@ -1,5 +1,6 @@
-import { LocalFirstAuthSyncServer } from "@localfirst/auth-syncserver";
 import { PostgresStorageAdapter } from "automerge-repo-storage-postgres";
+
+import { SyncServer } from "./server.js";
 
 const tableName = process.env.ARGUMENT_MAPS_AUTOMERGE_STORAGE_TABLE_NAME;
 if (!tableName) {
@@ -9,7 +10,11 @@ if (!tableName) {
 }
 const host = "localhost";
 const port = 3030;
-const storageDir = "dist/localfirst-auth-syncserver-storage";
 const storage = new PostgresStorageAdapter(tableName);
-const syncServer = new LocalFirstAuthSyncServer(host);
-await syncServer.listen({ port, storageDir, storage });
+const peerId = "sophistree-sync-server";
+new SyncServer({
+  host,
+  port,
+  storage,
+  peerId,
+});

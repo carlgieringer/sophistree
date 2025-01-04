@@ -111,10 +111,8 @@ export function getDocHandle(id: DocumentId): DocHandle<ArgumentMap> {
     // localRepo.delete(id);
   }
   if (syncedHandle.docSync()) {
-    console.log(`Returning doc ${id} from synced`, syncedHandle.docSync());
     return syncedHandle;
   } else {
-    console.log(`Returning doc ${id} from local`, localHandle.docSync());
     return localHandle;
   }
 }
