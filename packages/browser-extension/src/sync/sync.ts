@@ -22,10 +22,10 @@ const localRepo = (() => {
   return new Repo({ network, storage });
 })();
 
-const syncedRepo = (() => {
-  const storage = new IndexedDBStorageAdapter("sophistree-synced");
+const remoteRepo = (() => {
+  const storage = new IndexedDBStorageAdapter("sophistree-remote");
   const network: NetworkAdapter[] = [
-    new BroadcastChannelNetworkAdapter({ channelName: "synced" }),
+    new BroadcastChannelNetworkAdapter({ channelName: "remote" }),
     new BrowserWebSocketClientAdapter("ws://localhost:3030"),
   ];
   return new Repo({ network, storage });
@@ -33,21 +33,21 @@ const syncedRepo = (() => {
 
 export function addDocChangeListener(callback: () => void) {
   localRepo.on("document", callback);
-  syncedRepo.on("document", callback);
+  remoteRepo.on("document", callback);
   localRepo.on("delete-document", callback);
-  syncedRepo.on("delete-document", callback);
+  remoteRepo.on("delete-document", callback);
 }
 
 export function removeDocChangeListener(callback: () => void) {
   localRepo.off("document", callback);
-  syncedRepo.off("document", callback);
+  remoteRepo.off("document", callback);
   localRepo.off("delete-document", callback);
-  syncedRepo.off("delete-document", callback);
+  remoteRepo.off("delete-document", callback);
 }
 
 export function getAllDocs(): Doc<ArgumentMap>[] {
   const allHandles = [
-    ...(Object.values(syncedRepo.handles) as DocHandle<ArgumentMap>[]),
+    ...(Object.values(remoteRepo.handles) as DocHandle<ArgumentMap>[]),
     ...(Object.values(localRepo.handles) as DocHandle<ArgumentMap>[]),
   ];
   return allHandles
@@ -69,22 +69,22 @@ export function createDoc(map: NewArgumentMap) {
 }
 
 export function openDoc(id: DocumentId): DocHandle<ArgumentMap> {
-  return syncedRepo.find(id);
+  return remoteRepo.find(id);
 }
 
 export function deleteDoc(id: DocumentId) {
   localRepo.delete(id);
-  syncedRepo.delete(id);
+  remoteRepo.delete(id);
 }
 
-export function isSynced(id: DocumentId) {
-  return !!syncedRepo.find(id).docSync();
+export function isRemote(id: DocumentId) {
+  return !!remoteRepo.find(id).docSync();
 }
 
-export function syncDoc(id: DocumentId) {
+export function syncDocRemotely(id: DocumentId) {
   const doc = localRepo.find<ArgumentMap>(id).docSync();
   if (doc) {
-    const handle = syncedRepo.create<ArgumentMap>(doc);
+    const handle = remoteRepo.create<ArgumentMap>(doc);
     const newId = handle.documentId;
     handle.change((map) => {
       map.automergeDocumentId = newId;
@@ -92,19 +92,19 @@ export function syncDoc(id: DocumentId) {
     localRepo.delete(id);
     return newId;
   } else {
-    return syncedRepo.find(id).documentId;
+    return remoteRepo.find(id).documentId;
   }
 }
 
-export function unSyncDoc(id: DocumentId) {
-  const doc = syncedRepo.find<ArgumentMap>(id).docSync();
+export function syncDocLocally(id: DocumentId) {
+  const doc = remoteRepo.find<ArgumentMap>(id).docSync();
   if (doc) {
     const handle = localRepo.create<ArgumentMap>(doc);
     const newId = handle.documentId;
     handle.change((map) => {
       map.automergeDocumentId = newId;
     });
-    syncedRepo.delete(id);
+    remoteRepo.delete(id);
     return newId;
   } else {
     return localRepo.find(id).documentId;
@@ -116,15 +116,15 @@ export function getDocHandle(id: DocumentId): DocHandle<ArgumentMap> {
     throw new Error(`Invalid document ID: ${id as string}`);
   }
   const localHandle = localRepo.find<ArgumentMap>(id);
-  const syncedHandle = syncedRepo.find<ArgumentMap>(id);
-  if (localHandle.docSync() && syncedHandle.docSync()) {
+  const remoteHandle = remoteRepo.find<ArgumentMap>(id);
+  if (localHandle.docSync() && remoteHandle.docSync()) {
     appLogger.error(
-      `Automerge doc ${id} exists in both local and synced repos. Deleting local doc.`,
+      `Automerge doc ${id} exists in both local and remote repos. Deleting local doc.`,
     );
     localRepo.delete(id);
   }
-  if (syncedHandle.docSync()) {
-    return syncedHandle;
+  if (remoteHandle.docSync()) {
+    return remoteHandle;
   } else {
     return localHandle;
   }

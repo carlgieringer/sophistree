@@ -25,8 +25,8 @@ import {
   getDocHandle,
   NewArgumentMap,
   openDoc,
-  syncDoc,
-  unSyncDoc,
+  syncDocRemotely,
+  syncDocLocally,
 } from "../sync";
 import { DocumentId } from "@automerge/automerge-repo";
 import { useSelector } from "react-redux";
@@ -43,7 +43,7 @@ interface DragPayload {
 const initialState = {
   activeMapId: undefined as string | undefined,
   activeMapAutomergeDocumentId: undefined as DocumentId | undefined,
-  activeMapAutomergeRepo: undefined as "local" | "synced" | undefined,
+  activeMapAutomergeRepo: undefined as "local" | "remote" | undefined,
   selectedEntityIds: [] as string[],
   isOpeningSyncedMap: false,
 };
@@ -96,7 +96,7 @@ export const entitiesSlice = createAppSlice({
         state.activeMapAutomergeRepo = undefined;
       }
     }),
-    syncActiveMap: create.reducer((state) => {
+    syncActiveMapRemotely: create.reducer((state) => {
       const documentId = state.activeMapAutomergeDocumentId;
       if (!documentId) {
         appLogger.error(
@@ -104,10 +104,10 @@ export const entitiesSlice = createAppSlice({
         );
         return;
       }
-      state.activeMapAutomergeDocumentId = syncDoc(documentId);
-      state.activeMapAutomergeRepo = "synced";
+      state.activeMapAutomergeDocumentId = syncDocRemotely(documentId);
+      state.activeMapAutomergeRepo = "remote";
     }),
-    unSyncActiveMap: create.reducer((state) => {
+    syncActiveMapLocally: create.reducer((state) => {
       const documentId = state.activeMapAutomergeDocumentId;
       if (!documentId) {
         appLogger.error(
@@ -115,7 +115,7 @@ export const entitiesSlice = createAppSlice({
         );
         return;
       }
-      state.activeMapAutomergeDocumentId = unSyncDoc(documentId);
+      state.activeMapAutomergeDocumentId = syncDocLocally(documentId);
       state.activeMapAutomergeRepo = "local";
     }),
     openSyncedMap: create.asyncThunk(
@@ -138,7 +138,7 @@ export const entitiesSlice = createAppSlice({
           state.activeMapId = map.id;
           state.activeMapAutomergeDocumentId =
             map.automergeDocumentId as DocumentId;
-          state.activeMapAutomergeRepo = "synced";
+          state.activeMapAutomergeRepo = "remote";
         },
         settled: (state) => {
           state.isOpeningSyncedMap = false;
@@ -1069,9 +1069,9 @@ export const {
   selectEntities,
   setActiveMap,
   showEntity,
-  syncActiveMap,
   toggleCollapsed,
-  unSyncActiveMap,
+  syncActiveMapLocally,
+  syncActiveMapRemotely,
   updateEntity,
   updateJustification,
   updateMediaExerpt,

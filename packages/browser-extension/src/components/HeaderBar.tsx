@@ -17,8 +17,8 @@ import { useAppDispatch } from "../store";
 import * as colors from "../colors";
 import {
   deleteMap,
-  syncActiveMap,
-  unSyncActiveMap,
+  syncActiveMapLocally,
+  syncActiveMapRemotely,
   useActiveMapAutomergeDocumentId,
 } from "../store/entitiesSlice";
 import { publishMap as publishMap } from "../store/apiSlice";
@@ -34,7 +34,7 @@ import {
   showNewMapDialog,
 } from "../store/uiSlice";
 import * as appLogger from "../logging/appLogging";
-import { isSynced } from "../sync";
+import { isRemote } from "../sync";
 import { useActiveMapName } from "../sync/hooks";
 import { useIsAuthenticated } from "../store/authSlice";
 
@@ -131,27 +131,25 @@ function HeaderBar({ id }: { id?: string }) {
       disabled={!activeMapDocumentId || !isAuthenticated}
     />
   );
-  const syncMenuItem = !activeMapDocumentId ? null : isSynced(
+  const syncMenuItem = !activeMapDocumentId ? null : isRemote(
       activeMapDocumentId,
     ) ? (
-    <Tooltip title="All maps sync for now." key="unsync-map">
-      <Menu.Item
-        title="Un-sync map"
-        leadingIcon="sync"
-        key="unsync-map"
-        onPress={() => {
-          dispatch(unSyncActiveMap());
-          hideMenu();
-        }}
-      />
-    </Tooltip>
+    <Menu.Item
+      title="Sync locally"
+      leadingIcon="sync"
+      key="sync-map-locally"
+      onPress={() => {
+        dispatch(syncActiveMapLocally());
+        hideMenu();
+      }}
+    />
   ) : (
     <Menu.Item
-      title="Sync map"
+      title="Sync remotely"
       leadingIcon="sync"
-      key="sync-map"
+      key="sync-map-remotely"
       onPress={() => {
-        dispatch(syncActiveMap());
+        dispatch(syncActiveMapRemotely());
         hideMenu();
       }}
     />

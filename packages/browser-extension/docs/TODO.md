@@ -3,6 +3,7 @@
 Automerge:
 
 Syncing:
+
 - Why does the local doc ID show up in synced?
 - Why can't the extension find the doc (using either local or synced doc ID)?
 
@@ -11,10 +12,10 @@ Syncing:
 - Something is put in sync service for local docs?
 
 - Ensure sync occurs between browser windows
-  - Ensure sync works after sync/unsync: no, ID is missing. Need to find from map ID.
+  - Ensure sync works after remote sync/unsync: no, ID is missing. Need to find from map ID.
 - Ensure sync occurs between browsers
 - Ensure sync is happening at sync-service
-- Possible change all docSync to async.
+- Possible: change all docSync to async.
 - (Move async thunks into slices)
 - Deploy sync-service
 - Add option to configure sync service (update repo when changes.)
