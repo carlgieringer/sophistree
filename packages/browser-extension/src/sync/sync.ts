@@ -2,6 +2,7 @@ import {
   Doc,
   DocHandle,
   DocumentId,
+  NetworkAdapter,
   Repo,
   isValidDocumentId,
 } from "@automerge/automerge-repo";
@@ -23,7 +24,7 @@ const localRepo = (() => {
 
 const syncedRepo = (() => {
   const storage = new IndexedDBStorageAdapter("sophistree-synced");
-  const network = [
+  const network: NetworkAdapter[] = [
     new BroadcastChannelNetworkAdapter({ channelName: "synced" }),
     new BrowserWebSocketClientAdapter("ws://localhost:3030"),
   ];
@@ -67,6 +68,10 @@ export function createDoc(map: NewArgumentMap) {
   return handle;
 }
 
+export function openDoc(id: DocumentId): DocHandle<ArgumentMap> {
+  return syncedRepo.find(id);
+}
+
 export function deleteDoc(id: DocumentId) {
   localRepo.delete(id);
   syncedRepo.delete(id);
@@ -77,9 +82,13 @@ export function isSynced(id: DocumentId) {
 }
 
 export function syncDoc(id: DocumentId) {
-  const doc = localRepo.find(id).docSync();
+  const doc = localRepo.find<ArgumentMap>(id).docSync();
   if (doc) {
-    const newId = syncedRepo.create(doc).documentId;
+    const handle = syncedRepo.create<ArgumentMap>(doc);
+    const newId = handle.documentId;
+    handle.change((map) => {
+      map.automergeDocumentId = newId;
+    });
     localRepo.delete(id);
     return newId;
   } else {
@@ -88,9 +97,13 @@ export function syncDoc(id: DocumentId) {
 }
 
 export function unSyncDoc(id: DocumentId) {
-  const doc = syncedRepo.find(id).docSync();
+  const doc = syncedRepo.find<ArgumentMap>(id).docSync();
   if (doc) {
-    const newId = localRepo.create(doc).documentId;
+    const handle = localRepo.create<ArgumentMap>(doc);
+    const newId = handle.documentId;
+    handle.change((map) => {
+      map.automergeDocumentId = newId;
+    });
     syncedRepo.delete(id);
     return newId;
   } else {
@@ -106,9 +119,9 @@ export function getDocHandle(id: DocumentId): DocHandle<ArgumentMap> {
   const syncedHandle = syncedRepo.find<ArgumentMap>(id);
   if (localHandle.docSync() && syncedHandle.docSync()) {
     appLogger.error(
-      `Automerge doc ${id} exists in both local and synced repos.`,
+      `Automerge doc ${id} exists in both local and synced repos. Deleting local doc.`,
     );
-    // localRepo.delete(id);
+    localRepo.delete(id);
   }
   if (syncedHandle.docSync()) {
     return syncedHandle;

@@ -131,6 +131,31 @@ function HeaderBar({ id }: { id?: string }) {
       disabled={!activeMapDocumentId || !isAuthenticated}
     />
   );
+  const syncMenuItem = !activeMapDocumentId ? null : isSynced(
+      activeMapDocumentId,
+    ) ? (
+    <Tooltip title="All maps sync for now." key="unsync-map">
+      <Menu.Item
+        title="Un-sync map"
+        leadingIcon="sync"
+        key="unsync-map"
+        onPress={() => {
+          dispatch(unSyncActiveMap());
+          hideMenu();
+        }}
+      />
+    </Tooltip>
+  ) : (
+    <Menu.Item
+      title="Sync map"
+      leadingIcon="sync"
+      key="sync-map"
+      onPress={() => {
+        dispatch(syncActiveMap());
+        hideMenu();
+      }}
+    />
+  );
 
   const menuItemGroups = [
     [
@@ -144,23 +169,31 @@ function HeaderBar({ id }: { id?: string }) {
         }}
         disabled={!activeMapDocumentId}
       />,
-      !activeMapDocumentId ? null : isSynced(activeMapDocumentId) ? (
+      syncMenuItem,
+      activeMapDocumentId && (
         <Menu.Item
-          title="Un-sync map"
-          leadingIcon="sync"
-          key="unsync-map"
+          title="Copy document ID"
+          leadingIcon="content-copy"
+          key="copy-id"
           onPress={() => {
-            dispatch(unSyncActiveMap());
-            hideMenu();
-          }}
-        />
-      ) : (
-        <Menu.Item
-          title="Sync map"
-          leadingIcon="sync"
-          key="sync-map"
-          onPress={() => {
-            dispatch(syncActiveMap());
+            void navigator.clipboard.writeText(activeMapDocumentId).then(
+              () => {
+                setSnackbarMessage("Document ID copied to clipboard");
+                setSnackbarIcon("success");
+                setSnackbarDuration(3000);
+                setSnackbarVisible(true);
+              },
+              (reason) => {
+                setSnackbarMessage("Failed to copy to clipboard");
+                setSnackbarIcon("failure");
+                setSnackbarDuration(10_000);
+                setSnackbarVisible(true);
+                appLogger.error(
+                  "Failed to copy document ID to clipboard",
+                  reason,
+                );
+              },
+            );
             hideMenu();
           }}
         />

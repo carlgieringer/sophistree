@@ -1,4 +1,3 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { v4 as uuidv4 } from "uuid";
 import deepEqual from "deep-equal";
 import { deleteAt, insertAt } from "@automerge/automerge/next";
@@ -25,11 +24,13 @@ import {
   deleteDoc,
   getDocHandle,
   NewArgumentMap,
+  openDoc,
   syncDoc,
   unSyncDoc,
 } from "../sync";
 import { DocumentId } from "@automerge/automerge-repo";
 import { useSelector } from "react-redux";
+import { createAppSlice } from "./createAppSlice";
 
 export const defaultVisibilityProps = { autoVisibility: "Visible" as const };
 
@@ -44,6 +45,7 @@ const initialState = {
   activeMapAutomergeDocumentId: undefined as DocumentId | undefined,
   activeMapAutomergeRepo: undefined as "local" | "synced" | undefined,
   selectedEntityIds: [] as string[],
+  isOpeningSyncedMap: false,
 };
 
 type State = typeof initialState;
@@ -60,7 +62,7 @@ export interface AddMediaExcerptData {
   domAnchor: DomAnchor;
 }
 
-export const entitiesSlice = createSlice({
+export const entitiesSlice = createAppSlice({
   name: "entities",
   initialState,
   selectors: {
@@ -68,9 +70,10 @@ export const entitiesSlice = createSlice({
     activeMapAutomergeDocumentId: (state) => state.activeMapAutomergeDocumentId,
     activeMapAutomergeRepo: (state) => state.activeMapAutomergeRepo,
     selectedEntityIds: (state) => state.selectedEntityIds,
+    isOpeningSyncedMap: (state) => state.isOpeningSyncedMap,
   },
-  reducers: {
-    createMap(state, action: PayloadAction<Partial<ArgumentMap>>) {
+  reducers: (create) => ({
+    createMap: create.reducer<Partial<ArgumentMap>>((state, action) => {
       const newMap: NewArgumentMap = {
         name: "New map",
         entities: [],
@@ -84,16 +87,16 @@ export const entitiesSlice = createSlice({
       state.activeMapId = newMap.id;
       state.activeMapAutomergeDocumentId = handle.documentId;
       state.activeMapAutomergeRepo = "local";
-    },
-    deleteMap(state, action: PayloadAction<DocumentId>) {
+    }),
+    deleteMap: create.reducer<DocumentId>((state, action) => {
       deleteDoc(action.payload);
       if (state.activeMapAutomergeDocumentId === action.payload) {
         state.activeMapId = undefined;
         state.activeMapAutomergeDocumentId = undefined;
         state.activeMapAutomergeRepo = undefined;
       }
-    },
-    syncActiveMap(state) {
+    }),
+    syncActiveMap: create.reducer((state) => {
       const documentId = state.activeMapAutomergeDocumentId;
       if (!documentId) {
         appLogger.error(
@@ -102,8 +105,9 @@ export const entitiesSlice = createSlice({
         return;
       }
       state.activeMapAutomergeDocumentId = syncDoc(documentId);
-    },
-    unSyncActiveMap(state) {
+      state.activeMapAutomergeRepo = "synced";
+    }),
+    unSyncActiveMap: create.reducer((state) => {
       const documentId = state.activeMapAutomergeDocumentId;
       if (!documentId) {
         appLogger.error(
@@ -112,11 +116,39 @@ export const entitiesSlice = createSlice({
         return;
       }
       state.activeMapAutomergeDocumentId = unSyncDoc(documentId);
-    },
-    setActiveMap(state, action: PayloadAction<DocumentId | undefined>) {
+      state.activeMapAutomergeRepo = "local";
+    }),
+    openSyncedMap: create.asyncThunk(
+      async (documentId: DocumentId, thunkAPI) => {
+        const handle = openDoc(documentId);
+        const map = await handle.doc();
+        if (!map) {
+          return thunkAPI.rejectWithValue(
+            `Failed to open synced map ${documentId}`,
+          );
+        }
+        return map;
+      },
+      {
+        pending: (state) => {
+          state.isOpeningSyncedMap = true;
+        },
+        fulfilled: (state, action) => {
+          const map = action.payload;
+          state.activeMapId = map.id;
+          state.activeMapAutomergeDocumentId =
+            map.automergeDocumentId as DocumentId;
+          state.activeMapAutomergeRepo = "synced";
+        },
+        settled: (state) => {
+          state.isOpeningSyncedMap = false;
+        },
+      },
+    ),
+    setActiveMap: create.reducer<DocumentId | undefined>((state, action) => {
       state.activeMapId = action.payload;
-    },
-    renameActiveMap(state, action: PayloadAction<string>) {
+    }),
+    renameActiveMap: create.reducer<string>((state, action) => {
       const documentId = state.activeMapAutomergeDocumentId;
       if (!documentId) {
         appLogger.error(
@@ -126,8 +158,8 @@ export const entitiesSlice = createSlice({
       }
       const handle = getDocHandle(documentId);
       handle.change((doc) => (doc.name = action.payload));
-    },
-    addNewProposition(state) {
+    }),
+    addNewProposition: create.reducer((state) => {
       const documentId = state.activeMapAutomergeDocumentId;
       if (!documentId) {
         appLogger.error(
@@ -155,8 +187,8 @@ export const entitiesSlice = createSlice({
         doc.entities.push(proposition);
         updateConclusions(doc);
       });
-    },
-    addMediaExcerpt(state, action: PayloadAction<AddMediaExcerptData>) {
+    }),
+    addMediaExcerpt: create.reducer<AddMediaExcerptData>((state, action) => {
       const documentId = state.activeMapAutomergeDocumentId;
       if (!documentId) {
         appLogger.error(
@@ -213,14 +245,11 @@ export const entitiesSlice = createSlice({
         domAnchor,
       };
       handle.change((map) => map.entities.push(mediaExcerpt));
-    },
-    updateEntity(
-      state,
-      action: PayloadAction<{
-        id: string;
-        updates: Partial<Omit<Entity, "type">>;
-      }>,
-    ) {
+    }),
+    updateEntity: create.reducer<{
+      id: string;
+      updates: Partial<Omit<Entity, "type">>;
+    }>((state, action) => {
       const documentId = state.activeMapAutomergeDocumentId;
       if (!documentId) {
         appLogger.error(
@@ -249,14 +278,11 @@ export const entitiesSlice = createSlice({
         Object.assign(map.entities[index], action.payload.updates);
         updateConclusions(map);
       });
-    },
-    updateProposition(
-      state,
-      action: PayloadAction<{
-        id: string;
-        updates: Partial<Omit<Proposition, "type">>;
-      }>,
-    ) {
+    }),
+    updateProposition: create.reducer<{
+      id: string;
+      updates: Partial<Omit<Proposition, "type">>;
+    }>((state, action) => {
       const documentId = state.activeMapAutomergeDocumentId;
       if (!documentId) {
         appLogger.error(
@@ -286,14 +312,11 @@ export const entitiesSlice = createSlice({
         Object.assign(map.entities[index], action.payload.updates);
         updateConclusions(map);
       });
-    },
-    updateMediaExerpt(
-      state,
-      action: PayloadAction<{
-        id: string;
-        updates: Partial<Omit<MediaExcerpt, "type">>;
-      }>,
-    ) {
+    }),
+    updateMediaExerpt: create.reducer<{
+      id: string;
+      updates: Partial<Omit<MediaExcerpt, "type">>;
+    }>((state, action) => {
       const documentId = state.activeMapAutomergeDocumentId;
       if (!documentId) {
         appLogger.error(
@@ -336,14 +359,11 @@ export const entitiesSlice = createSlice({
 
         Object.assign(mediaExcerpt, updates);
       });
-    },
-    updateJustification(
-      state,
-      action: PayloadAction<{
-        id: string;
-        updates: Partial<Omit<Justification, "type">>;
-      }>,
-    ) {
+    }),
+    updateJustification: create.reducer<{
+      id: string;
+      updates: Partial<Omit<Justification, "type">>;
+    }>((state, action) => {
       const documentId = state.activeMapAutomergeDocumentId;
       if (!documentId) {
         appLogger.error(
@@ -372,8 +392,8 @@ export const entitiesSlice = createSlice({
       handle.change((map) => {
         Object.assign(map.entities[index], action.payload.updates);
       });
-    },
-    completeDrag(state, action: PayloadAction<DragPayload>) {
+    }),
+    completeDrag: create.reducer<DragPayload>((state, action) => {
       const documentId = state.activeMapAutomergeDocumentId;
       if (!documentId) {
         appLogger.error(
@@ -406,8 +426,8 @@ export const entitiesSlice = createSlice({
         applyDragOperation(map, source, target, actionPolarity);
         updateConclusions(map);
       });
-    },
-    selectEntities(state, action: PayloadAction<string[]>) {
+    }),
+    selectEntities: create.reducer<string[]>((state, action) => {
       const documentId = state.activeMapAutomergeDocumentId;
       if (!documentId) {
         appLogger.error(
@@ -435,11 +455,11 @@ export const entitiesSlice = createSlice({
         ...selectedEntityIds,
         ...appearances.map((a) => a.id),
       ];
-    },
-    resetSelection(state) {
+    }),
+    resetSelection: create.reducer((state) => {
       state.selectedEntityIds = emptySelection;
-    },
-    deleteEntity(state, action: PayloadAction<string>) {
+    }),
+    deleteEntity: create.reducer<string>((state, action) => {
       const documentId = state.activeMapAutomergeDocumentId;
       if (!documentId) {
         appLogger.error(
@@ -464,17 +484,17 @@ export const entitiesSlice = createSlice({
           updateMediaExcerptAutoVisibility(map, entity.mediaExcerptId);
         }
       });
-    },
-    showEntity(state, action: PayloadAction<string>) {
+    }),
+    showEntity: create.reducer<string>((state, action) => {
       updateEntityVisibility(state, action.payload, "Visible");
-    },
-    hideEntity(state, action: PayloadAction<string>) {
+    }),
+    hideEntity: create.reducer<string>((state, action) => {
       updateEntityVisibility(state, action.payload, "Hidden");
-    },
-    automateEntityVisibility(state, action: PayloadAction<string>) {
+    }),
+    automateEntityVisibility: create.reducer<string>((state, action) => {
       updateEntityVisibility(state, action.payload, undefined);
-    },
-    toggleCollapsed(state, action: PayloadAction<string>) {
+    }),
+    toggleCollapsed: create.reducer<string>((state, action) => {
       const documentId = state.activeMapAutomergeDocumentId;
       if (!documentId) {
         appLogger.error(
@@ -493,8 +513,8 @@ export const entitiesSlice = createSlice({
         }
         entity.isCollapsed = !entity.isCollapsed;
       });
-    },
-  },
+    }),
+  }),
 });
 
 function getSourceNameOverride(
@@ -1043,6 +1063,7 @@ export const {
   deleteEntity,
   deleteMap,
   hideEntity,
+  openSyncedMap,
   renameActiveMap,
   resetSelection,
   selectEntities,
@@ -1067,6 +1088,10 @@ export function useActiveMapAutomergeDocumentId() {
 
 export function useSelectedEntityIds() {
   return useSelector(entitiesSlice.selectors.selectedEntityIds);
+}
+
+export function useIsOpeningSyncedMap() {
+  return useSelector(entitiesSlice.selectors.isOpeningSyncedMap);
 }
 
 export default entitiesSlice.reducer;
