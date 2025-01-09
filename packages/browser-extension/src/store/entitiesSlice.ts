@@ -25,8 +25,7 @@ import {
   getDocHandle,
   NewArgumentMap,
   openDoc,
-  syncDocRemotely,
-  syncDocLocally,
+  setDocSyncServerAddresses,
 } from "../sync";
 import { DocumentId } from "@automerge/automerge-repo";
 import { useSelector } from "react-redux";
@@ -43,7 +42,6 @@ interface DragPayload {
 const initialState = {
   activeMapId: undefined as string | undefined,
   activeMapAutomergeDocumentId: undefined as DocumentId | undefined,
-  activeMapAutomergeRepo: undefined as "local" | "remote" | undefined,
   selectedEntityIds: [] as string[],
   isOpeningSyncedMap: false,
 };
@@ -68,7 +66,6 @@ export const entitiesSlice = createAppSlice({
   selectors: {
     activeMapId: (state) => state.activeMapId,
     activeMapAutomergeDocumentId: (state) => state.activeMapAutomergeDocumentId,
-    activeMapAutomergeRepo: (state) => state.activeMapAutomergeRepo,
     selectedEntityIds: (state) => state.selectedEntityIds,
     isOpeningSyncedMap: (state) => state.isOpeningSyncedMap,
   },
@@ -86,17 +83,15 @@ export const entitiesSlice = createAppSlice({
       const handle = createDoc(newMap);
       state.activeMapId = newMap.id;
       state.activeMapAutomergeDocumentId = handle.documentId;
-      state.activeMapAutomergeRepo = "local";
     }),
     deleteMap: create.reducer<DocumentId>((state, action) => {
       deleteDoc(action.payload);
       if (state.activeMapAutomergeDocumentId === action.payload) {
         state.activeMapId = undefined;
         state.activeMapAutomergeDocumentId = undefined;
-        state.activeMapAutomergeRepo = undefined;
       }
     }),
-    syncActiveMapRemotely: create.reducer((state) => {
+    syncActiveMapRemotely: create.reducer<string[]>((state, action) => {
       const documentId = state.activeMapAutomergeDocumentId;
       if (!documentId) {
         appLogger.error(
@@ -104,8 +99,17 @@ export const entitiesSlice = createAppSlice({
         );
         return;
       }
-      state.activeMapAutomergeDocumentId = syncDocRemotely(documentId);
-      state.activeMapAutomergeRepo = "remote";
+      const addresses = action.payload;
+      if (!addresses?.length) {
+        appLogger.error(
+          "Cannot sync active map because no sync server addresses provided.",
+        );
+        return;
+      }
+      state.activeMapAutomergeDocumentId = setDocSyncServerAddresses(
+        documentId,
+        addresses
+      );
     }),
     syncActiveMapLocally: create.reducer((state) => {
       const documentId = state.activeMapAutomergeDocumentId;
@@ -115,12 +119,20 @@ export const entitiesSlice = createAppSlice({
         );
         return;
       }
-      state.activeMapAutomergeDocumentId = syncDocLocally(documentId);
-      state.activeMapAutomergeRepo = "local";
+      state.activeMapAutomergeDocumentId = setDocSyncServerAddresses(
+        documentId,
+        [],
+      );
     }),
     openSyncedMap: create.asyncThunk(
-      async (documentId: DocumentId, thunkAPI) => {
-        const handle = openDoc(documentId);
+      async (
+        {
+          documentId,
+          syncServerAddresses,
+        }: { documentId: DocumentId; syncServerAddresses: string[] },
+        thunkAPI,
+      ) => {
+        const handle = openDoc(documentId, syncServerAddresses);
         const map = await handle.doc();
         if (!map) {
           return thunkAPI.rejectWithValue(
@@ -138,7 +150,6 @@ export const entitiesSlice = createAppSlice({
           state.activeMapId = map.id;
           state.activeMapAutomergeDocumentId =
             map.automergeDocumentId as DocumentId;
-          state.activeMapAutomergeRepo = "remote";
         },
         settled: (state) => {
           state.isOpeningSyncedMap = false;

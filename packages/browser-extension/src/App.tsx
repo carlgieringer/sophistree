@@ -8,7 +8,6 @@ import {
   BasisOutcome,
 } from "@sophistree/common";
 
-import "./App.scss";
 import EntityEditor from "./components/EntityEditor";
 import HeaderBar from "./components/HeaderBar";
 import { ChromeRuntimeMessage, sidepanelKeepalivePortName } from "./content";
@@ -50,7 +49,7 @@ const App: React.FC = () => {
   useRefreshAuth();
   useSyncApiConfig();
 
-  // Load initial API config
+  // Load initial configs
   useEffect(() => {
     void dispatch(loadApiEndpointOverride());
   }, [dispatch]);

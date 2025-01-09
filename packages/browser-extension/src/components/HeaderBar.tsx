@@ -34,9 +34,10 @@ import {
   showNewMapDialog,
 } from "../store/uiSlice";
 import * as appLogger from "../logging/appLogging";
-import { isRemote } from "../sync";
 import { useActiveMapName } from "../sync/hooks";
 import { useIsAuthenticated } from "../store/authSlice";
+import { isRemote } from "../sync";
+import { useDefaultSyncServerAddresses } from "../sync/defaultSyncServerAddresses";
 
 function HeaderBar({ id }: { id?: string }) {
   const dispatch = useAppDispatch();
@@ -60,6 +61,8 @@ function HeaderBar({ id }: { id?: string }) {
   const activeMapDocumentId = useActiveMapAutomergeDocumentId();
   const activeMapName = useActiveMapName();
   const isAuthenticated = useIsAuthenticated();
+  const { addresses: defaultSyncServerAddresses } =
+    useDefaultSyncServerAddresses();
 
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
@@ -149,7 +152,15 @@ function HeaderBar({ id }: { id?: string }) {
       leadingIcon="sync"
       key="sync-map-remotely"
       onPress={() => {
-        dispatch(syncActiveMapRemotely());
+        if (!defaultSyncServerAddresses.length) {
+          setSnackbarMessage("No sync server addresses configured");
+          setSnackbarIcon("failure");
+          setSnackbarDuration(10_000);
+          setSnackbarVisible(true);
+          hideMenu();
+          return;
+        }
+        dispatch(syncActiveMapRemotely(defaultSyncServerAddresses));
         hideMenu();
       }}
     />
@@ -168,7 +179,7 @@ function HeaderBar({ id }: { id?: string }) {
         disabled={!activeMapDocumentId}
       />,
       syncMenuItem,
-      activeMapDocumentId && (
+      activeMapDocumentId && isRemote(activeMapDocumentId) && (
         <Menu.Item
           title="Copy document ID"
           leadingIcon="content-copy"

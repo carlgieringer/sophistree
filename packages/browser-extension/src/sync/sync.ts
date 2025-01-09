@@ -2,7 +2,6 @@ import {
   Doc,
   DocHandle,
   DocumentId,
-  NetworkAdapter,
   Repo,
   isValidDocumentId,
 } from "@automerge/automerge-repo";
@@ -11,45 +10,79 @@ import { BroadcastChannelNetworkAdapter } from "@automerge/automerge-repo-networ
 import { BrowserWebSocketClientAdapter } from "@automerge/automerge-repo-network-websocket";
 
 import { ArgumentMap } from "@sophistree/common";
+import {
+  getDefaultSyncServerAddresses,
+  addListener,
+} from "./defaultSyncServerAddresses";
 
-import * as appLogger from "../logging/appLogging";
+const storage = new IndexedDBStorageAdapter("sophistree");
+const storageOnlyRepo = new Repo({ storage });
+const reposBySyncServers = new Map<string, Repo>();
+const activeDocChangeCallbacks = new Set<() => void>();
 
-const localRepo = (() => {
-  const storage = new IndexedDBStorageAdapter("sophistree-local");
-  const network = [
-    new BroadcastChannelNetworkAdapter({ channelName: "local" }),
-  ];
-  return new Repo({ network, storage });
+// Initialize with addresses from storage
+let defaultRepo: Repo;
+let defaultSyncServerAddresses: string[] = [];
+
+// Initialize the default repo
+void (async function initializeDefaultRepo() {
+  try {
+    defaultSyncServerAddresses = await getDefaultSyncServerAddresses();
+    defaultRepo = makeRepo(defaultSyncServerAddresses);
+    reposBySyncServers.set(makeKey(defaultSyncServerAddresses), defaultRepo);
+  } catch (error) {
+    console.error("Failed to initialize default repo:", error);
+    // Use empty array as fallback
+    defaultSyncServerAddresses = [];
+    defaultRepo = makeRepo([]);
+    reposBySyncServers.set(makeKey([]), defaultRepo);
+  }
 })();
 
-const remoteRepo = (() => {
-  const storage = new IndexedDBStorageAdapter("sophistree-remote");
-  const network: NetworkAdapter[] = [
-    new BroadcastChannelNetworkAdapter({ channelName: "remote" }),
-    new BrowserWebSocketClientAdapter("ws://localhost:3030"),
-  ];
-  return new Repo({ network, storage });
-})();
+addListener(updateDefaultSyncServerAddresses);
 
-export function addDocChangeListener(callback: () => void) {
-  localRepo.on("document", callback);
-  remoteRepo.on("document", callback);
-  localRepo.on("delete-document", callback);
-  remoteRepo.on("delete-document", callback);
+// Export function to update default repo when addresses change
+export function updateDefaultSyncServerAddresses(addresses: string[]) {
+  defaultSyncServerAddresses = addresses;
+  defaultRepo = makeRepo(addresses);
+  reposBySyncServers.set(makeKey(addresses), defaultRepo);
 }
 
-export function removeDocChangeListener(callback: () => void) {
-  localRepo.off("document", callback);
-  remoteRepo.off("document", callback);
-  localRepo.off("delete-document", callback);
-  remoteRepo.off("delete-document", callback);
+function makeRepo(syncServerAddresses: string[]) {
+  if (syncServerAddresses.length === 0) {
+    return new Repo({
+      network: [new BroadcastChannelNetworkAdapter()],
+      storage,
+    });
+  }
+  const network = syncServerAddresses.map(
+    (a) => new BrowserWebSocketClientAdapter(a),
+  );
+  return new Repo({
+    network,
+    storage,
+  });
+}
+
+function getRepo(syncServerAddresses: string[]) {
+  const key = makeKey(syncServerAddresses);
+  let repo = reposBySyncServers.get(key);
+  if (!repo) {
+    repo = makeRepo(syncServerAddresses);
+    reposBySyncServers.set(key, repo);
+    applyCallbacksToRepo(repo);
+  }
+  return repo;
+}
+
+function makeKey(strings: string[]): string {
+  return strings.join("|");
 }
 
 export function getAllDocs(): Doc<ArgumentMap>[] {
-  const allHandles = [
-    ...(Object.values(remoteRepo.handles) as DocHandle<ArgumentMap>[]),
-    ...(Object.values(localRepo.handles) as DocHandle<ArgumentMap>[]),
-  ];
+  const allHandles = Object.values(
+    storageOnlyRepo.handles,
+  ) as DocHandle<ArgumentMap>[];
   return allHandles
     .map((h) => h.docSync())
     .filter(Boolean) as Doc<ArgumentMap>[];
@@ -61,75 +94,119 @@ export interface NewArgumentMap
 }
 
 export function createDoc(map: NewArgumentMap) {
-  const handle = localRepo.create(map);
+  const handle = defaultRepo.create(map);
   handle.change((map) => {
     map.automergeDocumentId = handle.documentId;
   });
   return handle;
 }
 
-export function openDoc(id: DocumentId): DocHandle<ArgumentMap> {
-  return remoteRepo.find(id);
-}
-
-export function deleteDoc(id: DocumentId) {
-  localRepo.delete(id);
-  remoteRepo.delete(id);
-}
-
-export function isRemote(id: DocumentId) {
-  return !!remoteRepo.find(id).docSync();
-}
-
-export function syncDocRemotely(id: DocumentId) {
-  const doc = localRepo.find<ArgumentMap>(id).docSync();
-  if (doc) {
-    const handle = remoteRepo.create<ArgumentMap>(doc);
-    const newId = handle.documentId;
-    handle.change((map) => {
-      map.automergeDocumentId = newId;
-    });
-    localRepo.delete(id);
-    return newId;
-  } else {
-    return remoteRepo.find(id).documentId;
-  }
-}
-
-export function syncDocLocally(id: DocumentId) {
-  const doc = remoteRepo.find<ArgumentMap>(id).docSync();
-  if (doc) {
-    const handle = localRepo.create<ArgumentMap>(doc);
-    const newId = handle.documentId;
-    handle.change((map) => {
-      map.automergeDocumentId = newId;
-    });
-    remoteRepo.delete(id);
-    return newId;
-  } else {
-    return localRepo.find(id).documentId;
-  }
-}
-
 export function getDocHandle(id: DocumentId): DocHandle<ArgumentMap> {
   if (!isValidDocumentId(id)) {
     throw new Error(`Invalid document ID: ${id as string}`);
   }
-  const localHandle = localRepo.find<ArgumentMap>(id);
-  const remoteHandle = remoteRepo.find<ArgumentMap>(id);
-  if (localHandle.docSync() && remoteHandle.docSync()) {
-    appLogger.error(
-      `Automerge doc ${id} exists in both local and remote repos. Deleting local doc.`,
-    );
-    localRepo.delete(id);
-  }
-  if (remoteHandle.docSync()) {
-    return remoteHandle;
-  } else {
-    return localHandle;
-  }
+  const syncServerAddresses = getSyncServerAddresses(id);
+  return getRepo(syncServerAddresses).find<ArgumentMap>(id);
 }
 
 export function getDoc(id: DocumentId) {
   return getDocHandle(id).docSync();
+}
+
+export function openDoc(
+  id: DocumentId,
+  syncServerAddresses: string[],
+): DocHandle<ArgumentMap> {
+  if (syncServerAddresses.length) {
+    setSyncServerAddresses(id, syncServerAddresses);
+    return getRepo(syncServerAddresses).find(id);
+  }
+  setSyncServerAddresses(id, defaultSyncServerAddresses);
+  return defaultRepo.find(id);
+}
+
+export function setDocSyncServerAddresses(
+  oldId: DocumentId,
+  syncServerAddresses: string[],
+) {
+  const oldRepo = getRepoForDoc(oldId);
+  const doc = oldRepo.find<ArgumentMap>(oldId).docSync();
+  const newRepo = getRepo(syncServerAddresses);
+  const handle = newRepo.create<ArgumentMap>(doc);
+  const newId = handle.documentId;
+  handle.change((map) => {
+    map.automergeDocumentId = newId;
+  });
+  oldRepo.delete(oldId);
+  setSyncServerAddresses(newId, syncServerAddresses, oldId);
+  return newId;
+}
+
+function getRepoForDoc(id: DocumentId) {
+  const syncServerAddresses = getSyncServerAddresses(id);
+  return getRepo(syncServerAddresses);
+}
+
+export function deleteDoc(id: DocumentId) {
+  reposBySyncServers.values().forEach((r) => r.delete(id));
+}
+
+export function isRemote(id: DocumentId) {
+  return !!getSyncServerAddresses(id).length;
+}
+
+// Per-document sync server addresses
+const syncServerAddressesLocalStorageKey =
+  "SophistreeSyncServerAddressesByAutomergeDocumentId";
+
+function getSyncServerAddresses(id: DocumentId): string[] {
+  const value = window.localStorage.getItem(syncServerAddressesLocalStorageKey);
+  if (!value) {
+    return [];
+  }
+  const syncServerAddressesById = JSON.parse(value) as Record<string, string[]>;
+  return syncServerAddressesById[id] || [];
+}
+
+function setSyncServerAddresses(
+  id: DocumentId,
+  syncServerAddresses: string[],
+  oldId?: DocumentId,
+) {
+  const value = window.localStorage.getItem(syncServerAddressesLocalStorageKey);
+  const syncServerAddressesById = (value ? JSON.parse(value) : {}) as Record<
+    string,
+    string[]
+  >;
+  syncServerAddressesById[id] = syncServerAddresses;
+  if (oldId) {
+    delete syncServerAddressesById[oldId];
+  }
+  window.localStorage.setItem(
+    syncServerAddressesLocalStorageKey,
+    JSON.stringify(syncServerAddressesById),
+  );
+}
+
+export function addDocChangeListener(callback: () => void) {
+  activeDocChangeCallbacks.add(callback);
+  reposBySyncServers.values().forEach((r) => {
+    r.on("document", callback);
+    r.on("delete-document", callback);
+  });
+}
+
+export function removeDocChangeListener(callback: () => void) {
+  activeDocChangeCallbacks.delete(callback);
+  reposBySyncServers.values().forEach((r) => {
+    r.off("document", callback);
+    r.off("delete-document", callback);
+  });
+}
+
+function applyCallbacksToRepo(repo: Repo) {
+  activeDocChangeCallbacks.forEach((callback) => {
+    repo.on("document", callback);
+    repo.on("delete-document", callback);
+  });
 }

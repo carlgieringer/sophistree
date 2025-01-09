@@ -2,14 +2,17 @@
 
 Automerge:
 
-Syncing:
-
-- Why does the local doc ID show up in synced?
-- Why can't the extension find the doc (using either local or synced doc ID)?
+- Setting for default sync server
+- Extra actions button to set sync server when syncing map
+- Store sync addresses in map
+- Error message when selected sync service is unavailable
+- Introspect all sync service addresses combinations on startup and initialize them
+  OR only initialize current active map.
+- Open map using sync service(s)
 
 - Cancel open when close dialog
-- Fail to open document is not showing an error in dialog
-- Something is put in sync service for local docs?
+- Default sync service and per map sync service.
+- How to init repos on load?
 
 - Ensure sync occurs between browser windows
   - Ensure sync works after remote sync/unsync: no, ID is missing. Need to find from map ID.

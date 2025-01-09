@@ -1,32 +1,22 @@
 import React from "react";
+import { View } from "react-native";
+import { Text } from "react-native-paper";
 import { useRefreshAuth } from "../store/hooks";
 import { AuthenticationCard } from "./AuthenticationCard";
 import { ApiEndpointOverrideSetting } from "./ApiEndpointOverrideSetting";
+import { SyncServerSettings } from "./SyncServerSettings";
 
 export function OptionsPage() {
   useRefreshAuth();
 
   return (
-    <div style={styles.container}>
-      <h1 style={styles.title}>Sophistree Options</h1>
+    <View style={{ maxWidth: 800, marginHorizontal: 'auto', padding: 32 }}>
+      <Text variant="headlineLarge" style={{ textAlign: "center", marginBottom: 32 }}>
+        Sophistree Options
+      </Text>
       <AuthenticationCard />
       <ApiEndpointOverrideSetting />
-    </div>
+      <SyncServerSettings />
+    </View>
   );
 }
-
-const styles = {
-  container: {
-    maxWidth: "800px",
-    margin: "0 auto",
-    padding: "2rem",
-    fontFamily:
-      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif",
-  },
-  title: {
-    fontSize: "2rem",
-    color: "#333",
-    marginBottom: "2rem",
-    textAlign: "center" as const,
-  },
-};

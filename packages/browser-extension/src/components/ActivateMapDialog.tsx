@@ -6,7 +6,6 @@ import {
   TextInput,
 } from "react-native-paper";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { unwrapResult } from "@reduxjs/toolkit";
 import { DocumentId, isValidDocumentId } from "@automerge/automerge-repo";
 
 import {
@@ -18,6 +17,7 @@ import {
 import ArgumentMapView from "./ArgumentMapView";
 import { useAllMaps } from "../sync/hooks";
 import { useAppDispatch } from "../store";
+import { useDefaultSyncServerAddresses } from "../sync/defaultSyncServerAddresses";
 
 export default function ActiveMapDialog({
   onDismiss,
@@ -62,12 +62,13 @@ export default function ActiveMapDialog({
 
   const [documentId, setDocumentId] = useState("");
   const [documentIdError, setDocumentIdError] = useState("");
+  const { addresses: syncServerAddresses } = useDefaultSyncServerAddresses();
   function openDocumentId() {
     if (!documentId || !isValidDocumentId(documentId)) {
       return;
     }
-    dispatch(openSyncedMap(documentId))
-      .then(unwrapResult)
+    dispatch(openSyncedMap({ documentId, syncServerAddresses }))
+      .unwrap()
       .then(
         () => {
           hideModal();

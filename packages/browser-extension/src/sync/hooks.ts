@@ -26,6 +26,7 @@ import {
   useSelectedEntityIds,
 } from "../store/entitiesSlice";
 
+
 export const useAllMaps = () => {
   const [maps, setMaps] = useState<Doc<ArgumentMap>[]>([]);
 
