@@ -108,7 +108,7 @@ export const entitiesSlice = createAppSlice({
       }
       state.activeMapAutomergeDocumentId = setDocSyncServerAddresses(
         documentId,
-        addresses
+        addresses,
       );
     }),
     syncActiveMapLocally: create.reducer((state) => {

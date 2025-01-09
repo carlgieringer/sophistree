@@ -15,7 +15,7 @@ import {
 } from "../sync/defaultSyncServerAddresses";
 import * as appLogger from "../logging/appLogging";
 
-export function SyncServerSettings() {
+export function DefaultSyncServerSettings() {
   const {
     addresses: syncServerAddresses,
     loading,

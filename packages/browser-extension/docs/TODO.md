@@ -2,18 +2,6 @@
 
 Automerge:
 
-- Setting for default sync server
-- Extra actions button to set sync server when syncing map
-- Store sync addresses in map
-- Error message when selected sync service is unavailable
-- Introspect all sync service addresses combinations on startup and initialize them
-  OR only initialize current active map.
-- Open map using sync service(s)
-
-- Cancel open when close dialog
-- Default sync service and per map sync service.
-- How to init repos on load?
-
 - Ensure sync occurs between browser windows
   - Ensure sync works after remote sync/unsync: no, ID is missing. Need to find from map ID.
 - Ensure sync occurs between browsers

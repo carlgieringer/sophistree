@@ -44,7 +44,7 @@ const listeners = new Map<
   ChromeStorageChangeCallback
 >();
 
-export function addListener(callback: SyncServerAddressChangeCallback) {
+function addListener(callback: SyncServerAddressChangeCallback) {
   const storageListener: ChromeStorageChangeCallback = (changes, areaName) => {
     if (
       areaName === "local" &&
@@ -69,7 +69,7 @@ export function removeListener(callback: (addresses: string[]) => void) {
   }
 }
 
-export async function getDefaultSyncServerAddresses(): Promise<string[]> {
+async function getDefaultSyncServerAddresses(): Promise<string[]> {
   const result = await chrome.storage.local.get("syncServerAddresses");
   return (
     (result.syncServerAddresses as string[] | undefined) ?? [

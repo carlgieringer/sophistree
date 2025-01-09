@@ -3,6 +3,7 @@ import {
   DocHandleChangePayload,
   DocumentId,
 } from "@automerge/automerge-repo";
+import { useEffect, useState, useMemo } from "react";
 
 import {
   Appearance,
@@ -12,20 +13,14 @@ import {
   Entity,
 } from "@sophistree/common";
 
-import {
-  getDocHandle,
-  getAllDocs,
-  addDocChangeListener,
-  removeDocChangeListener,
-} from "./sync";
+import { getDocHandle, getAllDocs } from "./sync";
 import * as appLogger from "../logging/appLogging";
 import { combineAppearanceOutcomes } from "./combineAppearanceOutcomes";
-import { useEffect, useState, useMemo } from "react";
 import {
   useActiveMapAutomergeDocumentId,
   useSelectedEntityIds,
 } from "../store/entitiesSlice";
-
+import { addDocChangeListener, removeDocChangeListener } from "./repos";
 
 export const useAllMaps = () => {
   const [maps, setMaps] = useState<Doc<ArgumentMap>[]>([]);
