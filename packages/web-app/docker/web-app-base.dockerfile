@@ -1,10 +1,5 @@
-FROM node:18-alpine
-
-RUN npm install -g npm
-
-WORKDIR /sophistree
-COPY . .
-RUN npm install
+ARG BASE_VERSION=latest
+FROM sophistree/base:${BASE_VERSION}
 
 WORKDIR /sophistree/packages/web-app
 RUN npx prisma generate

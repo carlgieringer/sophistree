@@ -73,7 +73,7 @@ async function getDefaultSyncServerAddresses(): Promise<string[]> {
   const result = await chrome.storage.local.get("syncServerAddresses");
   return (
     (result.syncServerAddresses as string[] | undefined) ?? [
-      "wss://sync.sophistree.app",
+      "wss://sophistree.app",
     ]
   );
 }

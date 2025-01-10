@@ -5,7 +5,6 @@
   "scripts": {
     "build": "npm run prisma:generate && next build",
     "connect-db-local": "psql -h localhost -p 5432 -U sophistree -d sophistree",
-    "deploy-dev": "./bin/build-and-push-containers.sh $(npm run get-current-version) && ./bin/deploy.sh dev $(npm run get-current-version)",
     "dev": "npm run prisma:generate && NODE_OPTIONS=--inspect next dev",
     "check-all": "time (npm run type-check && npm run lint && npm run format-check && npm test) || { echo 'Checks failed'; exit 1; }",
     "format-fix": "prettier --write .",
@@ -16,7 +15,6 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "release": "./bin/release.sh",
     "start": "next start",
     "test": "jest",
     "test-watch": "jest --watch",

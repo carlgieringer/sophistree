@@ -23,14 +23,12 @@ success() {
 }
 
 # Check arguments
-if [[ $# -ne 2 ]]; then
-    error "Usage: $0 <environment> <version>
-    environment: 'dev' or 'prod'
-    version: Docker image version to deploy"
+if [[ $# -ne 1 ]]; then
+    error "Usage: $0 <environment>
+    environment: 'dev' or 'prod'"
 fi
 
 ENVIRONMENT=$1
-VERSION=$2
 
 # Validate environment
 if [[ "$ENVIRONMENT" != "dev" && "$ENVIRONMENT" != "prod" ]]; then
@@ -46,14 +44,24 @@ else
     URL="https://sophistree.app"
 fi
 
-log "Deploying version ${VERSION} to ${ENVIRONMENT} environment..."
+source bin/load-image-versions.sh
+
+versions="WEB_APP_VERSION=${WEB_APP_VERSION}, SYNC_SERVICE_VERSION=${SYNC_SERVICE_VERSION}"
+
+log "Deploying to ${ENVIRONMENT} environment. ${versions}"
 
 # Deploy to target
 ssh ${TARGET} "cd /web-app/ && \
-    sudo WEB_APP_IMAGE_VERSION=${VERSION} CADDY_IMAGE_VERSION=${VERSION} \
-    docker compose -f docker-compose.yml -f docker-compose.prod.yml pull && \
-    sudo WEB_APP_IMAGE_VERSION=${VERSION} CADDY_IMAGE_VERSION=${VERSION} \
-    docker compose -f docker-compose.yml -f docker-compose.prod.yml up --force-recreate -d" || error "Failed to deploy to ${ENVIRONMENT}"
+    sudo\
+     WEB_APP_IMAGE_VERSION=${WEB_APP_IMAGE_VERSION}\
+     SYNC_SERVER_IMAGE_VERSION=${SYNC_SERVER_IMAGE_VERSION}\
+     CADDY_IMAGE_VERSION=${CADDY_IMAGE_VERSION} \
+     docker compose -f docker-compose.yml -f docker-compose.prod.yml pull && \
+    sudo\
+     WEB_APP_IMAGE_VERSION=${WEB_APP_IMAGE_VERSION}\
+     SYNC_SERVER_IMAGE_VERSION=${SYNC_SERVER_IMAGE_VERSION}\
+     CADDY_IMAGE_VERSION=${CADDY_IMAGE_VERSION}\
+     docker compose -f docker-compose.yml -f docker-compose.prod.yml up --force-recreate -d" || error "Failed to deploy to ${ENVIRONMENT}"
 
-success "Successfully deployed version ${VERSION} to ${ENVIRONMENT}!"
+success "Successfully deployed to ${ENVIRONMENT}! ${versions}"
 success "- Available at: ${URL}"

@@ -1,4 +1,10 @@
+import { config } from "dotenv";
+import { existsSync } from "fs";
 import { PostgresStorageAdapter } from "automerge-repo-storage-postgres";
+
+if (existsSync(".env")) {
+  config();
+}
 
 import { SyncServer } from "./server.js";
 
@@ -8,7 +14,7 @@ if (!tableName) {
     "ARGUMENT_MAPS_AUTOMERGE_STORAGE_TABLE_NAME env. var. is required.",
   );
 }
-const host = "localhost";
+const host = "0.0.0.0";
 const port = 3030;
 const storage = new PostgresStorageAdapter(tableName);
 const peerId = "sophistree-sync-server";

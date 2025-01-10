@@ -1,27 +1,50 @@
 services:
   web-app:
     build:
-      context: ..
+      context: ../packages/web-app/
       dockerfile: docker/web-app.dockerfile
       args:
-        BASE_VERSION: ${BASE_IMAGE_VERSION:-latest}
+        BASE_VERSION: ${WEB_APP_BASE_IMAGE_VERSION:-latest}
     image: sophistree/web-app:${WEB_APP_IMAGE_VERSION:-latest}
     container_name: sophistree-web-app
     depends_on:
       db:
         condition: service_healthy
-      migrator:
+      web-app-migrator:
         condition: service_completed_successfully
     restart: always
 
-  migrator:
+  web-app-migrator:
     build:
-      context: ..
-      dockerfile: docker/migrator.dockerfile
+      context: ../packages/web-app
+      dockerfile: docker/web-app-migrator.dockerfile
       args:
-        BASE_VERSION: ${BASE_IMAGE_VERSION:-latest}
-    image: sophistree/migrator:${WEB_APP_IMAGE_VERSION:-latest}
-    container_name: sophistree-migrator
+        BASE_VERSION: ${WEB_APP_BASE_IMAGE_VERSION:-latest}
+    image: sophistree/web-app-migrator:${WEB_APP_IMAGE_VERSION:-latest}
+    container_name: sophistree-web-app-migrator
+    depends_on:
+      db:
+        condition: service_healthy
+
+  sync-service:
+    build:
+      context: ../packages/sync-service
+      dockerfile: docker/sync-service.dockerfile
+    image: sophistree/sync-service:${SYNC_SERVICE_IMAGE_VERSION:-latest}
+    container_name: sophistree-sync-service
+    depends_on:
+      db:
+        condition: service_healthy
+      sync-service-migrator:
+        condition: service_completed_successfully
+    restart: always
+
+  sync-service-migrator:
+    build:
+      context: ../packages/sync-service
+      dockerfile: docker/sync-service-migrator.dockerfile
+    image: sophistree/sync-service-migrator:${SYNC_SERVICE_IMAGE_VERSION:-latest}
+    container_name: sophistree-sync-service-migrator
     depends_on:
       db:
         condition: service_healthy
