@@ -11,10 +11,13 @@ import {
   resetSelection,
   selectEntities,
   toggleCollapsed,
+  useSelectedEntityIds,
 } from "../store/entitiesSlice";
 import * as appLogger from "../logging/appLogging";
-import { useSelector } from "react-redux";
-import * as selectors from "../store/selectors";
+import {
+  useActiveMapEntities,
+  useActiveMapEntitiesOutcomes,
+} from "../sync/hooks";
 
 export default function ExtensionGraphView({
   style,
@@ -22,9 +25,9 @@ export default function ExtensionGraphView({
   style?: CSSProperties;
 }) {
   const dispatch = useAppDispatch();
-  const entities = useSelector(selectors.activeMapEntities);
-  const selectedEntityIds = useSelector(selectors.selectedEntityIds);
-  const outcomes = useSelector(selectors.activeMapEntitiesOutcomes);
+  const entities = useActiveMapEntities();
+  const selectedEntityIds = useSelectedEntityIds();
+  const outcomes = useActiveMapEntitiesOutcomes();
   return (
     <GraphView
       style={style}

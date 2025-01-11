@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useDispatch } from "react-redux";
 import { TextInput, Text, Surface } from "react-native-paper";
 import { View, StyleSheet } from "react-native";
 import debounce from "lodash.debounce";
@@ -17,10 +17,10 @@ import {
   updateProposition,
   updateMediaExerpt,
 } from "../store/entitiesSlice";
-import * as selectors from "../store/selectors";
+import { useSelectedEntitiesForEdit } from "../sync/hooks";
 
 const EntityEditor: React.FC = () => {
-  const selectedEntities = useSelector(selectors.selectedEntitiesForEdit);
+  const selectedEntities = useSelectedEntitiesForEdit();
   if (selectedEntities.length < 1) {
     return <Text>No entity selected</Text>;
   }
@@ -54,7 +54,7 @@ function PropositionEditor({ entity }: { entity: Proposition }) {
     () =>
       debounce((text: string) => {
         dispatch(updateProposition({ id: entity.id, updates: { text } }));
-      }, 150),
+      }, 500),
     [dispatch, entity.id],
   );
 

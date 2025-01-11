@@ -4,14 +4,23 @@ import { ArgumentMap, Entity, MediaExcerpt } from "@sophistree/common";
 
 import { updateConclusions } from "./entitiesSlice";
 import { PersistedState } from "redux-persist";
-import { type RootState } from "./store";
+import { DocumentId } from "@automerge/automerge-repo";
+import { createDoc } from "../sync";
 
-export const persistedStateVersion = 7;
+export const persistedStateVersion = 8;
 
 type MapsState =
   | {
       maps: ArgumentMap[];
-      activeMapId: string;
+      activeMapId: DocumentId;
+      selectedEntityIds: string[];
+    }
+  | undefined;
+
+type AutomergeMapsState =
+  | {
+      maps?: ArgumentMap[];
+      activeMapId?: DocumentId;
       selectedEntityIds: string[];
     }
   | undefined;
@@ -58,8 +67,19 @@ export const reduxPersistMigrations = {
     if (s && "maps" in s) delete s.maps;
     if (s && "activeMapId" in s) delete s.activeMapId;
     if (s && "selectedEntityIds" in s) delete s.selectedEntityIds;
-    const rootState = s as unknown as RootState;
+    const rootState = s as unknown as { entities: MapsState };
     rootState.entities = { maps, activeMapId, selectedEntityIds };
+  }),
+  8: produce((s: PersistedState) => {
+    const state = s as unknown as { entities: AutomergeMapsState };
+    const maps = state.entities?.maps;
+    maps?.forEach((m) => {
+      createDoc(m);
+    });
+    // maps are now stored in automerge
+    delete state.entities?.maps;
+    // Existing UUIDs are invalid now that we use automerge DocumentIds
+    delete state.entities?.activeMapId;
   }),
 };
 
@@ -67,7 +87,7 @@ export type MapMigrationIndex = keyof typeof mapMigrations;
 
 export const migrateMap = (map: ArgumentMap, version: MapMigrationIndex) => {
   return produce(map, (draft: ArgumentMap) => {
-    mapMigrations[version](draft);
+    mapMigrations[version]?.(draft);
   });
 };
 
@@ -78,8 +98,6 @@ interface MediaExcerptv2 extends MediaExcerpt {
 }
 
 const mapMigrations = {
-  0: (map: unknown) => map,
-  1: (map: unknown) => map,
   2: (map: { entities: unknown[] }) => {
     map.entities.forEach((e: unknown) => {
       const entity = e as MediaExcerptv2;

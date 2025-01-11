@@ -1,6 +1,6 @@
 import { BasisOutcome } from "@sophistree/common";
 
-import { combineAppearanceOutcomes } from "./selectors";
+import { combineAppearanceOutcomes } from "./combineAppearanceOutcomes";
 
 describe("combineAppearanceOutcomes", () => {
   const allOutcomes: BasisOutcome[] = [

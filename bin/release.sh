@@ -22,14 +22,11 @@ success() {
     echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] SUCCESS:${NC} $1"
 }
 
-# Check if version argument is provided
-if [[ $# -ne 1 ]]; then
-    error "Usage: $0 <version>"
-fi
+source bin/load-image-versions.sh
 
-VERSION=$1
+versions="WEB_APP_VERSION=${WEB_APP_VERSION}, SYNC_SERVICE_VERSION=${SYNC_SERVICE_VERSION}"
 
-log "Starting release process for version ${VERSION}"
+log "Starting release process. ${versions}"
 
 # Create GitHub release
 log "Creating GitHub release..."
@@ -56,19 +53,19 @@ if [[ -z "$RELEASE_NOTES" ]]; then
     RELEASE_NOTES="No changes documented"
 fi
 
-NEW_TAG="web-app-v${VERSION}"
+NEW_TAG="web-app-v${WEB_APP_VERSION}"
 gh release create "${NEW_TAG}" \
-    --title "Web App Release v${VERSION}" \
+    --title "Web App Release v${WEB_APP_VERSION}" \
     --notes "${RELEASE_NOTES}" || error "Failed to create GitHub release"
 
 # Deploy to production
 log "Deploying to production..."
-./bin/deploy.sh "prod" "${VERSION}" || error "Failed to deploy to production"
+./bin/deploy.sh "prod" || error "Failed to deploy to production"
 
 # Get the repository URL from git config
 REPO_URL=$(git config --get remote.origin.url | sed 's/\.git$//' | sed 's|git@github.com:|https://github.com/|')
 RELEASE_URL="${REPO_URL}/releases/tag/${NEW_TAG}"
 
-success "Release v${VERSION} completed successfully!"
+success "Release completed successfully!"
 success "- GitHub release created: ${RELEASE_URL}"
 success "- Deployed to production: https://sophistree.app"

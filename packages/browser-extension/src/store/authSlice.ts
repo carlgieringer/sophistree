@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import * as appLogger from "../logging/appLogging";
+import { useSelector } from "react-redux";
 
 interface User {
   email: string;
@@ -49,6 +50,8 @@ async function broadcastAuthChange() {
   }
 }
 
+// TODO move createAsyncThunks into slice (https://redux-toolkit.js.org/api/createSlice#the-reducers-creator-callback-notation)
+
 export const refreshAuth = createAsyncThunk(
   "auth/refreshAuth",
   async (_, { rejectWithValue }) => {
@@ -95,6 +98,9 @@ const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {},
+  selectors: {
+    isAuthenticated: (state) => state.isAuthenticated,
+  },
   extraReducers: (builder) => {
     builder
       .addCase(refreshAuth.pending, (state) => {
@@ -142,5 +148,9 @@ const authSlice = createSlice({
       });
   },
 });
+
+export function useIsAuthenticated() {
+  return useSelector(authSlice.selectors.isAuthenticated);
+}
 
 export default authSlice.reducer;

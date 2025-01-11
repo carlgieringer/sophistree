@@ -7,3 +7,10 @@
 
 # TypeScript
 *.tsbuildinfo
+
+/infrastructure/.terraform*
+/infrastructure/terraform.tfstate*
+/infrastructure/**/*.tfvars
+
+# macOS Finder view settings
+.DS_Store

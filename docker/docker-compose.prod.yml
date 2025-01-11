@@ -6,11 +6,24 @@ services:
       options:
         awslogs-stream: web-app
 
-  migrator:
-    env_file: migrator.env
+  web-app-migrator:
+    env_file: web-app-migrator.env
     logging:
       options:
-        awslogs-stream: migrator
+        awslogs-stream: web-app-migrator
+
+  sync-service:
+    build: null
+    env_file: sync-service.env
+    logging:
+      options:
+        awslogs-stream: sync-service
+
+  sync-service-migrator:
+    env_file: sync-service-migrator.env
+    logging:
+      options:
+        awslogs-stream: sync-service-migrator
 
   db:
     env_file: db.env

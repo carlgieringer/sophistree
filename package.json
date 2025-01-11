@@ -12,13 +12,17 @@
     "packages/common",
     "packages/ui-common",
     "packages/web-app",
+    "packages/sync-service",
     "packages/browser-extension"
   ],
   "scripts": {
     "check-all": "time (npx package-lock-utd && npm run type-check-all && npm run lint-all && npm run format-check-all && npm run test-all) || { echo 'Checks failed'; exit 1; }",
+    "build-and-deploy-dev": "npm run build-and-push-containers && ./bin/deploy.sh dev",
+    "build-and-push-containers": "./bin/build-and-push-containers.sh",
     "format-check-all": "npm run format-check --workspaces --if-present",
     "lint-all": "npm run lint --workspaces --if-present",
     "test-all": "npm run test --workspaces --if-present",
+    "release": "./bin/release.sh",
     "rm-node-modules": "find . -name node_modules -type d -prune -exec rm -rf {} +",
     "test-ci-all": "npm run test-ci --workspaces --if-present",
     "type-check-all": "npm run type-check --workspaces --if-present",
@@ -26,5 +30,6 @@
   },
   "devDependencies": {
     "concurrently": "^9.0.1"
-  }
+  },
+  "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610"
 }

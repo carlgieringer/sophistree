@@ -4,19 +4,21 @@ import { ArgumentMap } from "@sophistree/common";
 
 import { selectApiEndpoint } from "./apiConfigSlice";
 import * as appLogger from "../logging/appLogging";
+import { getDoc } from "../sync";
 
-export const syncMap = createAsyncThunk(
-  "entities/syncMap",
+export const publishMap = createAsyncThunk(
+  "entities/publishMap",
   async (_, { getState }) => {
     const state = getState();
-    const activeMapId = state.entities.activeMapId;
-    if (!activeMapId) {
-      throw new Error("No active map to sync");
+    const documentId = state.entities.activeMapAutomergeDocumentId;
+    if (!documentId) {
+      throw new Error("No active map to publish");
     }
 
-    const activeMap = state.entities.maps.find((map) => map.id === activeMapId);
+    const activeMap = getDoc(documentId);
     if (!activeMap) {
-      throw new Error("Active map not found");
+      appLogger.error(`Doc ID ${documentId} did not have a doc.`);
+      return;
     }
 
     // Get the auth token
@@ -37,7 +39,7 @@ export const syncMap = createAsyncThunk(
 
     // Check if map exists
     const checkResponse = await fetch(
-      `${apiEndpoint}/api/argument-maps/${activeMapId}`,
+      `${apiEndpoint}/api/argument-maps/${documentId}`,
       {
         headers: authHeaders,
       },
@@ -46,7 +48,7 @@ export const syncMap = createAsyncThunk(
     const mapExists = checkResponse.ok;
     const method = mapExists ? "PUT" : "POST";
     const url = mapExists
-      ? `${apiEndpoint}/api/argument-maps/${activeMapId}`
+      ? `${apiEndpoint}/api/argument-maps/${documentId}`
       : `${apiEndpoint}/api/argument-maps`;
 
     const response = await fetch(url, {
@@ -76,14 +78,14 @@ export const apiSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
-      .addCase(syncMap.pending, () => {
+      .addCase(publishMap.pending, () => {
         // Could add loading state here if needed
       })
-      .addCase(syncMap.fulfilled, () => {
-        appLogger.log("Map synced successfully");
+      .addCase(publishMap.fulfilled, () => {
+        appLogger.log("Map published successfully");
       })
-      .addCase(syncMap.rejected, (state, action) => {
-        appLogger.error("Failed to sync map:", action.error);
+      .addCase(publishMap.rejected, (state, action) => {
+        appLogger.error("Failed to publish map:", action.error);
       });
   },
 });

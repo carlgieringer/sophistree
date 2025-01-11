@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { StyleSheet, View, ScrollView } from "react-native";
 import { Button, Text } from "react-native-paper";
-import { useSelector } from "react-redux";
 
 import {
   isMatchingUrlInfo,
@@ -9,7 +8,6 @@ import {
   BasisOutcome,
 } from "@sophistree/common";
 
-import "./App.scss";
 import EntityEditor from "./components/EntityEditor";
 import HeaderBar from "./components/HeaderBar";
 import { ChromeRuntimeMessage, sidepanelKeepalivePortName } from "./content";
@@ -17,9 +15,10 @@ import {
   addMediaExcerpt,
   AddMediaExcerptData,
   selectEntities,
+  useActiveMapAutomergeDocumentId,
+  useActiveMapId,
 } from "./store/entitiesSlice";
 import EntityList from "./components/EntityList";
-import * as selectors from "./store/selectors";
 import { showNewMapDialog } from "./store/uiSlice";
 import {
   GetMediaExcerptsResponse,
@@ -35,6 +34,11 @@ import { refreshAuth } from "./store/authSlice";
 import { useAppDispatch } from "./store";
 import { loadApiEndpointOverride } from "./store/apiConfigSlice";
 import ExtensionGraphView from "./graphView/ExtensionGraphView";
+import {
+  useActiveMap,
+  useActiveMapEntities,
+  useActiveMapMediaExcerptOutcomes,
+} from "./sync/hooks";
 
 const App: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -45,14 +49,21 @@ const App: React.FC = () => {
   useRefreshAuth();
   useSyncApiConfig();
 
-  // Load initial API config
+  // Load initial configs
   useEffect(() => {
     void dispatch(loadApiEndpointOverride());
   }, [dispatch]);
 
-  const activeMapId = useSelector(selectors.activeMapId);
-  const graphView = activeMapId ? (
-    <ExtensionGraphView style={styles.graphView} />
+  const documentId = useActiveMapAutomergeDocumentId();
+  const activeMap = useActiveMap();
+  const graphView = documentId ? (
+    activeMap ? (
+      <ExtensionGraphView style={styles.graphView} />
+    ) : (
+      <View style={styles.graphViewPlaceholder}>
+        <Text>Cannot find map.</Text>
+      </View>
+    )
   ) : (
     <View style={styles.graphViewPlaceholder}>
       <Text>No active map.</Text>
@@ -131,7 +142,7 @@ function connectToTab(tab: chrome.tabs.Tab) {
 }
 
 function useRefreshContentPageMediaExcerptsWhenActiveMapChanges() {
-  const activeMapId = useSelector(selectors.activeMapId);
+  const activeMapId = useActiveMapId();
   const [prevActiveMapId, setPrevActiveMapId] = useState(
     undefined as string | undefined,
   );
@@ -145,9 +156,7 @@ function useRefreshContentPageMediaExcerptsWhenActiveMapChanges() {
 }
 
 function useSendUpdatedMediaExcerptOutcomes() {
-  const mediaExcerptOutcomes = useSelector(
-    selectors.activeMapMediaExcerptOutcomes,
-  );
+  const mediaExcerptOutcomes = useActiveMapMediaExcerptOutcomes();
 
   // Store the outcomes so that we can diff them when they change
   const [prevMediaExcerptOutcomes, setPrevMediaExcerptOutcomes] = useState<
@@ -167,11 +176,11 @@ function useSendUpdatedMediaExcerptOutcomes() {
 }
 
 function useHandleChromeRuntimeMessage() {
+  const entities = useActiveMapEntities();
+  const mediaExcerptOutcomes = useActiveMapMediaExcerptOutcomes();
+
   const dispatch = useAppDispatch();
-  const entities = useSelector(selectors.activeMapEntities);
-  const mediaExcerptOutcomes = useSelector(
-    selectors.activeMapMediaExcerptOutcomes,
-  );
+
   const handleChromeRuntimeMessage = useCallback(
     (
       message: ChromeRuntimeMessage,

@@ -1,12 +1,12 @@
 import { DomAnchor } from "tapestry-highlights";
 
-type BaseEntity = {
+interface BaseEntity {
   id: string;
   // if explicitVisibility is missing, falls back to autoVisibility
   explicitVisibility?: Visibility | undefined;
   autoVisibility: Visibility;
   isCollapsed?: boolean;
-};
+}
 
 export type Visibility = "Visible" | "Hidden";
 
@@ -83,6 +83,7 @@ export interface ConclusionInfo {
 
 export interface ArgumentMap {
   id: string;
+  automergeDocumentId: string;
   name: string;
   entities: Entity[];
   /** Conclusions summarize the main points of the argument */

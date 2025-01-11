@@ -15,13 +15,17 @@ import { useSelector } from "react-redux";
 import { useAppDispatch } from "../store";
 
 import * as colors from "../colors";
-import { deleteMap } from "../store/entitiesSlice";
-import { syncMap } from "../store/apiSlice";
+import {
+  deleteMap,
+  syncActiveMapLocally,
+  syncActiveMapRemotely,
+  useActiveMapAutomergeDocumentId,
+} from "../store/entitiesSlice";
+import { publishMap as publishMap } from "../store/apiSlice";
 import NewMapDialog from "./NewMapDialog";
 import ActivateMapDialog from "./ActivateMapDialog";
 import DownloadMapsDialog from "./DownloadMapsDialog";
 import UploadMapsDialog from "./UploadMapsDialog";
-import * as selectors from "../store/selectors";
 import RenameMapDialog from "./RenameMapDialog";
 import ConfirmationDialog from "./ConfirmationDialog";
 import {
@@ -30,6 +34,10 @@ import {
   showNewMapDialog,
 } from "../store/uiSlice";
 import * as appLogger from "../logging/appLogging";
+import { useActiveMapName } from "../sync/hooks";
+import { useIsAuthenticated } from "../store/authSlice";
+import { isRemote } from "../sync";
+import { useDefaultSyncServerAddresses } from "../sync/defaultSyncServerAddresses";
 
 function HeaderBar({ id }: { id?: string }) {
   const dispatch = useAppDispatch();
@@ -50,9 +58,11 @@ function HeaderBar({ id }: { id?: string }) {
   const [isUploadMapsDialogVisible, setUploadMapsDialogVisible] =
     useState(false);
 
-  const activeMapId = useSelector(selectors.activeMapId);
-  const activeMapName = useSelector(selectors.activeMapName);
-  const isAuthenticated = useSelector(selectors.isAuthenticated);
+  const activeMapDocumentId = useActiveMapAutomergeDocumentId();
+  const activeMapName = useActiveMapName();
+  const isAuthenticated = useIsAuthenticated();
+  const { addresses: defaultSyncServerAddresses } =
+    useDefaultSyncServerAddresses();
 
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
@@ -76,11 +86,11 @@ function HeaderBar({ id }: { id?: string }) {
   };
 
   function deleteActiveMap() {
-    if (!activeMapId) {
+    if (!activeMapDocumentId) {
       appLogger.warn("No active map to delete");
       return;
     }
-    dispatch(deleteMap(activeMapId));
+    dispatch(deleteMap(activeMapDocumentId));
   }
 
   const deleteDialog = (
@@ -96,32 +106,63 @@ function HeaderBar({ id }: { id?: string }) {
     />
   );
 
-  const syncMenuItem = (
+  const publishMenuItem = (
     <Menu.Item
-      title="Sync map"
-      key="sync-map"
+      title="Publish map"
+      key="publish-map"
       onPress={() => {
-        dispatch(syncMap())
+        dispatch(publishMap())
           .unwrap()
           .then(
             () => {
-              setSnackbarMessage("Successfully synced map");
+              setSnackbarMessage("Successfully published map");
               setSnackbarIcon("success");
               setSnackbarDuration(3_000);
               setSnackbarVisible(true);
             },
             (reason) => {
-              setSnackbarMessage("Failed to sync map");
+              setSnackbarMessage("Failed to publish map");
               setSnackbarIcon("failure");
               setSnackbarDuration(10_000);
               setSnackbarVisible(true);
-              appLogger.error("Failed to sync map", reason);
+              appLogger.error("Failed to publish map", reason);
             },
           );
         hideMenu();
       }}
       leadingIcon="cloud-upload"
-      disabled={!activeMapId || !isAuthenticated}
+      disabled={!activeMapDocumentId || !isAuthenticated}
+    />
+  );
+  const syncMenuItem = !activeMapDocumentId ? null : isRemote(
+      activeMapDocumentId,
+    ) ? (
+    <Menu.Item
+      title="Sync locally"
+      leadingIcon="sync"
+      key="sync-map-locally"
+      onPress={() => {
+        dispatch(syncActiveMapLocally());
+        hideMenu();
+      }}
+    />
+  ) : (
+    <Menu.Item
+      title="Sync remotely"
+      leadingIcon="sync"
+      key="sync-map-remotely"
+      onPress={() => {
+        if (!defaultSyncServerAddresses.length) {
+          setSnackbarMessage("No sync server addresses configured");
+          setSnackbarIcon("failure");
+          setSnackbarDuration(10_000);
+          setSnackbarVisible(true);
+          hideMenu();
+          return;
+        }
+        dispatch(syncActiveMapRemotely(defaultSyncServerAddresses));
+        hideMenu();
+      }}
     />
   );
 
@@ -135,13 +176,45 @@ function HeaderBar({ id }: { id?: string }) {
           setRenameMapDialogVisible(true);
           hideMenu();
         }}
-        disabled={!activeMapId}
+        disabled={!activeMapDocumentId}
       />,
+      syncMenuItem,
+      activeMapDocumentId && isRemote(activeMapDocumentId) && (
+        <Menu.Item
+          title="Copy document ID"
+          leadingIcon="content-copy"
+          key="copy-id"
+          onPress={() => {
+            void navigator.clipboard.writeText(activeMapDocumentId).then(
+              () => {
+                setSnackbarMessage("Document ID copied to clipboard");
+                setSnackbarIcon("success");
+                setSnackbarDuration(3000);
+                setSnackbarVisible(true);
+              },
+              (reason) => {
+                setSnackbarMessage("Failed to copy to clipboard");
+                setSnackbarIcon("failure");
+                setSnackbarDuration(10_000);
+                setSnackbarVisible(true);
+                appLogger.error(
+                  "Failed to copy document ID to clipboard",
+                  reason,
+                );
+              },
+            );
+            hideMenu();
+          }}
+        />
+      ),
       isAuthenticated ? (
-        syncMenuItem
+        publishMenuItem
       ) : (
-        <Tooltip title="You must be logged in to sync maps" key="sync-map">
-          {syncMenuItem}
+        <Tooltip
+          title="You must be logged in to publish maps"
+          key="publish-map"
+        >
+          {publishMenuItem}
         </Tooltip>
       ),
       <Menu.Item
@@ -152,7 +225,7 @@ function HeaderBar({ id }: { id?: string }) {
         }}
         leadingIcon="delete"
         title={`Delete ${activeMapName}`}
-        disabled={!activeMapId}
+        disabled={!activeMapDocumentId}
       />,
     ],
     [

@@ -9,6 +9,7 @@ import Handlebars from "handlebars";
 import path from "path";
 import glob from "glob";
 import dotenv from "dotenv";
+import { wasmLoader } from "esbuild-plugin-wasm";
 
 const watch = process.argv.includes("--watch");
 const prod = process.env.NODE_ENV === "production";
@@ -34,7 +35,8 @@ const options = {
     "react-native": "react-native-web",
   },
   sourcemap: prod ? false : "inline",
-  target: ["chrome58", "firefox57"],
+  target: ["chrome89", "firefox89"],
+  format: "esm",
   outdir,
   resolveExtensions: [
     ".web.tsx",
@@ -161,6 +163,7 @@ const options = {
         });
       },
     },
+    wasmLoader(),
   ],
 };
 

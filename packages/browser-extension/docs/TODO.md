@@ -1,5 +1,11 @@
 # TODO
 
+Automerge:
+
+- Move async thunks into slice
+- Remove slice for api address setting
+- Posthog? Statsig?
+
 - Profile info in list
 - AI fact checking
 - Search (extension badge)

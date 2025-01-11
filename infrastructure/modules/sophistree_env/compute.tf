@@ -1,18 +1,3 @@
-data "aws_ami" "amazon_linux_2023" {
-  most_recent = true
-  owners      = ["amazon"]
-
-  filter {
-    name   = "name"
-    values = ["al2023-ami-*-x86_64"]
-  }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
-  }
-}
-
 resource "aws_s3_bucket" "postgres_backups" {
   bucket = "sophistree-postgres-backups-${var.environment}"
 }
@@ -124,25 +109,6 @@ resource "aws_iam_role_policy" "ssm_access" {
   })
 }
 
-data "template_file" "user_data" {
-  template = file("${path.module}/user-data.sh")
-  vars = {
-    domain_name                 = var.environment == "prod" ? var.domain_name : "${var.environment}.${var.domain_name}"
-    backup_bucket               = aws_s3_bucket.postgres_backups.id
-    cloudwatch_log_group        = aws_cloudwatch_log_group.web_app.name
-    aws_region                  = var.aws_region
-    device_name                 = "/dev/sdf"
-    docker_compose_content      = file("${path.root}/../docker/docker-compose.yml")
-    docker_compose_prod_content = file("${path.root}/../docker/docker-compose.prod.yml")
-    web_app_image_version       = var.web_app_image_version
-    caddy_image_version         = var.caddy_image_version
-    caddy_certs_bucket          = aws_s3_bucket.caddy_certs.bucket
-    caddy_certs_bucket_host     = aws_s3_bucket.caddy_certs.bucket_regional_domain_name
-    caddy_email                 = var.caddy_email
-    db_password_parameter_arn   = var.db_password_parameter_arn
-  }
-}
-
 resource "aws_ebs_volume" "postgres_data" {
   availability_zone = var.availability_zone
   size              = 20
@@ -155,8 +121,8 @@ resource "aws_ebs_volume" "postgres_data" {
 }
 
 resource "aws_instance" "web_app" {
-  ami               = data.aws_ami.amazon_linux_2023.id
-  instance_type     = "t3.small"
+  ami               = var.instance_ami
+  instance_type     = var.instance_type
   key_name          = var.key_name
   availability_zone = var.availability_zone
 
@@ -175,7 +141,26 @@ resource "aws_instance" "web_app" {
     Name = "sophistree-web-${var.environment}"
   }
 
-  user_data                   = sensitive(data.template_file.user_data.rendered)
+  user_data                   = sensitive(templatefile(
+    "${path.module}/user-data.sh.tftpl",
+    {
+      hostname                                   = local.hostname
+      backup_bucket                              = aws_s3_bucket.postgres_backups.id
+      cloudwatch_log_group                       = aws_cloudwatch_log_group.web_app.name
+      aws_region                                 = var.aws_region
+      device_name                                = "/dev/sdf"
+      docker_compose_content                     = file("${path.root}/../docker/docker-compose.yml")
+      docker_compose_prod_content                = file("${path.root}/../docker/docker-compose.prod.yml")
+      web_app_image_version                      = var.web_app_image_version
+      sync_service_image_version                 = var.sync_service_image_version
+      argument_maps_automerge_storage_table_name = var.argument_maps_automerge_storage_table_name
+      caddy_image_version                        = var.caddy_image_version
+      caddy_certs_bucket                         = aws_s3_bucket.caddy_certs.bucket
+      caddy_certs_bucket_host                    = aws_s3_bucket.caddy_certs.bucket_regional_domain_name
+      caddy_email                                = var.caddy_email
+      db_password_parameter_arn                  = var.db_password_parameter_arn
+    }
+  ))
   user_data_replace_on_change = true
 }
 
