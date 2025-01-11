@@ -8,16 +8,16 @@
 
 import * as Sentry from "@sentry/browser";
 
-Sentry.init({
-  dsn: "https://e3e3c422a56e870cdc1bfae52535fbd4@o4508077991002112.ingest.us.sentry.io/4508078000111616",
-  integrations: [
-    Sentry.browserTracingIntegration(),
-    Sentry.replayIntegration(),
-  ],
-  // Session Replay
-  replaysSessionSampleRate: 0.1, // This sets the sample rate at 10%. You may want to change it to 100% while in development and then sample at a lower rate in production.
-  replaysOnErrorSampleRate: 1.0, // If you're not already sampling the entire session, change the sample rate to 100% when sampling sessions where errors occur.
-});
+// Sentry.init({
+//   dsn: "https://e3e3c422a56e870cdc1bfae52535fbd4@o4508077991002112.ingest.us.sentry.io/4508078000111616",
+//   integrations: [
+//     Sentry.browserTracingIntegration(),
+//     Sentry.replayIntegration(),
+//   ],
+//   // Session Replay
+//   replaysSessionSampleRate: 0.1, // This sets the sample rate at 10%. You may want to change it to 100% while in development and then sample at a lower rate in production.
+//   replaysOnErrorSampleRate: 1.0, // If you're not already sampling the entire session, change the sample rate to 100% when sampling sessions where errors occur.
+// });
 
 export function debug(message: string, error?: unknown) {
   log(message, "debug", error);
@@ -62,8 +62,8 @@ export function log(
       console.debug(...logArgs);
       break;
   }
-  Sentry.captureMessage(message, level);
-  if (error) {
-    Sentry.captureException(error);
-  }
+  // Sentry.captureMessage(message, level);
+  // if (error) {
+  //   Sentry.captureException(error);
+  // }
 }

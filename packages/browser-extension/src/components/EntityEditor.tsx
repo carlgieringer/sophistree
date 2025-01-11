@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { useDispatch } from "react-redux";
 import { TextInput, Text, Surface } from "react-native-paper";
 import { View, StyleSheet } from "react-native";
@@ -58,10 +58,13 @@ function PropositionEditor({ entity }: { entity: Proposition }) {
     [dispatch, entity.id],
   );
 
-  const handleTextChange = (newText: string) => {
-    setText(newText);
-    debouncedDispatch(newText);
-  };
+  const handleTextChange = useCallback(
+    (newText: string) => {
+      setText(newText);
+      debouncedDispatch(newText);
+    },
+    [setText, debouncedDispatch],
+  );
 
   return (
     <View>

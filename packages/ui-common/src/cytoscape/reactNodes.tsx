@@ -2,12 +2,12 @@ import cytoscape, {
   EventObjectNode,
   LayoutOptions,
   NodeDataDefinition,
+  NodeSingular,
 } from "cytoscape";
 import ReactDOM from "react-dom/client";
-import throttle from "lodash.throttle";
-import debounce from "lodash.debounce";
 
 import { sunflower } from "../colors";
+import debounce from "lodash.debounce";
 
 declare module "cytoscape" {
   interface Core {
@@ -22,10 +22,6 @@ export default function register(cs: typeof cytoscape) {
 interface ReactNodesOptions {
   nodes: ReactNodeOptions[];
   layoutOptions: LayoutOptions;
-  // The delay before reactNodes applies a layout when one is necessary.
-  layoutThrottleDelay?: number;
-  // The delay before rendering the JSX after the node data changes.
-  nodeDataRenderDelay?: number;
   logger: Logger;
 }
 
@@ -40,27 +36,18 @@ export interface ReactNodeOptions {
   unselectedStyle?: Partial<CSSStyleDeclaration>;
 }
 
-type PassthroughOptions = Pick<ReactNodesOptions, "nodeDataRenderDelay">;
-
-const defaultOptions: Required<
-  Pick<ReactNodesOptions, "layoutThrottleDelay" | "nodeDataRenderDelay">
-> = {
-  layoutThrottleDelay: 500,
-  nodeDataRenderDelay: 150,
-};
-
 const defaultReactNodeOptions: ReactNodeOptions = {
-  query: "node", // selector for nodes to apply HTML to
+  query: "node",
   template: function (data: cytoscape.NodeDataDefinition) {
-    // function to generate HTML
     return <div>{data.id}</div>;
   },
   mode: "replace",
   containerCSS: {
-    // CSS for the HTML container
     textAlign: "center",
     borderRadius: "10px",
     border: "1px solid #ccc",
+    // Nodes should have the same height/width when they are selected
+    boxSizing: "border-box",
   },
   selectedStyle: { border: `5px solid ${sunflower}` },
   unselectedStyle: { border: "" },
@@ -107,47 +94,74 @@ const defaultReactNodeOptions: ReactNodeOptions = {
  * - We should not request a layout when one is already active.
  */
 function reactNodes(this: cytoscape.Core, options: ReactNodesOptions) {
-  const layout = throttle(() => {
-    this.layout(options.layoutOptions).run();
-  }, options.layoutThrottleDelay ?? defaultOptions.layoutThrottleDelay);
+  let isLayingOut = false;
+  let pendingLayout = false;
 
-  const { nodeDataRenderDelay } = options;
-  options.nodes.forEach((nodeOptions) =>
-    makeReactNode(
-      this,
-      options.logger,
-      { ...nodeOptions, nodeDataRenderDelay },
-      layout,
-    ),
+  const requestLayout = debounce(() => {
+    if (isLayingOut) {
+      pendingLayout = true;
+      return;
+    }
+    isLayingOut = true;
+    this.layout(options.layoutOptions).run();
+  }, 150); // Debounce layout requests
+
+  this.on("layout", () => {
+    isLayingOut = true;
+  });
+
+  this.on("layoutstop", () => {
+    isLayingOut = false;
+    if (pendingLayout) {
+      pendingLayout = false;
+      requestLayout();
+    }
+  });
+  options.nodes.map((nodeOptions) =>
+    makeReactNode(this, options.logger, nodeOptions, requestLayout),
   );
 
-  applyWebkitLayoutWorkaround(this, options.layoutOptions);
+  applyWebkitLayoutWorkaround(this);
 
   return this; // for chaining
 }
 
-// This is a terrible hack to try to get the elements to position correctly in Safari and iOS
-// browsers.
-// TODO: #31 - address the underlying cause.
-function applyWebkitLayoutWorkaround(
-  cy: cytoscape.Core,
-  layoutOptions: LayoutOptions,
-) {
+// Improved WebKit handling with proper position validation and layout stabilization
+function applyWebkitLayoutWorkaround(cy: cytoscape.Core) {
   const ua = navigator.userAgent;
   const isWebKitBrowser = /WebKit/.test(ua) && !/Chrome/.test(ua);
   const isIOS = /iPad|iPhone|iPod/.test(ua);
+
   if (isWebKitBrowser || isIOS) {
-    // eslint-disable-next-line no-inner-declarations
-    function oneTimeLayout() {
-      cy.off("layoutstop", oneTimeLayout);
-      setTimeout(() => {
-        cy.layout({
-          ...layoutOptions,
-          fit: true,
-        } as unknown as LayoutOptions).run();
-      }, 1000);
-    }
-    cy.on("layoutstop", oneTimeLayout);
+    // Add position validation to prevent NaN positions
+    cy.on("position", "node", function (evt) {
+      const node = evt.target as NodeSingular;
+      const pos = node.position();
+      if (isNaN(pos.x) || isNaN(pos.y)) {
+        // Restore last valid position or default to center
+        const lastValidPos = (node.scratch("_lastValidPosition") as {
+          x: number;
+          y: number;
+        }) || { x: 0, y: 0 };
+        node.position(lastValidPos);
+      } else {
+        // Store valid position
+        node.scratch("_lastValidPosition", { ...pos });
+      }
+    });
+
+    // More stable layout approach for WebKit
+    cy.on("layoutstop", function () {
+      requestAnimationFrame(() => {
+        cy.nodes().positions((node: NodeSingular) => {
+          const pos = node.position();
+          return {
+            x: Math.round(pos.x * 100) / 100, // Reduce floating point precision issues
+            y: Math.round(pos.y * 100) / 100,
+          };
+        });
+      });
+    });
   }
 }
 
@@ -157,19 +171,19 @@ function applyWebkitLayoutWorkaround(
  *
  * @param cy The cytoscape core instance
  * @param options The options for the react node
- * @param layout function to layout the graph. Called whenever layout affecting attributes changes,
+ * @param requestLayout function to request a graph layout. Called whenever layout affecting attributes changes,
  * such as node width or react element height.
  */
 function makeReactNode(
   cy: cytoscape.Core,
   logger: Logger,
-  options: ReactNodeOptions & PassthroughOptions,
-  layout: () => void,
+  options: ReactNodeOptions,
+  requestLayout: () => void,
 ) {
   options = Object.assign({}, defaultReactNodeOptions, options);
 
-  // Apply HTML to matching nodes
-  cy.nodes(options.query).forEach(createHtmlNode);
+  // Apply HTML to existing matching nodes
+  cy.nodes(options.query).map(createHtmlNode);
 
   // Apply HTML to new nodes that match the query
   cy.on("add", options.query, function (event: EventObjectNode) {
@@ -203,18 +217,38 @@ function makeReactNode(
     if (!container) throw new Error("Cytoscape container not found");
     container.appendChild(htmlElement);
 
-    window.addEventListener("resize", updateNodeHeightToSurroundHtmlWithLayout);
+    const updatePosition = () => {
+      const pos = node.position();
+      if (isNaN(pos.x) || isNaN(pos.y)) {
+        return;
+      }
+
+      // Cache values before RAF to reduce reflows
+      const zoom = cy.zoom();
+      const pan = cy.pan();
+      const nodeWidth = node.width();
+      const elementWidth = nodeWidth - getInnerHorizontalSpacing(htmlElement);
+      const nodeHeight = node.height();
+
+      // Batch DOM updates
+      const left =
+        Math.round((pan.x + pos.x * zoom - (nodeWidth * zoom) / 2) * 100) / 100;
+      const top =
+        Math.round((pan.y + pos.y * zoom - (nodeHeight * zoom) / 2) * 100) /
+        100;
+
+      const style = htmlElement.style;
+      style.top = `${top}px`;
+      style.left = `${left}px`;
+      style.width = `${elementWidth}px`;
+      style.transform = `scale(${zoom})`;
+      style.transformOrigin = "top left";
+    };
+
     cy.on("pan zoom resize", updatePosition);
-    cy.on("layoutstop", onLayoutStop);
-    node.on("position", updatePositionWithLayout);
-    node.on("remove", function removeHtmlElement() {
-      htmlElement.remove();
-      window.removeEventListener(
-        "resize",
-        updateNodeHeightToSurroundHtmlWithLayout,
-      );
-      cy.off("pan zoom resize", updatePosition);
-    });
+
+    node.on("position", updatePosition);
+
     node.on("select unselect", function onNodeSelectUnselect() {
       if (node.selected() && options.selectedStyle) {
         Object.assign(htmlElement.style, options.selectedStyle);
@@ -223,85 +257,32 @@ function makeReactNode(
       }
     });
 
-    // Debounce the node data event handler to reduce Redux updates
-    const debouncedDataHandler = debounce(function renderReactNode() {
+    node.on("data", function onNodeData() {
       renderJsxElement(reactRoot);
-    }, options.nodeDataRenderDelay);
-
-    node.on("data", debouncedDataHandler);
+    });
 
     if (options.syncClasses) {
       node.on("style", syncNodeClasses);
     }
 
-    function updateNodeHeightToSurroundHtmlWithLayout() {
+    node.on("remove", function removeHtmlElement() {
+      htmlElement.remove();
+      cy.off("pan zoom resize", updatePosition);
+    });
+
+    function renderJsxElement(root: ReactDOM.Root) {
+      const jsxElement = options.template(node.data() as NodeDataDefinition);
+      root.render(jsxElement);
       if (updateNodeHeightToSurroundHtml()) {
-        layout();
+        requestLayout();
       }
-    }
-
-    let isLayingOut = false;
-    function onLayoutStop() {
-      // Don't infinitely recurse on layouts the extension triggered.
-      if (!isLayingOut) {
-        isLayingOut = true;
-        try {
-          updateAfterLayout();
-        } finally {
-          isLayingOut = false;
-        }
-      }
-    }
-
-    function updatePositionWithLayout() {
-      if (updatePosition()) {
-        layout();
-      }
-    }
-
-    /** Returns true if the graph requires layout. */
-    function updatePosition() {
-      const pos = node.position();
-      // TODO: #31 - in Safari sometimes pos has NaN.
-      if (isNaN(pos.x) || isNaN(pos.y)) {
-        return false;
-      }
-      const zoom = cy.zoom();
-      const pan = cy.pan();
-      const nodeWidth = node.width();
-      const elementWidth = nodeWidth - getInnerHorizontalSpacing(htmlElement);
-      const nodeHeight = node.height();
-
-      const left = pan.x + pos.x * zoom - (nodeWidth * zoom) / 2;
-      const top = pan.y + pos.y * zoom - (nodeHeight * zoom) / 2;
-      const oldWidth = htmlElement.style.width;
-      const widthStyle = elementWidth + "px";
-      htmlElement.style.left = left + "px";
-      htmlElement.style.top = top + "px";
-      htmlElement.style.width = widthStyle;
-      htmlElement.style.transform = `scale(${zoom})`;
-      htmlElement.style.transformOrigin = "top left";
-      return oldWidth !== widthStyle;
     }
 
     function updateNodeHeightToSurroundHtml() {
       const height = htmlElement.offsetHeight;
       const oldHeight = getHeight(node) ?? 0;
-      node.data("height", height);
+      node.data({ height });
       return oldHeight !== height;
-    }
-
-    function updateAfterLayout() {
-      let isLayoutRequired = updatePosition();
-      isLayoutRequired = updateNodeHeightToSurroundHtml() || isLayoutRequired;
-      if (isLayoutRequired) {
-        layout();
-      }
-    }
-
-    function renderJsxElement(root: ReactDOM.Root) {
-      const jsxElement = options.template(node.data() as NodeDataDefinition);
-      root.render(jsxElement);
     }
 
     function syncNodeClasses() {

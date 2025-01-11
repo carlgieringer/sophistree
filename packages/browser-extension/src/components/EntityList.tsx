@@ -60,23 +60,28 @@ function EntityList({ style }: { style?: StyleProp<ViewStyle> }) {
           </DataTable.Title>
           <DataTable.Title>Visibility</DataTable.Title>
         </DataTable.Header>
-        {filteredEntities.map((entity) => (
-          <DataTable.Row
-            key={entity.id}
-            style={
-              selectedEntityIds.includes(entity.id)
-                ? { backgroundColor: "lightblue" }
-                : undefined
-            }
-            onPress={() => selectEntity(entity.id)}
-          >
-            <DataTable.Cell>{entity.type}</DataTable.Cell>
-            <DataTable.Cell>{makeDescription(entity)}</DataTable.Cell>
-            <DataTable.Cell>
-              <VisibilityDropdown entity={entity} />
-            </DataTable.Cell>
-          </DataTable.Row>
-        ))}
+        {filteredEntities.map((entity) => {
+          const { id: entityId, explicitVisibility, autoVisibility } = entity;
+          return (
+            <DataTable.Row
+              key={entity.id}
+              style={
+                selectedEntityIds.includes(entity.id)
+                  ? { backgroundColor: "lightblue" }
+                  : undefined
+              }
+              onPress={() => selectEntity(entity.id)}
+            >
+              <DataTable.Cell>{entity.type}</DataTable.Cell>
+              <DataTable.Cell>{makeDescription(entity)}</DataTable.Cell>
+              <DataTable.Cell>
+                <VisibilityDropdown
+                  {...{ entityId, explicitVisibility, autoVisibility }}
+                />
+              </DataTable.Cell>
+            </DataTable.Row>
+          );
+        })}
       </DataTable>
     </View>
   );

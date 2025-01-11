@@ -1,17 +1,28 @@
-import React from "react";
+import React, { useState } from "react";
 import { useDispatch } from "react-redux";
+import { Button, Menu } from "react-native-paper";
 
-import { Entity } from "@sophistree/common";
+import {
+  AutoVisibility,
+  EntityId,
+  ExplicitVisibility,
+} from "@sophistree/common";
 
 import {
   automateEntityVisibility,
   hideEntity,
   showEntity,
 } from "../store/entitiesSlice";
-import { Button, Menu } from "react-native-paper";
-import { useState } from "react";
 
-export default function VisibilityDropdown({ entity }: { entity: Entity }) {
+export default function VisibilityDropdown({
+  entityId,
+  explicitVisibility,
+  autoVisibility,
+}: {
+  entityId: EntityId;
+  explicitVisibility: ExplicitVisibility;
+  autoVisibility: AutoVisibility;
+}) {
   const dispatch = useDispatch();
 
   const [isMenuVisible, setMenuVisible] = useState(false);
@@ -25,22 +36,21 @@ export default function VisibilityDropdown({ entity }: { entity: Entity }) {
   }
 
   function setVisible() {
-    dispatch(showEntity(entity.id));
+    dispatch(showEntity(entityId));
     hideMenu();
   }
 
   function setHidden() {
-    dispatch(hideEntity(entity.id));
+    dispatch(hideEntity(entityId));
     hideMenu();
   }
 
   function unsetVisibility() {
-    dispatch(automateEntityVisibility(entity.id));
+    dispatch(automateEntityVisibility(entityId));
     hideMenu();
   }
 
-  const visibilityText =
-    entity.explicitVisibility ?? `Auto (${entity.autoVisibility})`;
+  const visibilityText = explicitVisibility ?? `Auto (${autoVisibility})`;
 
   return (
     <Menu
@@ -50,10 +60,7 @@ export default function VisibilityDropdown({ entity }: { entity: Entity }) {
     >
       <Menu.Item onPress={setVisible} title="Visible" />
       <Menu.Item onPress={setHidden} title="Hidden" />
-      <Menu.Item
-        onPress={unsetVisibility}
-        title={`Auto (${entity.autoVisibility})`}
-      />
+      <Menu.Item onPress={unsetVisibility} title={`Auto (${autoVisibility})`} />
     </Menu>
   );
 }

@@ -6,7 +6,10 @@ interface BaseEntity {
   explicitVisibility?: Visibility | undefined;
   autoVisibility: Visibility;
   isCollapsed?: boolean;
-};
+}
+export type EntityId = BaseEntity["id"];
+export type ExplicitVisibility = BaseEntity["explicitVisibility"];
+export type AutoVisibility = BaseEntity["autoVisibility"];
 
 export type Visibility = "Visible" | "Hidden";
 

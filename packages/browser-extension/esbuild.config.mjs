@@ -26,7 +26,7 @@ const options = {
   bundle: true,
   minify: true,
   // React error messages are much more helpful when the Component names are not minimized
-  keepNames: !prod,
+  keepNames: true,
   external: [
     // Required by cytoscape-elk
     "web-worker",
