@@ -66,7 +66,46 @@ const defaultReactNodeOptions: ReactNodeOptions = {
   unselectedStyle: { border: "" },
 };
 
-/** A cytoscape extension that renders React elements over nodes. */
+/**
+ * A cytoscape extension that renders React elements over nodes.
+ *
+ * Requirements:
+ *
+ * Rendering:
+ * - React elements must be positioned precisely over their corresponding Cytoscape nodes
+ * - React elements must remain correctly positioned during pan, zoom, and graph manipulation
+ * - The system must handle both initial node rendering and dynamically added nodes
+ * - The system must work consistently across different browsers and platforms
+ *
+ * Sizing:
+ * - React elements must have a predictable and consistent sizing model
+ * - Changes in React element size must be detected and handled appropriately
+ * - Size changes should trigger layout updates only when necessary
+ * - Layout updates must not create infinite update cycles
+ *
+ * Performance:
+ * - The system must efficiently handle graphs with many nodes
+ * - Updates may be batched or debounced to prevent excessive re-renders
+ * - Memory usage must be properly managed, especially for dynamic graphs
+ * - Event listeners must be properly managed to prevent memory leaks
+ *
+ * Integration:
+ * - The extension must integrate cleanly with Cytoscape's existing systems
+ * - It must not interfere with other Cytoscape extensions or features
+ *
+ * Current implementation:
+ *
+ * - The Cytoscape node determines the width of the React element.
+ * - The React element's content grows vertically, and the Cytoscape node must
+ *   grow vertically to match the React element.
+ * - When the node's data changes, it should re-render the React JSX in case the data changes the rendering.
+ * - When the extension changes the height of a Cytoscape node, we should request a layout
+ *   to ensure that the graph is laid out to accomodate the new height.
+ * - When the Cytoscape node position changes (e.g. during a layout), the React element
+ *   must move to match it. Since position changes are assumed to come from layouts,
+ *   we must never request a layout in response to a position change.
+ * - We should not request a layout when one is already active.
+ */
 function reactNodes(this: cytoscape.Core, options: ReactNodesOptions) {
   const layout = throttle(() => {
     this.layout(options.layoutOptions).run();
