@@ -13,21 +13,25 @@ import {
   Entity,
 } from "@sophistree/common";
 
-import { getDocHandle, getAllDocs } from "./sync";
+import { getDocHandle } from "./sync";
 import * as appLogger from "../logging/appLogging";
 import { combineAppearanceOutcomes } from "./combineAppearanceOutcomes";
 import {
   useActiveMapAutomergeDocumentId,
   useSelectedEntityIds,
 } from "../store/entitiesSlice";
-import { addDocChangeListener, removeDocChangeListener } from "./repos";
+import {
+  addDocChangeListener,
+  getAllDocs,
+  removeDocChangeListener,
+} from "./repos";
 
 export const useAllMaps = () => {
   const [maps, setMaps] = useState<Doc<ArgumentMap>[]>([]);
 
   useEffect(() => {
     const updateMaps = () => {
-      setMaps(getAllDocs());
+      void getAllDocs().then(setMaps);
     };
 
     updateMaps();

@@ -107,7 +107,7 @@ export function DefaultSyncServerSettings() {
                 mode="outlined"
                 value={address}
                 onChangeText={(value) => handleAddressChange(index, value)}
-                placeholder="ws://localhost:3000 or wss://example.com:3000"
+                placeholder=" wss://sophistree.app or ws://localhost:3000"
                 error={!!validationErrors[index]}
               />
               <HelperText type="error" visible={!!validationErrors[index]}>
