@@ -74,8 +74,7 @@ export const reduxPersistMigrations = {
     const state = s as unknown as { entities: AutomergeMapsState };
     const maps = state.entities?.maps;
     maps?.forEach((m) => {
-      const handle = createDoc(m);
-      m.id = handle.documentId;
+      createDoc(m);
     });
     // maps are now stored in automerge
     delete state.entities?.maps;

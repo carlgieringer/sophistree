@@ -56,7 +56,6 @@ const options = {
     ".js": "jsx",
     ".ttf": "file",
     ".png": "file",
-    // ".wasm": "file",
   },
   assetNames: "assets/[name]-[hash]",
   define: makeEnvDefines(),

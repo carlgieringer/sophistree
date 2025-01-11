@@ -1,18 +1,20 @@
 # Sync service
 
-This package contains a server that syncs automerge docs with auth via
-`@localfirst/auth-syncserver`.
+This package contains a server that syncs automerge docs.
 
-## Local changes
+## Getting started
 
-To use a locally modified `@localfirst/auth-syncserver`:
-
-```shell
-npm install '@localfirst/auth-syncserver@file:../../../local-first-auth/packages/auth-syncserver/dist'
-```
-
-To use the released version:
+Copy the env file:
 
 ```shell
-npm install '@localfirst/auth-syncserver'
+cp .env.example .env
+# update the DB password
 ```
+
+Run the server with hotreload for changes:
+
+```shell
+yarn run dev
+```
+
+The server also runs with hot reload as part of the root package's `watch-all` script.
