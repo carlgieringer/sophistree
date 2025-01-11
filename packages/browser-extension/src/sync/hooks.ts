@@ -31,7 +31,9 @@ export const useAllMaps = () => {
 
   useEffect(() => {
     const updateMaps = () => {
-      void getAllDocs().then(setMaps);
+      void getAllDocs().then((maps) => {
+        setMaps(maps);
+      });
     };
 
     updateMaps();

@@ -11,7 +11,7 @@ import { DocumentId, isValidDocumentId } from "@automerge/automerge-repo";
 import {
   openSyncedMap,
   setActiveMap,
-  useActiveMapId,
+  useActiveMapAutomergeDocumentId,
   useIsOpeningSyncedMap,
 } from "../store/entitiesSlice";
 import ArgumentMapView from "./ArgumentMapView";
@@ -28,7 +28,7 @@ export default function ActiveMapDialog({
 }) {
   const dispatch = useAppDispatch();
 
-  const activeMapId = useActiveMapId();
+  const activeMapId = useActiveMapAutomergeDocumentId();
   const maps = useAllMaps();
 
   function hideModal() {
@@ -38,7 +38,7 @@ export default function ActiveMapDialog({
   }
 
   const mapCards = maps.map((map) => {
-    const isActive = map.id === activeMapId;
+    const isActive = map.automergeDocumentId === activeMapId;
     return (
       <ArgumentMapView
         key={map.id}
@@ -48,7 +48,7 @@ export default function ActiveMapDialog({
           !isActive && (
             <Button
               onPress={() => {
-                dispatch(setActiveMap(map.id as DocumentId));
+                dispatch(setActiveMap(map.automergeDocumentId as DocumentId));
                 hideModal();
               }}
             >

@@ -16,7 +16,6 @@ import {
   AddMediaExcerptData,
   selectEntities,
   useActiveMapAutomergeDocumentId,
-  useActiveMapId,
 } from "./store/entitiesSlice";
 import EntityList from "./components/EntityList";
 import { showNewMapDialog } from "./store/uiSlice";
@@ -142,17 +141,20 @@ function connectToTab(tab: chrome.tabs.Tab) {
 }
 
 function useRefreshContentPageMediaExcerptsWhenActiveMapChanges() {
-  const activeMapId = useActiveMapId();
-  const [prevActiveMapId, setPrevActiveMapId] = useState(
-    undefined as string | undefined,
-  );
+  // TODO
+  // Previously we proactively sent MediaExcerpts the user created and reactively
+  // sent MediaExcerpts when the map changed. With Automerge, we must also be
+  // reactive for the current map. We should instead watch all MediaExcerpts,
+  // and trigger when we see the unique set of their ids change.
+  const id = useActiveMapAutomergeDocumentId();
+  const [prevId, setPrevId] = useState(undefined as string | undefined);
 
   useEffect(() => {
-    if (activeMapId !== prevActiveMapId) {
+    if (id !== prevId) {
       void sendRefreshMediaExcerptsMessage();
-      setPrevActiveMapId(activeMapId);
+      setPrevId(id);
     }
-  }, [activeMapId, prevActiveMapId, setPrevActiveMapId]);
+  }, [id, prevId, setPrevId]);
 }
 
 function useSendUpdatedMediaExcerptOutcomes() {

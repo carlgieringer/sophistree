@@ -125,14 +125,17 @@ function getCollapsedDescendantCounts(
     { childCount: number; descendantCount: number }
   >();
 
+  const seen = new Set();
+
   for (const entity of entities) {
     visit(entity.id);
   }
 
   function visit(id: string) {
-    if (collapsedDescendantCounts.has(id)) {
+    if (seen.has(id)) {
       return;
     }
+    seen.add(id);
 
     for (const childId of adjacencies.get(id) ?? []) {
       visit(childId);
