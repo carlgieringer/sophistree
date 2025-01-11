@@ -1,6 +1,6 @@
 import { DomAnchor } from "tapestry-highlights";
 
-type BaseEntity = {
+interface BaseEntity {
   id: string;
   // if explicitVisibility is missing, falls back to autoVisibility
   explicitVisibility?: Visibility | undefined;
