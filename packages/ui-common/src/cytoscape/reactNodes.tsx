@@ -203,18 +203,17 @@ function makeReactNode(
     if (!container) throw new Error("Cytoscape container not found");
     container.appendChild(htmlElement);
 
-    window.addEventListener("resize", updateNodeHeightToSurroundHtmlWithLayout);
     cy.on("pan zoom resize", updatePosition);
+
     cy.on("layoutstop", onLayoutStop);
-    node.on("position", updatePositionWithLayout);
+
+    node.on("position", updatePosition);
+
     node.on("remove", function removeHtmlElement() {
       htmlElement.remove();
-      window.removeEventListener(
-        "resize",
-        updateNodeHeightToSurroundHtmlWithLayout,
-      );
       cy.off("pan zoom resize", updatePosition);
     });
+
     node.on("select unselect", function onNodeSelectUnselect() {
       if (node.selected() && options.selectedStyle) {
         Object.assign(htmlElement.style, options.selectedStyle);
@@ -224,22 +223,16 @@ function makeReactNode(
     });
 
     // Debounce the node data event handler to reduce Redux updates
-    const debouncedDataHandler = debounce(function renderReactNode() {
+    const onNodeData = debounce(function onNodeData() {
       renderJsxElement(reactRoot);
     }, options.nodeDataRenderDelay);
-
-    node.on("data", debouncedDataHandler);
+    node.on("data", onNodeData);
 
     if (options.syncClasses) {
       node.on("style", syncNodeClasses);
     }
 
-    function updateNodeHeightToSurroundHtmlWithLayout() {
-      if (updateNodeHeightToSurroundHtml()) {
-        layout();
-      }
-    }
-
+    // Check if we need one last layout after every layout stops.
     let isLayingOut = false;
     function onLayoutStop() {
       // Don't infinitely recurse on layouts the extension triggered.
@@ -250,12 +243,6 @@ function makeReactNode(
         } finally {
           isLayingOut = false;
         }
-      }
-    }
-
-    function updatePositionWithLayout() {
-      if (updatePosition()) {
-        layout();
       }
     }
 
@@ -292,9 +279,8 @@ function makeReactNode(
     }
 
     function updateAfterLayout() {
-      let isLayoutRequired = updatePosition();
-      isLayoutRequired = updateNodeHeightToSurroundHtml() || isLayoutRequired;
-      if (isLayoutRequired) {
+      updatePosition();
+      if (updateNodeHeightToSurroundHtml()) {
         layout();
       }
     }

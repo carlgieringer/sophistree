@@ -54,7 +54,7 @@ function PropositionEditor({ entity }: { entity: Proposition }) {
     () =>
       debounce((text: string) => {
         dispatch(updateProposition({ id: entity.id, updates: { text } }));
-      }, 150),
+      }, 500),
     [dispatch, entity.id],
   );
 
