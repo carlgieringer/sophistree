@@ -6,7 +6,7 @@ interface BaseEntity {
   explicitVisibility?: Visibility | undefined;
   autoVisibility: Visibility;
   isCollapsed?: boolean;
-};
+}
 
 export type Visibility = "Visible" | "Hidden";
 
