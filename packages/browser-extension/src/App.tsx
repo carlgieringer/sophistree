@@ -22,8 +22,8 @@ import { showNewMapDialog } from "./store/uiSlice";
 import {
   GetMediaExcerptsResponse,
   notifyTabOfNewMediaExcerpt,
-  sendRefreshMediaExcerptsMessage,
   sendUpdatedMediaExcerptOutcomes,
+  sendUpdatedMediaExcerpts,
 } from "./extension/messages";
 import { serializeMap } from "./extension/serialization";
 import * as appLogger from "./logging/appLogging";
@@ -37,12 +37,13 @@ import {
   useActiveMap,
   useActiveMapEntities,
   useActiveMapMediaExcerptOutcomes,
+  useActiveMapMediaExcerpts,
 } from "./sync/hooks";
 
 const App: React.FC = () => {
   const dispatch = useAppDispatch();
-  useRefreshContentPageMediaExcerptsWhenActiveMapChanges();
-  useSendUpdatedMediaExcerptOutcomes();
+  useSyncMediaExcerptsWithContent();
+  useSyncUpdatedMediaExcerptOutcomesWithContent();
   useHandleChromeRuntimeMessage();
   useContentScriptKeepAliveConnection();
   useRefreshAuth();
@@ -140,24 +141,42 @@ function connectToTab(tab: chrome.tabs.Tab) {
   }
 }
 
-function useRefreshContentPageMediaExcerptsWhenActiveMapChanges() {
-  // TODO
-  // Previously we proactively sent MediaExcerpts the user created and reactively
-  // sent MediaExcerpts when the map changed. With Automerge, we must also be
-  // reactive for the current map. We should instead watch all MediaExcerpts,
-  // and trigger when we see the unique set of their ids change.
-  const id = useActiveMapAutomergeDocumentId();
-  const [prevId, setPrevId] = useState(undefined as string | undefined);
+function useSyncMediaExcerptsWithContent() {
+  const mediaExcerpts = useActiveMapMediaExcerpts();
+
+  const [prevMediaExcerpts, setPrevMediaExcerpts] = useState<MediaExcerpt[]>(
+    [],
+  );
 
   useEffect(() => {
-    if (id !== prevId) {
-      void sendRefreshMediaExcerptsMessage();
-      setPrevId(id);
+    const { add, remove } = diffMediaExcerpts(prevMediaExcerpts, mediaExcerpts);
+    if (add.length > 0 || remove.length > 0) {
+      void sendUpdatedMediaExcerpts({ add, remove });
     }
-  }, [id, prevId, setPrevId]);
+    setPrevMediaExcerpts(mediaExcerpts);
+  }, [mediaExcerpts, prevMediaExcerpts]);
 }
 
-function useSendUpdatedMediaExcerptOutcomes() {
+function diffMediaExcerpts(
+  prevMediaExcerpts: MediaExcerpt[],
+  mediaExcerpts: MediaExcerpt[],
+) {
+  const remove = new Set(prevMediaExcerpts.map((me) => me.id));
+  const add = [] as MediaExcerpt[];
+  mediaExcerpts.forEach((me) => {
+    if (remove.has(me.id)) {
+      remove.delete(me.id);
+    } else {
+      add.push(me);
+    }
+  });
+  return {
+    add,
+    remove: Array.from(remove),
+  };
+}
+
+function useSyncUpdatedMediaExcerptOutcomesWithContent() {
   const mediaExcerptOutcomes = useActiveMapMediaExcerptOutcomes();
 
   // Store the outcomes so that we can diff them when they change

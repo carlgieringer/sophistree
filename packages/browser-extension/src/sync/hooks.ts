@@ -159,14 +159,18 @@ export const useActiveMapEntitiesOutcomes = () => {
   return useMemo(() => determineOutcomes(entities), [entities]);
 };
 
+export const useActiveMapMediaExcerpts = () => {
+  const entities = useActiveMapEntities();
+  return useMemo(
+    () => entities.filter((e) => e.type === "MediaExcerpt"),
+    [entities],
+  );
+};
+
 /**
  * First group the appearances by mediaExcerptId. Then aggregate the appearances'
- * propositions outcomes into a single outcome for the mediaExcerpt. The rules are:
- *
- * - "Proven" + "Presumed" = "Proven"
- * - "Disproven" + either "Proven" or "Presumed"  = "Contradictory"
- * - "Contradictory" + any other outcome = "Contradictory"
- * - "Unproven" does not change the value.
+ * propositions outcomes into a single outcome for the mediaExcerpt. See
+ * combineAppearanceOutcomes for the rules.
  *
  * @param state
  * @returns Map of mediaExcerptId to BasisOutcome

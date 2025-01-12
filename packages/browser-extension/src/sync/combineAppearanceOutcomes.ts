@@ -1,5 +1,14 @@
 import { BasisOutcome } from "@sophistree/common";
 
+/**
+ * Combines two outcomes into of an appearance's propositions into a single
+ * outcome. The rules are:
+ *
+ * - "Proven" + "Presumed" = "Proven"
+ * - "Disproven" + either "Proven" or "Presumed"  = "Contradictory"
+ * - "Contradictory" + any other outcome = "Contradictory"
+ * - "Unproven" does not change the value.
+ */
 export function combineAppearanceOutcomes(
   outcome1: BasisOutcome,
   outcome2: BasisOutcome,

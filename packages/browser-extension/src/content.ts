@@ -23,6 +23,7 @@ import type {
   ContentMessage,
   CreateMediaExcerptMessage,
   GetMediaExcerptsResponse,
+  MediaExcerptUpdates,
 } from "./extension/messages";
 import { deserializeMap } from "./extension/serialization";
 import { connectionErrorMessage } from "./extension/errorMessages";
@@ -79,10 +80,9 @@ async function handleMessage(
       updateMediaExcerptOutcomes(updatedOutcomes);
       break;
     }
-    case "refreshMediaExcerpts": {
-      await refreshMediaExcerpts();
+    case "updateMediaExcerpts":
+      updateMediaExcerpts(message);
       break;
-    }
     case "notifyTabOfNewMediaExcerpt": {
       highlightNewMediaExcerptIfOnPage(message.data);
       break;
@@ -95,9 +95,28 @@ async function handleMessage(
   }
 }
 
-async function refreshMediaExcerpts() {
-  highlightManager.removeAllHighlights();
-  await getMediaExcerpts();
+function updateMediaExcerpts({ add, remove }: MediaExcerptUpdates) {
+  add.forEach((mediaExcerpt) => {
+    const {
+      id,
+      quotation,
+      domAnchor,
+      sourceInfo: { name: sourceName },
+      urlInfo: { url, canonicalUrl, pdfFingerprint },
+    } = mediaExcerpt;
+    const addData = {
+      id,
+      quotation,
+      url,
+      canonicalUrl,
+      pdfFingerprint,
+      sourceName,
+      domAnchor,
+    };
+    highlightNewMediaExcerptIfOnPage(addData);
+  });
+  const removeSet = new Set(remove);
+  highlightManager.removeHighlights((h) => removeSet.has(h.mediaExcerptId));
 }
 
 function highlightNewMediaExcerptIfOnPage(data: AddMediaExcerptData) {

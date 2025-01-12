@@ -26,8 +26,13 @@ export interface GetMediaExcerptsResponse {
   serializedOutcomes: [string, BasisOutcome][];
 }
 
-export interface RefreshMediaExcerptsMessage {
-  action: "refreshMediaExcerpts";
+export interface UpdateMediaExcerptsMessage extends MediaExcerptUpdates {
+  action: "updateMediaExcerpts";
+}
+
+export interface MediaExcerptUpdates {
+  add: MediaExcerpt[];
+  remove: string[];
 }
 
 export interface NotifyTabOfNewMediaExcerptMessage {
@@ -44,8 +49,8 @@ export type ContentMessage =
   | CreateMediaExcerptMessage
   | FocusMediaExcerptMessage
   | RequestUrlInfoMessage
+  | UpdateMediaExcerptsMessage
   | UpdateMediaExcerptOutcomesMessage
-  | RefreshMediaExcerptsMessage
   | NotifyTabOfNewMediaExcerptMessage
   | NotifyTabsOfDeletedMediaExcerptsMessage;
 
@@ -56,9 +61,14 @@ export function getTabUrlInfo(tabId: number): Promise<UrlInfo> {
   return chrome.tabs.sendMessage(tabId, message);
 }
 
-export async function sendRefreshMediaExcerptsMessage() {
-  const message: RefreshMediaExcerptsMessage = {
-    action: "refreshMediaExcerpts",
+export async function sendUpdatedMediaExcerpts({
+  add,
+  remove,
+}: MediaExcerptUpdates) {
+  const message: UpdateMediaExcerptsMessage = {
+    action: "updateMediaExcerpts",
+    add,
+    remove,
   };
 
   await sendMessageToAllCompleteTabs(message);
