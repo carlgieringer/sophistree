@@ -241,12 +241,18 @@ export const entitiesSlice = createAppSlice({
           pdfFingerprint,
         },
       );
+
+      // Automerge's IndexedDB storage does not support undefined values.
+      const urlInfo: UrlInfo = { url };
+      if (canonicalUrl !== undefined) urlInfo.canonicalUrl = canonicalUrl;
+      if (pdfFingerprint !== undefined) urlInfo.pdfFingerprint = pdfFingerprint;
+
       const mediaExcerpt: MediaExcerpt = {
         type: "MediaExcerpt",
         ...defaultVisibilityProps,
         id,
         quotation,
-        urlInfo: { url, canonicalUrl, pdfFingerprint },
+        urlInfo,
         sourceInfo: { name: sourceNameOverride ?? sourceName },
         domAnchor,
       };

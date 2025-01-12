@@ -17,14 +17,15 @@
     "default_title": "Sophistree{{#unless prod}} (Dev){{/unless}}"
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.mjs"
   },
   "options_page": "options.html",
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "css": ["content.css"]
+      "js": ["content.mjs"],
+      "css": ["content.css"],
+      "type": "module"
     }
   ],
   "content_security_policy": {

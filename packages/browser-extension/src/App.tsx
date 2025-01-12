@@ -10,7 +10,6 @@ import {
 
 import EntityEditor from "./components/EntityEditor";
 import HeaderBar from "./components/HeaderBar";
-import { ChromeRuntimeMessage, sidepanelKeepalivePortName } from "./content";
 import {
   addMediaExcerpt,
   AddMediaExcerptData,
@@ -24,6 +23,7 @@ import {
   notifyTabOfNewMediaExcerpt,
   sendUpdatedMediaExcerptOutcomes,
   sendUpdatedMediaExcerpts,
+  sidepanelKeepalivePortName,
 } from "./extension/messages";
 import { serializeMap } from "./extension/serialization";
 import * as appLogger from "./logging/appLogging";
@@ -39,6 +39,7 @@ import {
   useActiveMapMediaExcerptOutcomes,
   useActiveMapMediaExcerpts,
 } from "./sync/hooks";
+import { ChromeRuntimeMessage } from "./extension/chromeRuntimeMessages";
 
 const App: React.FC = () => {
   const dispatch = useAppDispatch();

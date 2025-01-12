@@ -1,7 +1,9 @@
 import { BasisOutcome, MediaExcerpt, UrlInfo } from "@sophistree/common";
 import { AddMediaExcerptData } from "../store/entitiesSlice";
 import { serializeMap } from "./serialization";
-import * as appLogger from "../logging/appLogging";
+import * as appLogger from "../logging/contentLogging";
+
+export const sidepanelKeepalivePortName = "keepalive";
 
 export interface CreateMediaExcerptMessage {
   action: "createMediaExcerpt";
