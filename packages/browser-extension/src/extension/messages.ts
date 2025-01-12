@@ -28,12 +28,13 @@ export interface GetMediaExcerptsResponse {
   serializedOutcomes: [string, BasisOutcome][];
 }
 
-export interface UpdateMediaExcerptsMessage extends MediaExcerptUpdates {
-  action: "updateMediaExcerpts";
+export interface SyncMediaExcerptsMessage extends MediaExcerptUpdates {
+  action: "syncMediaExcerpts";
 }
 
 export interface MediaExcerptUpdates {
   add: MediaExcerpt[];
+  // The IDs of the MediaExcerpts to remove
   remove: string[];
 }
 
@@ -51,7 +52,7 @@ export type ContentMessage =
   | CreateMediaExcerptMessage
   | FocusMediaExcerptMessage
   | RequestUrlInfoMessage
-  | UpdateMediaExcerptsMessage
+  | SyncMediaExcerptsMessage
   | UpdateMediaExcerptOutcomesMessage
   | NotifyTabOfNewMediaExcerptMessage
   | NotifyTabsOfDeletedMediaExcerptsMessage;
@@ -67,8 +68,8 @@ export async function sendUpdatedMediaExcerpts({
   add,
   remove,
 }: MediaExcerptUpdates) {
-  const message: UpdateMediaExcerptsMessage = {
-    action: "updateMediaExcerpts",
+  const message: SyncMediaExcerptsMessage = {
+    action: "syncMediaExcerpts",
     add,
     remove,
   };

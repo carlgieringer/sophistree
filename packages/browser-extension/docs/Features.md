@@ -121,6 +121,11 @@ Guidelines for excerpt creation from already open tabs:
 
 - The user must open the sidebar and activate a map first.
 
+## Collaborative editing
+
+- Changes to argument maps are automatically synced between users
+- Other users' MediaExcerpts are highlighted in the local content pages
+
 ## Social Features
 
 - Authentication
