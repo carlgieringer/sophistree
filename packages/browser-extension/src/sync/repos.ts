@@ -3,12 +3,37 @@ import { BrowserWebSocketClientAdapter } from "@automerge/automerge-repo-network
 import { IndexedDBStorageAdapter } from "@automerge/automerge-repo-storage-indexeddb";
 
 import * as appLogger from "../logging/appLogging";
-import { Repo } from "@automerge/automerge-repo";
+import {
+  Doc,
+  DocumentId,
+  isValidDocumentId,
+  Repo,
+} from "@automerge/automerge-repo";
+import { ArgumentMap } from "@sophistree/common";
 
 /** A cache of repos we have opened keyed based on their sync server addresses. */
 const reposBySyncServers = new Map<string, Repo>();
 
 const storage = new IndexedDBStorageAdapter("sophistree");
+
+async function getAllDocIds() {
+  const chunks = await storage.loadRange([]);
+  const docIds = new Set<DocumentId>();
+  chunks.forEach(({ key: [docId] }) => {
+    if (isValidDocumentId(docId)) {
+      docIds.add(docId);
+    }
+  });
+  return Array.from(docIds);
+}
+
+export async function getAllDocs(): Promise<Doc<ArgumentMap>[]> {
+  const docIds = await getAllDocIds();
+  const docs = await Promise.all(
+    docIds.map((id) => storageOnlyRepo.find<ArgumentMap>(id).doc()),
+  );
+  return docs.flatMap((d) => (d ? [d] : []));
+}
 
 /** A repo to read all docs */
 export const storageOnlyRepo = new Repo({ storage });

@@ -1,5 +1,4 @@
 import {
-  Doc,
   DocHandle,
   DocumentId,
   isValidDocumentId,
@@ -10,16 +9,7 @@ import {
   getSyncServerAddresses,
   setSyncServerAddresses,
 } from "./syncServerStorage";
-import { getRepo, storageOnlyRepo } from "./repos";
-
-export function getAllDocs(): Doc<ArgumentMap>[] {
-  const allHandles = Object.values(
-    storageOnlyRepo.handles,
-  ) as DocHandle<ArgumentMap>[];
-  return allHandles
-    .map((h) => h.docSync())
-    .filter(Boolean) as Doc<ArgumentMap>[];
-}
+import { getRepo } from "./repos";
 
 export function createDoc(map: NewArgumentMap) {
   const repo = getRepo([]);

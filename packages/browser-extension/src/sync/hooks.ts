@@ -13,21 +13,27 @@ import {
   Entity,
 } from "@sophistree/common";
 
-import { getDocHandle, getAllDocs } from "./sync";
+import { getDocHandle } from "./sync";
 import * as appLogger from "../logging/appLogging";
 import { combineAppearanceOutcomes } from "./combineAppearanceOutcomes";
 import {
   useActiveMapAutomergeDocumentId,
   useSelectedEntityIds,
 } from "../store/entitiesSlice";
-import { addDocChangeListener, removeDocChangeListener } from "./repos";
+import {
+  addDocChangeListener,
+  getAllDocs,
+  removeDocChangeListener,
+} from "./repos";
 
 export const useAllMaps = () => {
   const [maps, setMaps] = useState<Doc<ArgumentMap>[]>([]);
 
   useEffect(() => {
     const updateMaps = () => {
-      setMaps(getAllDocs());
+      void getAllDocs().then((maps) => {
+        setMaps(maps);
+      });
     };
 
     updateMaps();
@@ -153,14 +159,18 @@ export const useActiveMapEntitiesOutcomes = () => {
   return useMemo(() => determineOutcomes(entities), [entities]);
 };
 
+export const useActiveMapMediaExcerpts = () => {
+  const entities = useActiveMapEntities();
+  return useMemo(
+    () => entities.filter((e) => e.type === "MediaExcerpt"),
+    [entities],
+  );
+};
+
 /**
  * First group the appearances by mediaExcerptId. Then aggregate the appearances'
- * propositions outcomes into a single outcome for the mediaExcerpt. The rules are:
- *
- * - "Proven" + "Presumed" = "Proven"
- * - "Disproven" + either "Proven" or "Presumed"  = "Contradictory"
- * - "Contradictory" + any other outcome = "Contradictory"
- * - "Unproven" does not change the value.
+ * propositions outcomes into a single outcome for the mediaExcerpt. See
+ * combineAppearanceOutcomes for the rules.
  *
  * @param state
  * @returns Map of mediaExcerptId to BasisOutcome

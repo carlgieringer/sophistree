@@ -17,17 +17,26 @@ import {
   outcomeValence,
 } from "@sophistree/common";
 
-import "./highlights/outcome-colors.scss";
 import { AddMediaExcerptData } from "./store/entitiesSlice";
-import type {
-  ContentMessage,
-  CreateMediaExcerptMessage,
-  GetMediaExcerptsResponse,
+import {
+  sidepanelKeepalivePortName,
+  type ContentMessage,
+  type CreateMediaExcerptMessage,
+  type GetMediaExcerptsResponse,
+  type MediaExcerptUpdates,
 } from "./extension/messages";
 import { deserializeMap } from "./extension/serialization";
 import { connectionErrorMessage } from "./extension/errorMessages";
 import * as contentLogger from "./logging/contentLogging";
 import { getPdfUrlFromViewerUrl, isPdfViewerUrl } from "./pdfs/pdfs";
+import {
+  AddMediaExcerptMessage,
+  GetMediaExcerptMessage,
+  GetMediaExcerptsMessage,
+  SelectMediaExcerptMessage,
+} from "./extension/chromeRuntimeMessages";
+
+import "./highlights/outcome-colors.scss";
 
 chrome.runtime.onConnect.addListener(getMediaExcerptsWhenSidebarConnects);
 chrome.runtime.onMessage.addListener(
@@ -56,8 +65,6 @@ function getMediaExcerptsWhenSidebarConnects(port: chrome.runtime.Port) {
   }
 }
 
-export const sidepanelKeepalivePortName = "keepalive";
-
 async function handleMessage(
   message: ContentMessage,
   sender: chrome.runtime.MessageSender,
@@ -79,10 +86,9 @@ async function handleMessage(
       updateMediaExcerptOutcomes(updatedOutcomes);
       break;
     }
-    case "refreshMediaExcerpts": {
-      await refreshMediaExcerpts();
+    case "updateMediaExcerpts":
+      updateMediaExcerpts(message);
       break;
-    }
     case "notifyTabOfNewMediaExcerpt": {
       highlightNewMediaExcerptIfOnPage(message.data);
       break;
@@ -95,9 +101,28 @@ async function handleMessage(
   }
 }
 
-async function refreshMediaExcerpts() {
-  highlightManager.removeAllHighlights();
-  await getMediaExcerpts();
+function updateMediaExcerpts({ add, remove }: MediaExcerptUpdates) {
+  add.forEach((mediaExcerpt) => {
+    const {
+      id,
+      quotation,
+      domAnchor,
+      sourceInfo: { name: sourceName },
+      urlInfo: { url, canonicalUrl, pdfFingerprint },
+    } = mediaExcerpt;
+    const addData = {
+      id,
+      quotation,
+      url,
+      canonicalUrl,
+      pdfFingerprint,
+      sourceName,
+      domAnchor,
+    };
+    highlightNewMediaExcerptIfOnPage(addData);
+  });
+  const removeSet = new Set(remove);
+  highlightManager.removeHighlights((h) => removeSet.has(h.mediaExcerptId));
 }
 
 function highlightNewMediaExcerptIfOnPage(data: AddMediaExcerptData) {
@@ -407,45 +432,6 @@ async function selectMediaExcerpt(mediaExcerptId: string) {
   };
   await chrome.runtime.sendMessage(message);
 }
-
-interface AddMediaExcerptMessage {
-  action: "addMediaExcerpt";
-  data: AddMediaExcerptData;
-}
-
-interface SelectMediaExcerptMessage {
-  action: "selectMediaExcerpt";
-  data: {
-    mediaExcerptId: string;
-  };
-}
-
-interface GetMediaExcerptMessage {
-  action: "getMediaExcerpt";
-  data: {
-    mediaExcerptId: string;
-  };
-}
-
-interface GetMediaExcerptsMessage {
-  action: "getMediaExcerpts";
-  data: {
-    url: string;
-    canonicalUrl?: string;
-    pdfFingerprint?: string;
-  };
-}
-
-interface AuthStateChangedMessage {
-  action: "authStateChanged";
-}
-
-export type ChromeRuntimeMessage =
-  | AddMediaExcerptMessage
-  | SelectMediaExcerptMessage
-  | GetMediaExcerptMessage
-  | GetMediaExcerptsMessage
-  | AuthStateChangedMessage;
 
 declare global {
   interface Window {

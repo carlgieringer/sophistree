@@ -10,21 +10,20 @@ import {
 
 import EntityEditor from "./components/EntityEditor";
 import HeaderBar from "./components/HeaderBar";
-import { ChromeRuntimeMessage, sidepanelKeepalivePortName } from "./content";
 import {
   addMediaExcerpt,
   AddMediaExcerptData,
   selectEntities,
   useActiveMapAutomergeDocumentId,
-  useActiveMapId,
 } from "./store/entitiesSlice";
 import EntityList from "./components/EntityList";
 import { showNewMapDialog } from "./store/uiSlice";
 import {
   GetMediaExcerptsResponse,
   notifyTabOfNewMediaExcerpt,
-  sendRefreshMediaExcerptsMessage,
   sendUpdatedMediaExcerptOutcomes,
+  sendUpdatedMediaExcerpts,
+  sidepanelKeepalivePortName,
 } from "./extension/messages";
 import { serializeMap } from "./extension/serialization";
 import * as appLogger from "./logging/appLogging";
@@ -38,12 +37,14 @@ import {
   useActiveMap,
   useActiveMapEntities,
   useActiveMapMediaExcerptOutcomes,
+  useActiveMapMediaExcerpts,
 } from "./sync/hooks";
+import { ChromeRuntimeMessage } from "./extension/chromeRuntimeMessages";
 
 const App: React.FC = () => {
   const dispatch = useAppDispatch();
-  useRefreshContentPageMediaExcerptsWhenActiveMapChanges();
-  useSendUpdatedMediaExcerptOutcomes();
+  useSyncMediaExcerptsWithContent();
+  useSyncUpdatedMediaExcerptOutcomesWithContent();
   useHandleChromeRuntimeMessage();
   useContentScriptKeepAliveConnection();
   useRefreshAuth();
@@ -141,21 +142,42 @@ function connectToTab(tab: chrome.tabs.Tab) {
   }
 }
 
-function useRefreshContentPageMediaExcerptsWhenActiveMapChanges() {
-  const activeMapId = useActiveMapId();
-  const [prevActiveMapId, setPrevActiveMapId] = useState(
-    undefined as string | undefined,
+function useSyncMediaExcerptsWithContent() {
+  const mediaExcerpts = useActiveMapMediaExcerpts();
+
+  const [prevMediaExcerpts, setPrevMediaExcerpts] = useState<MediaExcerpt[]>(
+    [],
   );
 
   useEffect(() => {
-    if (activeMapId !== prevActiveMapId) {
-      void sendRefreshMediaExcerptsMessage();
-      setPrevActiveMapId(activeMapId);
+    const { add, remove } = diffMediaExcerpts(prevMediaExcerpts, mediaExcerpts);
+    if (add.length > 0 || remove.length > 0) {
+      void sendUpdatedMediaExcerpts({ add, remove });
     }
-  }, [activeMapId, prevActiveMapId, setPrevActiveMapId]);
+    setPrevMediaExcerpts(mediaExcerpts);
+  }, [mediaExcerpts, prevMediaExcerpts]);
 }
 
-function useSendUpdatedMediaExcerptOutcomes() {
+function diffMediaExcerpts(
+  prevMediaExcerpts: MediaExcerpt[],
+  mediaExcerpts: MediaExcerpt[],
+) {
+  const remove = new Set(prevMediaExcerpts.map((me) => me.id));
+  const add = [] as MediaExcerpt[];
+  mediaExcerpts.forEach((me) => {
+    if (remove.has(me.id)) {
+      remove.delete(me.id);
+    } else {
+      add.push(me);
+    }
+  });
+  return {
+    add,
+    remove: Array.from(remove),
+  };
+}
+
+function useSyncUpdatedMediaExcerptOutcomesWithContent() {
   const mediaExcerptOutcomes = useActiveMapMediaExcerptOutcomes();
 
   // Store the outcomes so that we can diff them when they change

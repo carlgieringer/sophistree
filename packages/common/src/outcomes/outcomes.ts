@@ -55,21 +55,29 @@ export function determineOutcomes(entities: Entity[]): {
         basisOutcomes.set(entity.id, "Presumed");
         break;
       case "PropositionCompound": {
-        const compoundOutcome = determinePropositionCompoundOutcome(
-          basisOutcomes,
-          entity,
-        );
-        basisOutcomes.set(entity.id, compoundOutcome);
+        try {
+          const compoundOutcome = determinePropositionCompoundOutcome(
+            basisOutcomes,
+            entity,
+          );
+          basisOutcomes.set(entity.id, compoundOutcome);
+        } catch (err) {
+          console.error("Error in determinePropositionCompoundOutcome", err);
+        }
         break;
       }
       case "Justification": {
-        const justificationOutcome = determineJustificationOutcome(
-          basisOutcomes,
-          justificationOutcomes,
-          entity,
-          contributions,
-        );
-        justificationOutcomes.set(entity.id, justificationOutcome);
+        try {
+          const justificationOutcome = determineJustificationOutcome(
+            basisOutcomes,
+            justificationOutcomes,
+            entity,
+            contributions,
+          );
+          justificationOutcomes.set(entity.id, justificationOutcome);
+        } catch (err) {
+          console.error("Error in determineJustificationOutcome", err);
+        }
         break;
       }
       case "Proposition": {
@@ -99,7 +107,9 @@ function determinePropositionCompoundOutcome(
   for (const atomId of propositionCompound.atomIds) {
     const atomOutcome = basisOutcomes.get(atomId);
     if (atomOutcome === undefined) {
-      throw new Error(`Outcome for atom ${atomId} not found`);
+      throw new Error(
+        `Outcome for atom ${atomId} not found (is there a circular reference?)`,
+      );
     }
     if (atomOutcome === "Contradictory" || atomOutcome === "Disproven") {
       return "Disproven";

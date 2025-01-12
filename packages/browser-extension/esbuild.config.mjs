@@ -18,7 +18,7 @@ const pdfjsSubdir = "pdfjs";
 
 const options = {
   entryPoints: [
-    "src/main.tsx",
+    "src/sidebar.tsx",
     "src/background.ts",
     "src/content.ts",
     "src/options.tsx",
@@ -38,6 +38,9 @@ const options = {
   target: ["chrome89", "firefox89"],
   format: "esm",
   outdir,
+  outExtension: {
+    ".js": ".mjs",
+  },
   resolveExtensions: [
     ".web.tsx",
     ".tsx",

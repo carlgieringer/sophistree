@@ -40,7 +40,6 @@ interface DragPayload {
 }
 
 const initialState = {
-  activeMapId: undefined as string | undefined,
   activeMapAutomergeDocumentId: undefined as DocumentId | undefined,
   selectedEntityIds: [] as string[],
   isOpeningSyncedMap: false,
@@ -64,7 +63,6 @@ export const entitiesSlice = createAppSlice({
   name: "entities",
   initialState,
   selectors: {
-    activeMapId: (state) => state.activeMapId,
     activeMapAutomergeDocumentId: (state) => state.activeMapAutomergeDocumentId,
     selectedEntityIds: (state) => state.selectedEntityIds,
     isOpeningSyncedMap: (state) => state.isOpeningSyncedMap,
@@ -81,13 +79,11 @@ export const entitiesSlice = createAppSlice({
         sourceNameOverrides: {},
       };
       const handle = createDoc(newMap);
-      state.activeMapId = newMap.id;
       state.activeMapAutomergeDocumentId = handle.documentId;
     }),
     deleteMap: create.reducer<DocumentId>((state, action) => {
       deleteDoc(action.payload);
       if (state.activeMapAutomergeDocumentId === action.payload) {
-        state.activeMapId = undefined;
         state.activeMapAutomergeDocumentId = undefined;
       }
     }),
@@ -147,7 +143,6 @@ export const entitiesSlice = createAppSlice({
         },
         fulfilled: (state, action) => {
           const map = action.payload;
-          state.activeMapId = map.id;
           state.activeMapAutomergeDocumentId =
             map.automergeDocumentId as DocumentId;
         },
@@ -157,7 +152,7 @@ export const entitiesSlice = createAppSlice({
       },
     ),
     setActiveMap: create.reducer<DocumentId | undefined>((state, action) => {
-      state.activeMapId = action.payload;
+      state.activeMapAutomergeDocumentId = action.payload;
     }),
     renameActiveMap: create.reducer<string>((state, action) => {
       const documentId = state.activeMapAutomergeDocumentId;
@@ -246,12 +241,18 @@ export const entitiesSlice = createAppSlice({
           pdfFingerprint,
         },
       );
+
+      // Automerge's IndexedDB storage does not support undefined values.
+      const urlInfo: UrlInfo = { url };
+      if (canonicalUrl !== undefined) urlInfo.canonicalUrl = canonicalUrl;
+      if (pdfFingerprint !== undefined) urlInfo.pdfFingerprint = pdfFingerprint;
+
       const mediaExcerpt: MediaExcerpt = {
         type: "MediaExcerpt",
         ...defaultVisibilityProps,
         id,
         quotation,
-        urlInfo: { url, canonicalUrl, pdfFingerprint },
+        urlInfo,
         sourceInfo: { name: sourceNameOverride ?? sourceName },
         domAnchor,
       };
@@ -970,7 +971,7 @@ function updateEntityVisibility(
     const entity = map.entities.find((entity) => entity.id === entityId);
     if (!entity) {
       appLogger.error(
-        `Unable to update entity visibility because the entity with ID ${state.activeMapId} was not found.`,
+        `Unable to update entity visibility because the entity with ID ${entityId} was not found.`,
       );
       return;
     }
@@ -1088,10 +1089,6 @@ export const {
   updateMediaExerpt,
   updateProposition,
 } = entitiesSlice.actions;
-
-export function useActiveMapId() {
-  return useSelector(entitiesSlice.selectors.activeMapId);
-}
 
 export function useActiveMapAutomergeDocumentId() {
   return useSelector(entitiesSlice.selectors.activeMapAutomergeDocumentId);
