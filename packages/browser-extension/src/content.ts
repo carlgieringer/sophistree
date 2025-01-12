@@ -86,8 +86,8 @@ async function handleMessage(
       updateMediaExcerptOutcomes(updatedOutcomes);
       break;
     }
-    case "updateMediaExcerpts":
-      updateMediaExcerpts(message);
+    case "syncMediaExcerpts":
+      syncMediaExcerpts(message);
       break;
     case "notifyTabOfNewMediaExcerpt": {
       highlightNewMediaExcerptIfOnPage(message.data);
@@ -101,7 +101,7 @@ async function handleMessage(
   }
 }
 
-function updateMediaExcerpts({ add, remove }: MediaExcerptUpdates) {
+function syncMediaExcerpts({ add, remove }: MediaExcerptUpdates) {
   add.forEach((mediaExcerpt) => {
     const {
       id,
