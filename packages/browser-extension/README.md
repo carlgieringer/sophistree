@@ -52,7 +52,7 @@ in public don't trigger changes, but are picked up when the JS changes.
 2. Enable "Developer mode" in the top right corner.
 3. Click "Load unpacked" and select the `dist/dev` folder created in the previous step.
 
-To reload JS changes, you can just close and re-open the sidebar using the action button in Chrome's
+To reload JS changes, you can just close and re-open the side panel using the action button in Chrome's
 toolbar.
 
 You'll need to reload the extension any time the manifest or content scripts
@@ -99,7 +99,7 @@ npm run check-all
   - Drag a Proposition to a PropositionCompound (wrapper around Proposition(s) already
     in a Justification) to combine the Propositions into a Justification basis.
 
-Due to an apparent limitation of Chrome extension sidebars, pinch-to-zoom does not work on the
+Due to an apparent limitation of Chrome extension side panels, pinch-to-zoom does not work on the
 graph. Use command-/control- scroll to zoom.
 
 See [Features.md](https://github.com/carlgieringer/sophistree/blob/main/packages/browser-extension/docs/Features.md) for a list
@@ -139,7 +139,7 @@ This section briefly describes why the extensions requires certain scripts and p
   - Installs and responds to context menu items
 - `content_scripts`:
 
-  - The content script manages highlights and interacts with the sidebar to create excerpts and to
+  - The content script manages highlights and interacts with the side panel to create excerpts and to
     emphasize focused exerpts.
   - `<all_urls>` so that Sophistree works on all pages
 
@@ -151,7 +151,8 @@ This section briefly describes why the extensions requires certain scripts and p
 Ensure:
 
 - the version in `package.json` is up-to-date.
-- You have an `.env.production` file with the intended values.
+- you have run `npm install` to update package-lock.json to reflect the version number.
+- you have an `.env.production` file with the intended values.
 
 ```sh
 npm run build-prod

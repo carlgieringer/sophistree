@@ -18,7 +18,7 @@ const pdfjsSubdir = "pdfjs";
 
 const options = {
   entryPoints: [
-    "src/sidebar.tsx",
+    "src/sidePanel.tsx",
     "src/background.ts",
     "src/content.ts",
     "src/options.tsx",
@@ -77,7 +77,7 @@ const options = {
     copy({
       assets: [
         {
-          from: ["./public/sidebar.html", "./public/options.html"],
+          from: ["./public/sidePanel.html", "./public/options.html"],
           to: ["."],
         },
         {

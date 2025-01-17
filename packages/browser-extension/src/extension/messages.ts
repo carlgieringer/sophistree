@@ -3,7 +3,7 @@ import { AddMediaExcerptData } from "../store/entitiesSlice";
 import { serializeMap } from "./serialization";
 import * as appLogger from "../logging/contentLogging";
 
-export const sidepanelKeepalivePortName = "keepalive";
+export const sidePanelKeepalivePortName = "keepalive";
 
 export interface CreateMediaExcerptMessage {
   action: "createMediaExcerpt";

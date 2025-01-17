@@ -19,7 +19,7 @@ import {
 
 import { AddMediaExcerptData } from "./store/entitiesSlice";
 import {
-  sidepanelKeepalivePortName,
+  sidePanelKeepalivePortName,
   type ContentMessage,
   type CreateMediaExcerptMessage,
   type GetMediaExcerptsResponse,
@@ -38,7 +38,7 @@ import {
 
 import "./highlights/outcome-colors.scss";
 
-chrome.runtime.onConnect.addListener(getMediaExcerptsWhenSidebarConnects);
+chrome.runtime.onConnect.addListener(getMediaExcerptsWhenSidePanelConnects);
 chrome.runtime.onMessage.addListener(
   (message: ContentMessage, sender, sendResponse) => {
     handleMessage(message, sender, sendResponse).catch((reason) => {
@@ -50,8 +50,8 @@ chrome.runtime.onMessage.addListener(
   },
 );
 
-function getMediaExcerptsWhenSidebarConnects(port: chrome.runtime.Port) {
-  if (port.name === sidepanelKeepalivePortName) {
+function getMediaExcerptsWhenSidePanelConnects(port: chrome.runtime.Port) {
+  if (port.name === sidePanelKeepalivePortName) {
     const promise = getMediaExcerpts().catch((error) =>
       contentLogger.error("Failed to get media excerpts", error),
     );
@@ -232,7 +232,7 @@ async function createMediaExcerpt(data: AddMediaExcerptData) {
       error instanceof Error &&
       error.message.includes(connectionErrorMessage)
     ) {
-      window.alert("Please open the Sophistree sidebar to add excerpts");
+      window.alert("Please open the Sophistree side panel to add excerpts");
     } else {
       contentLogger.error(
         `Unable to connect to extension to add media excerpt.`,
@@ -340,7 +340,7 @@ async function getMediaExcerpts() {
       error instanceof Error &&
       error.message.includes(connectionErrorMessage)
     ) {
-      // This is expected when the sidebar is not open.
+      // This is expected when the side panel is not open.
     } else {
       contentLogger.error(
         "Unable to connect to extension to get media excerpts.",
