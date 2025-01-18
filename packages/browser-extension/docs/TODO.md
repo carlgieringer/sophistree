@@ -1,5 +1,9 @@
 # TODO
 
+- Translate sync to howdju graph/web
+- connect justifications using equivalent propositions
+- Auth using Chrome for now.
+
 Automerge:
 
 - Move async thunks into slice
