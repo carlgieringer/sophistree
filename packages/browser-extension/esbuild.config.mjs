@@ -81,6 +81,10 @@ const options = {
           to: ["."],
         },
         {
+          from: ["./public/pdf-rules.json"],
+          to: ["."],
+        },
+        {
           from: ["./public/logo*.png"],
           to: ["."],
         },

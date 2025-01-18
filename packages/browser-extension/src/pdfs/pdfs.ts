@@ -1,12 +1,3 @@
-export function isPdfUrl(url: string) {
-  const urlObj = new URL(url);
-  return urlObj.pathname.toLowerCase().endsWith(".pdf");
-}
-
-export function makePdfViewerUrl(pdfUrl: string) {
-  return `${viewerUrl()}?file=${encodeURIComponent(pdfUrl)}`;
-}
-
 export function isPdfViewerUrl(url: string) {
   return url.startsWith(viewerUrl());
 }

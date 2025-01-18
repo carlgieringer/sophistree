@@ -6,12 +6,12 @@
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAu7ncE4EsNZ76PZY6YgKzq0SpPs59Dw+1+gZh+wTX3j18ruCC1+I601Pdi9M/i4kYP82TFsTBhOlW6+IeXQbG06fzJwvmFLAIAwOUX+5IDndcU3/0byW8K5IbFfCNWZeFPg8xJjPlj7NOP1Scud/AGVpQnADquoIk94LwREiqGSEG3INMxr8IbCI3/TpONkimkOlIBPceJPXLT3zIhoe2SnNXXACfCIwglgxtNUYqKmH9aNsrmJY4nRiGFlujAlpNdn5dP6zKou5HAK+hBx/GvxKWwP6EEW4YGwnwExtA6GLALjvJRmMDEcxM+vfhW6CvVAhC2dLwDSfdnRktQdYL+wIDAQAB",
   "permissions": [
     "contextMenus",
+    "declarativeNetRequest",
     "identity",{{#unless prod}}
     "management",{{/unless}}
     "scripting",
     "sidePanel",
-    "storage",
-    "webNavigation"
+    "storage"
   ],
   "action": {
     "default_title": "Sophistree{{#unless prod}} (Dev){{/unless}}"
@@ -45,5 +45,18 @@
   "icons": {
     "32": "logo-32.png",
     "512": "logo-512.png"
-  }
+  },
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "pdf-rules",
+        "enabled": true,
+        "path": "pdf-rules.json"
+      }
+    ]
+  },
+  "web_accessible_resources": [{
+    "resources": [ "/pdfjs/web/viewer.html" ],
+    "matches": [ "<all_urls>" ]
+  }]
 }

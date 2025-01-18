@@ -2,7 +2,6 @@ import { wrapCallback } from "./extension/callbacks";
 import { accessChromeUrlErrorMessage } from "./extension/errorMessages";
 import { CreateMediaExcerptMessage } from "./extension/messages";
 import * as appLogger from "./logging/appLogging";
-import { isPdfUrl, makePdfViewerUrl } from "./pdfs/pdfs";
 
 chrome.runtime.onInstalled.addListener(
   wrapCallback(installContentScriptsInOpenTabs),
@@ -10,8 +9,6 @@ chrome.runtime.onInstalled.addListener(
 chrome.runtime.onInstalled.addListener(wrapCallback(installContextMenus));
 
 chrome.contextMenus.onClicked.addListener(wrapCallback(handleContextMenuClick));
-
-chrome.webNavigation.onCommitted.addListener(wrapCallback(handleNavigation));
 
 void chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
 
@@ -123,17 +120,5 @@ async function handleContextMenuClick(
       `Failed to sendMessage createMediaExcerpt to tab ID ${tab.id} URL ${tab.url}. Is the content script loaded?`,
       error,
     );
-  }
-}
-
-async function handleNavigation(
-  details: chrome.webNavigation.WebNavigationFramedCallbackDetails,
-) {
-  // Only handle main frame navigation
-  if (details.frameId !== 0) return;
-
-  if (isPdfUrl(details.url)) {
-    const redirectUrl = makePdfViewerUrl(details.url);
-    await chrome.tabs.update(details.tabId, { url: redirectUrl });
   }
 }

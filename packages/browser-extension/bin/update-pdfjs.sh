@@ -26,7 +26,7 @@ sed -i '' -e 's/HOSTED_VIEWER_ORIGINS.includes(viewerOrigin)/true \/* Sophistree
 
 # Modify the viewer HTML page to load Sophistree's content scripts and styles.
 sed -i '' -e 's%</head>%<link rel="stylesheet" href="/content.css" /></head>%' $dest_dir/web/viewer.html
-sed -i '' -e 's%</body>%<script src="/content.js"></script></body>%' $dest_dir/web/viewer.html
+sed -i '' -e 's%</body>%<script src="/content.mjs"></script></body>%' $dest_dir/web/viewer.html
 
 # Add a README to make it super-obvious that $DEST_DIR contains generated files which
 # should not be manually edited.
