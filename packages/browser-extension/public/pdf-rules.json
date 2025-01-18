@@ -24,27 +24,6 @@
     "id": 2,
     "priority": 2,
     "action": {
-      "type": "redirect",
-      "redirect": {
-        "regexSubstitution": "chrome-extension://mjcdfjnpgilfkhnolcjellbknlehekem/pdfjs/web/viewer.html?file=\\1",
-        "regex": "^(.*)(#:~:text=.*)$"
-      }
-    },
-    "condition": {
-      "resourceTypes": ["main_frame"],
-      "responseHeaders": [
-        {
-          "header": "content-type",
-          "contains": "application/pdf"
-        }
-      ],
-      "regexFilter": "^https?://.*#:~:text="
-    }
-  },
-  {
-    "id": 3,
-    "priority": 3,
-    "action": {
       "type": "allow"
     },
     "condition": {
