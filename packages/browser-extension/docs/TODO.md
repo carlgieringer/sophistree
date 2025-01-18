@@ -1,5 +1,9 @@
 # TODO
 
+- Translate sync to howdju graph/web
+- connect justifications using equivalent propositions
+- Auth using Chrome for now.
+
 Automerge:
 
 - Move async thunks into slice
@@ -28,12 +32,11 @@ Automerge:
 - User relationships: following, trusting
 
 - don't persist apiConfig; truth of source is storage.
-- Rename main.ts to sidebar.ts
 - Respond to OAuth verification
   - Document sophistree
 - Use RTK query instead of async thunk directly?
 - Update OptionsPage, ApiEndpointOverrideSetting, AuthenticationCard to use react-native-paper
-- Separate options and sidebar redux store/reducers.
+- Separate options and side panel redux store/reducers.
 - Move user auth into separate table (multiple auth methods for single user)
 - Look into SSR
 
@@ -55,7 +58,7 @@ Automerge:
 
   - What happens if you have two windows open to the same map? Are edits propagated?
     - Only highlight tabs in the current window
-  - Switching between dev and prod extensions with sidepanel open doens't clear highlights
+  - Switching between dev and prod extensions with side panel open doens't clear highlights
 
 - Try adding
 

@@ -27,7 +27,7 @@ A user can:
 
 Excerpt creation guidelines:
 
-- The sidebar must be open to create a new excerpt. If the sidebar is not open, the user gets an
+- The side panel must be open to create a new excerpt. If the side panel is not open, the user gets an
   error message when trying to crate a media excerpt.
 - If excerpt creation fails, no highlight is created.
 - There must be an active map to create a new excerpt. Otherwise, the user gets an error message.
@@ -36,11 +36,11 @@ Excerpt creation guidelines:
 ## Highlights
 
 - Creating a new excerpt highlights the selected text
-- Loading a content page while the sidebar is open with an active map will apply highlights for all
+- Loading a content page while the side panel is open with an active map will apply highlights for all
   excerpts in the map from this page.
 - Hovering over a higlight will emphasize the highlight.
-- Closing the sidebar removes highlights from all pages.
-- Opening the sidebar with an active map adds highlights to all pages.
+- Closing the side panel removes highlights from all pages.
+- Opening the side panel with an active map adds highlights to all pages.
 - Activating a new map replaces highlights from the previously active map, if any, with
   highlights from the new map in all pages.
 - Deleting the last map removes highlights from the content pages.
@@ -119,7 +119,7 @@ Data guidelines:
 
 Guidelines for excerpt creation from already open tabs:
 
-- The user must open the sidebar and activate a map first.
+- The user must open the side panel and activate a map first.
 
 ## Collaborative editing
 

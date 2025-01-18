@@ -1,14 +1,14 @@
 # Sophistree Browser Extension
 
-Sophistree is a
-[Chrome
+Sophistree is a [Chrome
 extension](https://chromewebstore.google.com/detail/sophistree/mjcdfjnpgilfkhnolcjellbknlehekem?pli=1)
 for mapping arguments.
 
 ![screenshot](https://github.com/carlgieringer/sophistree/blob/main/packages/browser-extension/docs/screenshot.png?raw=true)
 
-See [Features.md](https://github.com/carlgieringer/sophistree/blob/main/packages/browser-extension/docs/Features.md) for a list
-of CUJs.
+See
+[Features.md](https://github.com/carlgieringer/sophistree/blob/main/packages/browser-extension/docs/Features.md)
+for a list of CUJs.
 
 ## Development Setup
 
@@ -43,8 +43,8 @@ This continuously builds the javascript:
 npm run build-dev-watch
 ```
 
-This will build the javascript and watch for changes. Changes to static files
-in public don't trigger changes, but are picked up when the JS changes.
+This will build the javascript and watch for changes. Changes to static files in public don't
+trigger changes, but are picked up when the JS changes.
 
 ### Loading the Extension in Chrome
 
@@ -52,11 +52,11 @@ in public don't trigger changes, but are picked up when the JS changes.
 2. Enable "Developer mode" in the top right corner.
 3. Click "Load unpacked" and select the `dist/dev` folder created in the previous step.
 
-To reload JS changes, you can just close and re-open the sidebar using the action button in Chrome's
-toolbar.
+To reload JS changes, you can just close and re-open the side panel using the action button in
+Chrome's toolbar.
 
-You'll need to reload the extension any time the manifest or content scripts
-change. You can do this from the in-app menu or from Chrome's extension page.
+You'll need to reload the extension any time the manifest or content scripts change. You can do this
+from the in-app menu or from Chrome's extension page.
 
 ### Running Tests
 
@@ -91,19 +91,18 @@ npm run check-all
 - Click a highlight on a page to select the MediaExcerpt and any Appearances in the graph.
 - Double click on the graph to create a new Proposition (select it to edit its text.)
 - Everthing else is drag-and-drop:
-  - Drag a Proposition to a MediaExcerpt to say "the Proposition appears
-    at that MediaExcerpt". The MediaExcerpt will then be hidden by default, but you can
-    show it using the table.
-  - Drag a Proposition or MediaExcerpt to a Proposition to create a
-    Justification.
-  - Drag a Proposition to a PropositionCompound (wrapper around Proposition(s) already
-    in a Justification) to combine the Propositions into a Justification basis.
+  - Drag a Proposition to a MediaExcerpt to say "the Proposition appears at that MediaExcerpt". The
+    MediaExcerpt will then be hidden by default, but you can show it using the table.
+  - Drag a Proposition or MediaExcerpt to a Proposition to create a Justification.
+  - Drag a Proposition to a PropositionCompound (wrapper around Proposition(s) already in a
+    Justification) to combine the Propositions into a Justification basis.
 
-Due to an apparent limitation of Chrome extension sidebars, pinch-to-zoom does not work on the
-graph. Use command-/control- scroll to zoom.
+Due to an apparent [limitation](https://issues.chromium.org/issues/375982190) of Chrome extension
+side panels, pinch-to-zoom does not work on the graph. Use command-/control- scroll to zoom.
 
-See [Features.md](https://github.com/carlgieringer/sophistree/blob/main/packages/browser-extension/docs/Features.md) for a list
-of CUJs.
+See
+[Features.md](https://github.com/carlgieringer/sophistree/blob/main/packages/browser-extension/docs/Features.md)
+for a list of CUJs.
 
 The model is the same as Howdju, and is explained here with a graph:
 https://docs.howdju.com/concepts
@@ -114,7 +113,8 @@ Sophistree supports highlighting PDFs by:
 
 - Including PDF.js's embedded PDF viewer page, modified to inject our content script into the page.
 - Detecting PDF files and redirecting to the embedded PDF viewer page.
-- Supporting highlights on the PDF viewer page with `tapestry-highlight`'s `PdfJsAnchorHighlightManager`.
+- Supporting highlights on the PDF viewer page with `tapestry-highlight`'s
+  `PdfJsAnchorHighlightManager`.
 
 Note that the PDF support is currently very basic, only detecting PDFs with a `".pdf"` extension. If
 you encounter issues, please report them using Github's issues.
@@ -139,19 +139,20 @@ This section briefly describes why the extensions requires certain scripts and p
   - Installs and responds to context menu items
 - `content_scripts`:
 
-  - The content script manages highlights and interacts with the sidebar to create excerpts and to
-    emphasize focused exerpts.
+  - The content script manages highlights and interacts with the side panel to create excerpts and
+    to emphasize focused exerpts.
   - `<all_urls>` so that Sophistree works on all pages
 
-- `webNavigation`: allows the extension to detect PDF files and redirect to a PDF viewer that supports
-  highlighting.
+- `webNavigation`: allows the extension to detect PDF files and redirect to a PDF viewer that
+  supports highlighting.
 
 ## Publishing to Chrome Web Store
 
 Ensure:
 
 - the version in `package.json` is up-to-date.
-- You have an `.env.production` file with the intended values.
+- you have run `npm install` to update package-lock.json to reflect the version number.
+- you have an `.env.production` file with the intended values.
 
 ```sh
 npm run build-prod

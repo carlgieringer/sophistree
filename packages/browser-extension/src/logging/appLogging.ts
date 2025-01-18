@@ -1,5 +1,5 @@
 /** Do not import this file in shared contexts such as the content script. Use it for background
- * script and sidebar app. */
+ * script and side panel app. */
 
 // Sentry's types don't seem to work...
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */

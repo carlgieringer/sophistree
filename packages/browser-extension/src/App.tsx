@@ -23,7 +23,7 @@ import {
   notifyTabOfNewMediaExcerpt,
   sendUpdatedMediaExcerptOutcomes,
   sendUpdatedMediaExcerpts,
-  sidepanelKeepalivePortName,
+  sidePanelKeepalivePortName,
 } from "./extension/messages";
 import { serializeMap } from "./extension/serialization";
 import * as appLogger from "./logging/appLogging";
@@ -135,7 +135,7 @@ function connectToTab(tab: chrome.tabs.Tab) {
   }
   try {
     chrome.tabs.connect(tab.id, {
-      name: sidepanelKeepalivePortName,
+      name: sidePanelKeepalivePortName,
     });
   } catch (error) {
     appLogger.error("Failed to connect to tab", error);
