@@ -792,12 +792,11 @@ function applyDeleteOperation(
       allIndexesToDelete.push(i);
     }
   });
-  allIndexesToDelete
-    .sort()
-    .reverse()
-    .forEach((i) => {
-      deleteAt(activeMap.entities, i);
-    });
+  // Numbers are already sorted due to how we added them. Handle them in reverse
+  // so that the indices remain valid after each delete.
+  allIndexesToDelete.reverse().forEach((i) => {
+    deleteAt(activeMap.entities, i);
+  });
 
   state.selectedEntityIds = state.selectedEntityIds.filter(
     (id) => !allEntityIdsToDelete.has(id),
