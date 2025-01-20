@@ -423,18 +423,17 @@ export const entitiesSlice = createAppSlice({
 
       const { sourceId, targetId, polarity: actionPolarity } = action.payload;
 
-      const source = activeMap.entities.find((n) => n.id === sourceId);
-      if (!source) {
-        appLogger.error(`Drag source node with id ${sourceId} not found`);
-        return;
-      }
-      const target = activeMap.entities.find((n) => n.id === targetId);
-      if (!target) {
-        appLogger.error(`Drag target node with id ${targetId} not found`);
-        return;
-      }
-
       handle.change((map) => {
+        const source = map.entities.find((n) => n.id === sourceId);
+        if (!source) {
+          appLogger.error(`Drag source node with id ${sourceId} not found`);
+          return;
+        }
+        const target = map.entities.find((n) => n.id === targetId);
+        if (!target) {
+          appLogger.error(`Drag target node with id ${targetId} not found`);
+          return;
+        }
         applyDragOperation(map, source, target, actionPolarity);
         updateConclusions(map);
       });
