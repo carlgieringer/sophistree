@@ -267,7 +267,9 @@ function getNodesAndEdges(
             break;
           }
 
-          let duplicatedPropositionCompoundAtomEdgeSource = basisNodeId;
+          let duplicatedPropositionCompoundAtomEdgeProps = {
+            source: basisNodeId,
+          } as { source: string; sourceArrow?: string | undefined };
 
           if (counteredJustificationIds.has(entity.id)) {
             const intermediateNodeId = justificationTargetNodeIds.get(
@@ -279,7 +281,10 @@ function getNodesAndEdges(
               );
               break;
             }
-            duplicatedPropositionCompoundAtomEdgeSource = intermediateNodeId;
+            duplicatedPropositionCompoundAtomEdgeProps = {
+              source: intermediateNodeId,
+              sourceArrow: "none",
+            };
 
             acc.nodes.push({
               id: intermediateNodeId,
@@ -329,12 +334,12 @@ function getNodesAndEdges(
             ?.forEach((nodeId, compoundId) => {
               acc.edges.push({
                 id: `justification-${entity.id}-compound-${compoundId}`,
-                source: duplicatedPropositionCompoundAtomEdgeSource,
                 target: nodeId,
                 entity,
                 entityId: entity.id,
                 entityType: entity.type,
                 polarity: entity.polarity,
+                ...duplicatedPropositionCompoundAtomEdgeProps,
               });
             });
           break;
