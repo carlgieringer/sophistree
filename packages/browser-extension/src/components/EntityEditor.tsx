@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch } from "react-redux";
 import { TextInput, Text, Surface } from "react-native-paper";
 import { View, StyleSheet } from "react-native";
@@ -50,6 +50,10 @@ function PropositionEditor({ entity }: { entity: Proposition }) {
   const dispatch = useDispatch();
   const [text, setText] = useState(entity.text);
 
+  useEffect(() => {
+    setText(entity.text);
+  }, [entity]);
+
   const debouncedDispatch = useMemo(
     () =>
       debounce((text: string) => {
@@ -99,6 +103,10 @@ function JustificationEditor({ entity }: { entity: Justification }) {
 function MediaExcerptEditor({ entity }: { entity: MediaExcerpt }) {
   const dispatch = useDispatch();
   const [text, setText] = useState(entity.sourceInfo.name);
+
+  useEffect(() => {
+    setText(entity.sourceInfo.name);
+  }, [entity]);
 
   const debouncedDispatch = useMemo(
     () =>
