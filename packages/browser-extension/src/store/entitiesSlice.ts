@@ -33,7 +33,7 @@ import { createAppSlice } from "./createAppSlice";
 
 export const defaultVisibilityProps = { autoVisibility: "Visible" as const };
 
-interface DragPayload {
+export interface DragPayload {
   sourceId: string;
   targetId: string;
   polarity?: Polarity;

@@ -19,6 +19,7 @@ export default function ArgumentMapPage() {
   const params = useParams();
   const id = params.id as string;
 
+  const [mapId, setMapId] = useState<string>("");
   const [mapName, setMapName] = useState<string>("");
   const [entities, setEntities] = useState<Entity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,6 +32,7 @@ export default function ArgumentMapPage() {
           throw new Error(`Failed to fetch map data: ${response.status}`);
         }
         const data = await response.json();
+        setMapId(data.id);
         setMapName(data.name);
         setEntities(data.entities);
       } catch (error) {
@@ -51,6 +53,7 @@ export default function ArgumentMapPage() {
       ) : (
         <WebGraphView
           id={id}
+          activeGraphId={mapId}
           style={{ width: "100%", height: "100%" }}
           entities={entities}
         />
