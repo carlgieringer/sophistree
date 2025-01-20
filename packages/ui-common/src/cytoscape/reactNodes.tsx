@@ -4,8 +4,9 @@ import cytoscape, {
   NodeDataDefinition,
 } from "cytoscape";
 import ReactDOM from "react-dom/client";
-import throttle from "lodash.throttle";
 import debounce from "lodash.debounce";
+import throttle from "lodash.throttle";
+import type { DebouncedFuncLeading } from "lodash";
 
 import { sunflower } from "../colors";
 
@@ -22,10 +23,12 @@ export default function register(cs: typeof cytoscape) {
 interface ReactNodesOptions {
   nodes: ReactNodeOptions[];
   layoutOptions: LayoutOptions;
-  // The delay before reactNodes applies a layout when one is necessary.
-  layoutThrottleDelay?: number;
+  // The amount by which adjusting node size after a layout is debounced
+  afterLayoutAdjustmentDelay?: number;
   // The delay before rendering the JSX after the node data changes.
   nodeDataRenderDelay?: number;
+  // The throttle delay for syncing CSS classes
+  syncClassesDelay?: number;
   logger: Logger;
 }
 
@@ -40,13 +43,18 @@ export interface ReactNodeOptions {
   unselectedStyle?: Partial<CSSStyleDeclaration>;
 }
 
-type PassthroughOptions = Pick<ReactNodesOptions, "nodeDataRenderDelay">;
+// ReactNodesOptions that are passed through to individual nodes
+type PassthroughOptions = Required<
+  Pick<
+    ReactNodesOptions,
+    "nodeDataRenderDelay" | "afterLayoutAdjustmentDelay" | "syncClassesDelay"
+  >
+>;
 
-const defaultOptions: Required<
-  Pick<ReactNodesOptions, "layoutThrottleDelay" | "nodeDataRenderDelay">
-> = {
-  layoutThrottleDelay: 500,
+const defaultOptions: PassthroughOptions = {
   nodeDataRenderDelay: 150,
+  afterLayoutAdjustmentDelay: 150,
+  syncClassesDelay: 50,
 };
 
 const defaultReactNodeOptions: ReactNodeOptions = {
@@ -107,17 +115,25 @@ const defaultReactNodeOptions: ReactNodeOptions = {
  * - We should not request a layout when one is already active.
  */
 function reactNodes(this: cytoscape.Core, options: ReactNodesOptions) {
-  const layout = throttle(() => {
+  const { afterLayoutAdjustmentDelay, nodeDataRenderDelay, syncClassesDelay } =
+    options;
+  const requestLayout = debounce(() => {
     this.layout(options.layoutOptions).run();
-  }, options.layoutThrottleDelay ?? defaultOptions.layoutThrottleDelay);
-
-  const { nodeDataRenderDelay } = options;
+  });
   options.nodes.forEach((nodeOptions) =>
     makeReactNode(
       this,
       options.logger,
-      { ...nodeOptions, nodeDataRenderDelay },
-      layout,
+      {
+        ...nodeOptions,
+        afterLayoutAdjustmentDelay:
+          afterLayoutAdjustmentDelay ??
+          defaultOptions.afterLayoutAdjustmentDelay,
+        nodeDataRenderDelay:
+          nodeDataRenderDelay ?? defaultOptions.nodeDataRenderDelay,
+        syncClassesDelay: syncClassesDelay ?? defaultOptions.syncClassesDelay,
+      },
+      requestLayout,
     ),
   );
 
@@ -164,7 +180,7 @@ function makeReactNode(
   cy: cytoscape.Core,
   logger: Logger,
   options: ReactNodeOptions & PassthroughOptions,
-  layout: () => void,
+  requestLayout: () => void,
 ) {
   options = Object.assign({}, defaultReactNodeOptions, options);
 
@@ -205,6 +221,14 @@ function makeReactNode(
 
     cy.on("pan zoom resize", updatePosition);
 
+    let haveRequestedInitialLayout = false;
+    const onLayoutStop = debounce(function onLayoutStop() {
+      updateNodeHeightToSurroundHtml();
+      if (!haveRequestedInitialLayout) {
+        haveRequestedInitialLayout = true;
+        requestLayout();
+      }
+    }, options.afterLayoutAdjustmentDelay);
     cy.on("layoutstop", onLayoutStop);
 
     node.on("position", updatePosition);
@@ -212,6 +236,10 @@ function makeReactNode(
     node.on("remove", function removeHtmlElement() {
       htmlElement.remove();
       cy.off("pan zoom resize", updatePosition);
+      cy.off("layoutstop", onLayoutStop);
+      onLayoutStop.cancel();
+      onNodeData.cancel();
+      throttledSyncNodeClasses?.cancel();
     });
 
     node.on("select unselect", function onNodeSelectUnselect() {
@@ -228,22 +256,15 @@ function makeReactNode(
     }, options.nodeDataRenderDelay);
     node.on("data", onNodeData);
 
+    let throttledSyncNodeClasses = undefined as
+      | DebouncedFuncLeading<typeof syncNodeClasses>
+      | undefined;
     if (options.syncClasses) {
-      node.on("style", syncNodeClasses);
-    }
-
-    // Check if we need one last layout after every layout stops.
-    let isLayingOut = false;
-    function onLayoutStop() {
-      // Don't infinitely recurse on layouts the extension triggered.
-      if (!isLayingOut) {
-        isLayingOut = true;
-        try {
-          updateAfterLayout();
-        } finally {
-          isLayingOut = false;
-        }
-      }
+      throttledSyncNodeClasses = throttle(
+        syncNodeClasses,
+        options.syncClassesDelay,
+      );
+      node.on("style", throttledSyncNodeClasses);
     }
 
     /** Returns true if the graph requires layout. */
@@ -276,13 +297,6 @@ function makeReactNode(
       const oldHeight = getHeight(node) ?? 0;
       node.data("height", height);
       return oldHeight !== height;
-    }
-
-    function updateAfterLayout() {
-      updatePosition();
-      if (updateNodeHeightToSurroundHtml()) {
-        layout();
-      }
     }
 
     function renderJsxElement(root: ReactDOM.Root) {
