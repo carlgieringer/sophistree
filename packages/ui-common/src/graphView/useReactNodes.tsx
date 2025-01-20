@@ -15,6 +15,7 @@ import { OnToggleCollapse } from "./collapsing";
 
 export function useReactNodes(
   cyRef: MutableRefObject<cytoscape.Core | undefined>,
+  activeGraphId: string,
   setVisitAppearancesDialogProposition: (
     data: PropositionNodeData | undefined,
   ) => void,
@@ -119,13 +120,19 @@ export function useReactNodes(
     if (cyRef.current) {
       const cy = cyRef.current;
 
-      cy.reactNodes({
-        layoutOptions: getLayout(false),
+      return cy.reactNodes({
+        layoutOptions: getLayout(true),
         nodes: reactNodesConfig,
         logger,
       });
     }
-  }, [cyRef, reactNodesConfig, logger]);
+  }, [
+    cyRef,
+    // Explicitly include activeGraphId so that a new map's nodes trigger relayout
+    activeGraphId,
+    reactNodesConfig,
+    logger,
+  ]);
 }
 
 const syncClasses = ["hover-highlight", "dragging", ...nodeOutcomeClasses];

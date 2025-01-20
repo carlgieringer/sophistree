@@ -39,6 +39,8 @@ cytoscape.use(reactNodes);
 
 interface GraphViewProps {
   id?: string;
+  // A unique identifier of the active map. Changing it resets the reactNodes extension.
+  activeGraphId: string;
   style?: CSSProperties;
   entities: Entity[];
   selectedEntityIds: string[];
@@ -55,6 +57,7 @@ interface GraphViewProps {
 
 export default function GraphView({
   id,
+  activeGraphId,
   style,
   entities,
   selectedEntityIds,
@@ -94,6 +97,7 @@ export default function GraphView({
 
   useReactNodes(
     cyRef,
+    activeGraphId,
     setVisitAppearancesDialogProposition,
     onFocusMediaExcerpt,
     onToggleCollapse,

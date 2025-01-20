@@ -12,10 +12,12 @@ const logger = {
 
 export default function WebGraphView({
   id,
+  activeGraphId,
   style,
   entities,
 }: {
   id: string;
+  activeGraphId: string;
   style: CSSProperties;
   entities: Entity[];
 }) {
@@ -63,6 +65,7 @@ export default function WebGraphView({
     <div style={{ width: "100%", height: "100vh" }}>
       <GraphView
         id={id}
+        activeGraphId={activeGraphId}
         style={style}
         entities={entitiesWithCollapse}
         selectedEntityIds={selectedEntityIds}

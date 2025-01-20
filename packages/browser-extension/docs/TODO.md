@@ -1,5 +1,9 @@
 # TODO
 
+- Improve collapsing to allow collapsing some children
+- When clicking highlight of collapsed entity, focus collapse indicator
+- drag border should supercede selected border
+
 - Translate sync to howdju graph/web
 - connect justifications using equivalent propositions
 - Auth using Chrome for now.

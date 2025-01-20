@@ -12,7 +12,7 @@ import { sunflower } from "../colors";
 
 declare module "cytoscape" {
   interface Core {
-    reactNodes(options: ReactNodesOptions): void;
+    reactNodes(options: ReactNodesOptions): () => void;
   }
 }
 
@@ -23,11 +23,11 @@ export default function register(cs: typeof cytoscape) {
 interface ReactNodesOptions {
   nodes: ReactNodeOptions[];
   layoutOptions: LayoutOptions;
-  // The amount by which adjusting node size after a layout is debounced
-  afterLayoutAdjustmentDelay?: number;
-  // The delay before rendering the JSX after the node data changes.
+  // The time in milliseconds during which newly added nodes will request a relayout.
+  relayoutCutoff?: number;
+  // The delay in milliseconds between a node data change and rerendering the JSX.
   nodeDataRenderDelay?: number;
-  // The throttle delay for syncing CSS classes
+  // The throttle delay in milliseconds for syncing CSS classes between the node and React element.
   syncClassesDelay?: number;
   logger: Logger;
 }
@@ -47,13 +47,13 @@ export interface ReactNodeOptions {
 type PassthroughOptions = Required<
   Pick<
     ReactNodesOptions,
-    "nodeDataRenderDelay" | "afterLayoutAdjustmentDelay" | "syncClassesDelay"
+    "nodeDataRenderDelay" | "relayoutCutoff" | "syncClassesDelay"
   >
 >;
 
 const defaultOptions: PassthroughOptions = {
   nodeDataRenderDelay: 150,
-  afterLayoutAdjustmentDelay: 150,
+  relayoutCutoff: 1000,
   syncClassesDelay: 50,
 };
 
@@ -115,23 +115,18 @@ const defaultReactNodeOptions: ReactNodeOptions = {
  * - We should not request a layout when one is already active.
  */
 function reactNodes(this: cytoscape.Core, options: ReactNodesOptions) {
-  const { afterLayoutAdjustmentDelay, nodeDataRenderDelay, syncClassesDelay } =
+  const { relayoutCutoff, nodeDataRenderDelay, syncClassesDelay, logger } =
     options;
   const requestLayout = debounce(() => {
-    this.layout({
-      ...options.layoutOptions,
-      fit: true,
-    } as unknown as LayoutOptions).run();
+    this.layout(options.layoutOptions).run();
   });
-  options.nodes.forEach((nodeOptions) =>
+  const cleanups = options.nodes.map((nodeOptions) =>
     makeReactNode(
       this,
-      options.logger,
+      logger,
       {
         ...nodeOptions,
-        afterLayoutAdjustmentDelay:
-          afterLayoutAdjustmentDelay ??
-          defaultOptions.afterLayoutAdjustmentDelay,
+        relayoutCutoff: relayoutCutoff ?? defaultOptions.relayoutCutoff,
         nodeDataRenderDelay:
           nodeDataRenderDelay ?? defaultOptions.nodeDataRenderDelay,
         syncClassesDelay: syncClassesDelay ?? defaultOptions.syncClassesDelay,
@@ -142,7 +137,11 @@ function reactNodes(this: cytoscape.Core, options: ReactNodesOptions) {
 
   applyWebkitLayoutWorkaround(this, options.layoutOptions);
 
-  return this; // for chaining
+  function cleanup() {
+    cleanups.forEach((c) => c());
+  }
+
+  return cleanup;
 }
 
 // This is a terrible hack to try to get the elements to position correctly in Safari and iOS
@@ -160,10 +159,7 @@ function applyWebkitLayoutWorkaround(
     function oneTimeLayout() {
       cy.off("layoutstop", oneTimeLayout);
       setTimeout(() => {
-        cy.layout({
-          ...layoutOptions,
-          fit: true,
-        } as unknown as LayoutOptions).run();
+        cy.layout(layoutOptions).run();
       }, 1000);
     }
     cy.on("layoutstop", oneTimeLayout);
@@ -187,15 +183,38 @@ function makeReactNode(
 ) {
   options = Object.assign({}, defaultReactNodeOptions, options);
 
-  // Apply HTML to matching nodes
-  cy.nodes(options.query).forEach(createHtmlNode);
+  let needsRelayout = true;
 
-  // Apply HTML to new nodes that match the query
-  cy.on("add", options.query, function (event: EventObjectNode) {
-    createHtmlNode(event.target);
+  // Apply HTML to matching nodes
+  cy.nodes(options.query).forEach((node) => {
+    createHtmlNode(node, true);
   });
 
-  function createHtmlNode(node: cytoscape.NodeSingular) {
+  setTimeout(() => {
+    needsRelayout = false;
+  }, options.relayoutCutoff);
+
+  // Apply HTML to new nodes that match the query
+  cy.on("add", options.query, createHtmlNodeWithRelayout);
+
+  function createHtmlNodeWithRelayout(event: EventObjectNode) {
+    createHtmlNode(event.target, needsRelayout);
+  }
+
+  function cleanup() {
+    cy.off("add", createHtmlNodeWithRelayout);
+  }
+
+  return cleanup;
+
+  /**
+   * Creates a React element for node.
+   *
+   * @param needsRelayout whether to request a layout the first time the node observes a
+   * layout to stop. This helps React nodes layout properly after the initial layout, which often
+   * requires adjustment to accommodate the newly rendered JSX.
+   */
+  function createHtmlNode(node: cytoscape.NodeSingular, needsRelayout = false) {
     switch (options.mode) {
       case "replace":
         node.style("opacity", 0);
@@ -224,31 +243,23 @@ function makeReactNode(
 
     cy.on("pan zoom resize", updatePosition);
 
-    // After the initial layoutstop, immediately update node height and request layout if necessary.
-    // This avoids a discontinuity between the first layout and the next layout.
-    function initialOnLayoutStop() {
-      cy.off("layoutstop", initialOnLayoutStop);
-
-      if (updateNodeHeightToSurroundHtml()) {
-        requestLayout();
+    const onLayoutStop = function onLayoutStop() {
+      const didChange = updateNodeHeightToSurroundHtml();
+      if (needsRelayout) {
+        needsRelayout = false;
+        if (didChange) {
+          requestLayout();
+        }
       }
-
-      // Afterwards, debounce the updates.
-      cy.on("layoutstop", onLayoutStop);
-    }
-    const onLayoutStop = debounce(function onLayoutStop() {
-      updateNodeHeightToSurroundHtml();
-    }, options.afterLayoutAdjustmentDelay);
-    cy.on("layoutstop", initialOnLayoutStop);
+    };
+    cy.on("layoutstop", onLayoutStop);
 
     node.on("position", updatePosition);
 
     node.on("remove", function removeHtmlElement() {
       htmlElement.remove();
       cy.off("pan zoom resize", updatePosition);
-      cy.off("layoutstop", initialOnLayoutStop);
       cy.off("layoutstop", onLayoutStop);
-      onLayoutStop.cancel();
       onNodeData.cancel();
       throttledSyncNodeClasses?.cancel();
     });
@@ -354,4 +365,5 @@ function getHeight(node: cytoscape.NodeSingular) {
 
 export interface Logger {
   error(message: string): void;
+  info(message: string): void;
 }
