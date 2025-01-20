@@ -85,6 +85,39 @@ Where `<suitePattern>` matches the test file name and `<testPattern>` matches th
 npm run check-all
 ```
 
+### Debugging with React Devtools
+
+From command line, run the standalone React devtools:
+
+```shell
+npx react-devtools
+```
+
+Copy the script tag from the window that opens and add it to `sidePanel.html` (I think before the
+react app):
+
+```html
+...
+<body>
+  <div id="root"></div>
+  <script src="http://localhost:8097"></script>
+  <script type="module" src="sidePanel.mjs"></script>
+</body>
+...
+```
+
+Update the extension's manifest's CSP to allow the script:
+
+```json
+  ...
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval' http://localhost:8097; object-src 'self';"
+  },
+  ...
+```
+
+Reload the extension. Do not commit these changes!
+
 ## Using the extension
 
 - Select text on a page and there will be a context menu item that creates a MediaExcerpt.
