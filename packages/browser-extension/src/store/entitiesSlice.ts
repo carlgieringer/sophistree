@@ -503,7 +503,7 @@ export const entitiesSlice = createAppSlice({
       updateEntityVisibility(state, action.payload, "Hidden");
     }),
     automateEntityVisibility: create.reducer<string>((state, action) => {
-      updateEntityVisibility(state, action.payload, undefined);
+      removeEntityExplicitVisibility(state, action.payload);
     }),
     toggleCollapsed: create.reducer<string>((state, action) => {
       const documentId = state.activeMapAutomergeDocumentId;
@@ -953,7 +953,7 @@ function updateMediaExcerptAutoVisibilityForDeletedJustifications(
 function updateEntityVisibility(
   state: State,
   entityId: string,
-  visibility: Visibility | undefined,
+  visibility: Visibility,
 ) {
   const documentId = state.activeMapAutomergeDocumentId;
   if (!documentId) {
@@ -974,6 +974,29 @@ function updateEntityVisibility(
       return;
     }
     entity.explicitVisibility = visibility;
+  });
+}
+
+function removeEntityExplicitVisibility(state: State, entityId: string) {
+  const documentId = state.activeMapAutomergeDocumentId;
+  if (!documentId) {
+    appLogger.error(
+      "Cannot update an entity of the active map because there is no active map.",
+    );
+    return;
+  }
+
+  const handle = getDocHandle(documentId);
+
+  handle.change((map) => {
+    const entity = map.entities.find((entity) => entity.id === entityId);
+    if (!entity) {
+      appLogger.error(
+        `Unable to update entity visibility because the entity with ID ${entityId} was not found.`,
+      );
+      return;
+    }
+    delete entity.explicitVisibility;
   });
 }
 
