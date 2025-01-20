@@ -712,11 +712,20 @@ export function updateConclusions(map: ArgumentMap) {
     }
   }
   const remainingNewConclusions = newConclusions.slice(newIndex);
-  map.conclusions.splice(
-    mergedIndex,
-    oldConclusions.length - oldIndex,
-    ...remainingNewConclusions,
-  );
+  if (mergedIndex < map.conclusions.length) {
+    map.conclusions.splice(
+      mergedIndex,
+      oldConclusions.length - oldIndex,
+      ...remainingNewConclusions,
+    );
+  } else {
+    // Automerge list proxies don't support using splice to insert at the end of an array.
+    insertAt(
+      map.conclusions,
+      map.conclusions.length,
+      ...remainingNewConclusions,
+    );
+  }
 }
 
 function applyDeleteOperation(
