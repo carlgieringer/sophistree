@@ -291,13 +291,24 @@ function makeReactNode(
     }
 
     function syncNodeClasses() {
+      const toAdd = [] as string[];
+      const toRemove = [] as string[];
       options.syncClasses?.forEach((className) => {
+        const elementHasClass = htmlElement.classList.contains(className);
         if (node.hasClass(className)) {
-          htmlElement.classList.add(className);
-        } else {
-          htmlElement.classList.remove(className);
+          if (!elementHasClass) {
+            toAdd.push(className);
+          }
+        } else if (elementHasClass) {
+          toRemove.push(className);
         }
       });
+      if (toAdd.length) {
+        htmlElement.classList.add(...toAdd);
+      }
+      if (toRemove.length) {
+        htmlElement.classList.remove(...toRemove);
+      }
     }
   }
 }
