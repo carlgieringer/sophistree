@@ -46,5 +46,5 @@ export function useSelectionHandlers(
       cy.off("tap", "edge", tapEdgeHandler);
       cy.off("tap", tapHandler);
     };
-  });
+  }, [cyRef, onResetSelection, onSelectEntities]);
 }
