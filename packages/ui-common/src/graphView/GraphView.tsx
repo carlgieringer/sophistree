@@ -29,7 +29,6 @@ import {
   useDblTapToCreateNode,
 } from "./useDblTapToCreateNode";
 import { OnCompleteDrag, useDragHandlers } from "./useDragHandlers";
-import { useLayoutOnceUponInitialLoad } from "./useLayoutOnceUponInitialLoad";
 import { stylesheet } from "./graphStyles";
 
 import "./GraphView.scss";
@@ -120,7 +119,6 @@ export default function GraphView({
   useSelectionHandlers(cyRef, onSelectEntities, onResetSelection);
   useDblTapToCreateNode(cyRef, onAddNewProposition);
   useDragHandlers(cyRef, onCompleteDrag);
-  useLayoutOnceUponInitialLoad(cyRef, layoutGraph);
 
   useEffect(() => layoutGraph(), [layoutGraph, elements]);
 

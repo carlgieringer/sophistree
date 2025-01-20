@@ -118,7 +118,10 @@ function reactNodes(this: cytoscape.Core, options: ReactNodesOptions) {
   const { afterLayoutAdjustmentDelay, nodeDataRenderDelay, syncClassesDelay } =
     options;
   const requestLayout = debounce(() => {
-    this.layout(options.layoutOptions).run();
+    this.layout({
+      ...options.layoutOptions,
+      fit: true,
+    } as unknown as LayoutOptions).run();
   });
   options.nodes.forEach((nodeOptions) =>
     makeReactNode(
@@ -221,21 +224,29 @@ function makeReactNode(
 
     cy.on("pan zoom resize", updatePosition);
 
-    let haveRequestedInitialLayout = false;
-    const onLayoutStop = debounce(function onLayoutStop() {
-      updateNodeHeightToSurroundHtml();
-      if (!haveRequestedInitialLayout) {
-        haveRequestedInitialLayout = true;
+    // After the initial layoutstop, immediately update node height and request layout if necessary.
+    // This avoids a discontinuity between the first layout and the next layout.
+    function initialOnLayoutStop() {
+      cy.off("layoutstop", initialOnLayoutStop);
+
+      if (updateNodeHeightToSurroundHtml()) {
         requestLayout();
       }
+
+      // Afterwards, debounce the updates.
+      cy.on("layoutstop", onLayoutStop);
+    }
+    const onLayoutStop = debounce(function onLayoutStop() {
+      updateNodeHeightToSurroundHtml();
     }, options.afterLayoutAdjustmentDelay);
-    cy.on("layoutstop", onLayoutStop);
+    cy.on("layoutstop", initialOnLayoutStop);
 
     node.on("position", updatePosition);
 
     node.on("remove", function removeHtmlElement() {
       htmlElement.remove();
       cy.off("pan zoom resize", updatePosition);
+      cy.off("layoutstop", initialOnLayoutStop);
       cy.off("layoutstop", onLayoutStop);
       onLayoutStop.cancel();
       onNodeData.cancel();
