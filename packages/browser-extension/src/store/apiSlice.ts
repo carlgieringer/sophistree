@@ -20,6 +20,7 @@ export const publishMap = createAsyncThunk(
       appLogger.error(`Doc ID ${documentId} did not have a doc.`);
       return;
     }
+    const mapId = activeMap.id;
 
     // Get the auth token
     const { token } = await chrome.identity.getAuthToken({
@@ -39,7 +40,7 @@ export const publishMap = createAsyncThunk(
 
     // Check if map exists
     const checkResponse = await fetch(
-      `${apiEndpoint}/api/argument-maps/${documentId}`,
+      `${apiEndpoint}/api/argument-maps/${mapId}`,
       {
         headers: authHeaders,
       },
@@ -48,7 +49,7 @@ export const publishMap = createAsyncThunk(
     const mapExists = checkResponse.ok;
     const method = mapExists ? "PUT" : "POST";
     const url = mapExists
-      ? `${apiEndpoint}/api/argument-maps/${documentId}`
+      ? `${apiEndpoint}/api/argument-maps/${mapId}`
       : `${apiEndpoint}/api/argument-maps`;
 
     const response = await fetch(url, {
