@@ -49,7 +49,7 @@ function PropositionEditor({ entity }: { entity: Proposition }) {
   const dispatch = useDispatch();
   const id = entity.id;
 
-  const handleTextChange = useCallback(
+  const onChangeText = useCallback(
     (text: string) => dispatch(updateProposition({ id, updates: { text } })),
     [dispatch, id],
   );
@@ -60,7 +60,7 @@ function PropositionEditor({ entity }: { entity: Proposition }) {
         value={entity.text}
         multiline={true}
         numberOfLines={1}
-        onChangeText={handleTextChange}
+        onChangeText={onChangeText}
       />
     </View>
   );
@@ -91,7 +91,7 @@ function MediaExcerptEditor({ entity }: { entity: MediaExcerpt }) {
   const dispatch = useDispatch();
   const id = entity.id;
 
-  const handleTextChange = useCallback(
+  const onChangeText = useCallback(
     (text: string) => {
       dispatch(
         updateMediaExerpt({
@@ -111,7 +111,7 @@ function MediaExcerptEditor({ entity }: { entity: MediaExcerpt }) {
         value={entity.sourceInfo.name}
         multiline={true}
         numberOfLines={1}
-        onChangeText={handleTextChange}
+        onChangeText={onChangeText}
       />
       <Surface style={styles.quotationContainer}>
         <Text style={styles.quotationLabel}>Quotation</Text>
