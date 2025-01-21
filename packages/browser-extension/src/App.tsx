@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { StyleSheet, View, ScrollView } from "react-native";
-import { Button, Text } from "react-native-paper";
+import { Button, ProgressBar, Text } from "react-native-paper";
 
 import {
   isMatchingUrlInfo,
@@ -62,7 +62,10 @@ const App: React.FC = () => {
       <ExtensionGraphView style={styles.graphView} />
     ) : (
       <View style={styles.graphViewPlaceholder}>
-        <Text>Cannot find map.</Text>
+        <View style={styles.progressContainer}>
+          <Text style={styles.progressText}>Opening map</Text>
+          <ProgressBar indeterminate={true} style={styles.progressBar} />
+        </View>
       </View>
     )
   ) : (
@@ -320,6 +323,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  progressContainer: {
+    alignItems: "center",
+    width: "100%",
+    padding: 16,
+  },
+  progressBar: {
+    width: "100%",
+    marginTop: 8,
+  },
+  progressText: {
+    textAlign: "center",
   },
   entityListScrollView: {
     flexShrink: 0,

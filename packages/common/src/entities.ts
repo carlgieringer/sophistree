@@ -86,7 +86,7 @@ export interface ArgumentMap {
   automergeDocumentId: string;
   name: string;
   entities: Entity[];
-  /** Conclusions summarize the main points of the argument */
+  /** Conclusions summarize the main points of the argument. See ConclusionInfo. */
   conclusions: ConclusionInfo[];
   /**
    * Some sources (especially PDFs) have poor names. We track what the user
