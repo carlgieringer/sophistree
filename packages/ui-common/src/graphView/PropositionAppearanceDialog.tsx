@@ -30,41 +30,41 @@ export default function PropositionAppearanceDialog({
     <Dialog visible={visible} onDismiss={onDismiss}>
       <Dialog.Title>Appearances for “{data.entity.text}”</Dialog.Title>
       <Dialog.Content>
-        {data.appearances?.map((appearance, i) => {
+        {data.appearances?.flatMap((appearance, i) => {
           const url = preferredUrl(appearance.mediaExcerpt.urlInfo);
           const hostname = new URL(url).hostname;
-          return (
-            <>
-              {i > 0 ? <Divider style={styles.divider} /> : null}
-              <View>
-                <Text>“{appearance.mediaExcerpt.quotation}”</Text>
-                <Text style={styles.sourceName}>
-                  {appearance.mediaExcerpt.sourceInfo.name}{" "}
-                </Text>
-                <Tooltip title={url}>
-                  <Text style={styles.hostname}>{hostname}</Text>
-                </Tooltip>
-                <View key={appearance.id} style={styles.row}>
+          return [
+            i > 0 ? (
+              <Divider key={`divider-${i}`} style={styles.divider} />
+            ) : null,
+            <View key={`appearance-${i}`}>
+              <Text>“{appearance.mediaExcerpt.quotation}”</Text>
+              <Text style={styles.sourceName}>
+                {appearance.mediaExcerpt.sourceInfo.name}{" "}
+              </Text>
+              <Tooltip title={url}>
+                <Text style={styles.hostname}>{hostname}</Text>
+              </Tooltip>
+              <View key={appearance.id} style={styles.row}>
+                <Button
+                  mode="contained"
+                  style={styles.goButtonCell}
+                  onPress={() => onFocusMediaExcerpt(appearance.mediaExcerpt)}
+                >
+                  Go
+                </Button>
+                {onDeleteEntity && (
                   <Button
-                    mode="contained"
-                    style={styles.goButtonCell}
-                    onPress={() => onFocusMediaExcerpt(appearance.mediaExcerpt)}
+                    style={styles.deleteButtonCell}
+                    accessibilityLabel="delete appearance"
+                    onPress={() => onDeleteEntity(appearance.id)}
                   >
-                    Go
+                    <Icon name="delete" size={18} />
                   </Button>
-                  {onDeleteEntity && (
-                    <Button
-                      style={styles.deleteButtonCell}
-                      accessibilityLabel="delete appearance"
-                      onPress={() => onDeleteEntity(appearance.id)}
-                    >
-                      <Icon name="delete" size={18} />
-                    </Button>
-                  )}
-                </View>
+                )}
               </View>
-            </>
-          );
+            </View>,
+          ];
         })}
       </Dialog.Content>
       <Dialog.Actions>
