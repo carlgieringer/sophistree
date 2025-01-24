@@ -98,7 +98,9 @@ const App: React.FC = () => {
 
 function useContentScriptKeepAliveConnection() {
   useEffect(() => {
-    void connectToOpenTabs();
+    connectToOpenTabs().catch((reason) => {
+      appLogger.error("Error connecting to open tabls", reason);
+    });
     chrome.tabs.onUpdated.addListener(connectToReloadedTabs);
     return () => {
       chrome.tabs.onUpdated.removeListener(connectToReloadedTabs);
@@ -133,7 +135,9 @@ function connectToReloadedTabs(
 }
 
 function connectToTab(tab: chrome.tabs.Tab) {
-  if (!tab.id) {
+  // Discarded tabs aren't listening for us to connect, and URLs
+  // lacking a URL are ineligble to connect (chrome internal pages etc.)
+  if (!tab.id || tab.discarded || !tab.url) {
     return;
   }
   try {
