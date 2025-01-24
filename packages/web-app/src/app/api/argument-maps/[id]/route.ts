@@ -89,13 +89,11 @@ export async function PUT(
       return {
         where: { id },
         update: {
-          explicitVisibility,
           data: { id, type, explicitVisibility, ...entityData },
         },
         create: {
           id,
           type,
-          explicitVisibility,
           data: { id, type, explicitVisibility, ...entityData },
         },
       };
