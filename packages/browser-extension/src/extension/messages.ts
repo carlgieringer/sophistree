@@ -2,6 +2,7 @@ import { BasisOutcome, MediaExcerpt, UrlInfo } from "@sophistree/common";
 import { AddMediaExcerptData } from "../store/entitiesSlice";
 import { serializeMap } from "./serialization";
 import * as appLogger from "../logging/contentLogging";
+import { isValidContentTab } from "./tabs";
 
 export const sidePanelKeepalivePortName = "keepalive";
 
@@ -101,7 +102,7 @@ async function sendMessageToAllCompleteTabs(message: ContentMessage) {
   const tabs = await getCompleteTabs();
   return Promise.all(
     tabs.map(async (tab) => {
-      if (!tab.id) {
+      if (!isValidContentTab(tab)) {
         appLogger.error("Tab id is undefined");
         return;
       }
