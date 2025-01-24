@@ -75,7 +75,7 @@ export async function sendUpdatedMediaExcerpts({
     remove,
   };
 
-  await sendMessageToAllCompleteTabs(message);
+  await sendMessageToAllContentTabs(message);
 }
 
 export async function sendUpdatedMediaExcerptOutcomes(
@@ -87,7 +87,7 @@ export async function sendUpdatedMediaExcerptOutcomes(
     serializedUpdatedOutcomes,
   };
 
-  await sendMessageToAllCompleteTabs(message);
+  await sendMessageToAllContentTabs(message);
 }
 
 export async function notifyTabsOfDeletedMediaExcerpt(mediaExcerptId: string) {
@@ -95,15 +95,14 @@ export async function notifyTabsOfDeletedMediaExcerpt(mediaExcerptId: string) {
     action: "notifyTabsOfDeletedMediaExcerpts",
     mediaExcerptId,
   };
-  await sendMessageToAllCompleteTabs(message);
+  await sendMessageToAllContentTabs(message);
 }
 
-async function sendMessageToAllCompleteTabs(message: ContentMessage) {
+async function sendMessageToAllContentTabs(message: ContentMessage) {
   const tabs = await getCompleteTabs();
   return Promise.all(
     tabs.map(async (tab) => {
       if (!isValidContentTab(tab)) {
-        appLogger.error("Tab id is undefined");
         return;
       }
       try {

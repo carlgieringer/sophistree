@@ -7,6 +7,7 @@ export type ValidContentTab = Omit<
   url: string;
 };
 
+/** Whether the tab is one we expect has our content script and can be highlighted. */
 export function isValidContentTab(
   tab: chrome.tabs.Tab,
 ): tab is ValidContentTab {
