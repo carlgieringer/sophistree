@@ -54,12 +54,12 @@ log "Deploying to ${ENVIRONMENT} environment. ${versions}"
 ssh ${TARGET} "cd /web-app/ && \
     sudo\
      WEB_APP_IMAGE_VERSION=${WEB_APP_IMAGE_VERSION}\
-     SYNC_SERVER_IMAGE_VERSION=${SYNC_SERVER_IMAGE_VERSION}\
+     SYNC_SERVICE_IMAGE_VERSION=${SYNC_SERVICE_IMAGE_VERSION}\
      CADDY_IMAGE_VERSION=${CADDY_IMAGE_VERSION} \
      docker compose -f docker-compose.yml -f docker-compose.prod.yml pull && \
     sudo\
      WEB_APP_IMAGE_VERSION=${WEB_APP_IMAGE_VERSION}\
-     SYNC_SERVER_IMAGE_VERSION=${SYNC_SERVER_IMAGE_VERSION}\
+     SYNC_SERVICE_IMAGE_VERSION=${SYNC_SERVICE_IMAGE_VERSION}\
      CADDY_IMAGE_VERSION=${CADDY_IMAGE_VERSION}\
      docker compose -f docker-compose.yml -f docker-compose.prod.yml up --force-recreate -d" || error "Failed to deploy to ${ENVIRONMENT}"
 
