@@ -29,7 +29,6 @@ versions="WEB_APP_VERSION=${WEB_APP_VERSION}, SYNC_SERVICE_VERSION=${SYNC_SERVIC
 log "Starting release process. ${versions}"
 
 # Create GitHub release
-log "Creating GitHub release..."
 if ! command -v gh &> /dev/null; then
     error "GitHub CLI (gh) is not installed. Please install it first."
 fi
@@ -54,17 +53,19 @@ if [[ -z "$RELEASE_NOTES" ]]; then
 fi
 
 NEW_TAG="web-app-v${WEB_APP_VERSION}"
+log "Creating GitHub release ${NEW_TAG}..."
 gh release create "${NEW_TAG}" \
     --title "Web App Release v${WEB_APP_VERSION}" \
-    --notes "${RELEASE_NOTES}" || error "Failed to create GitHub release"
+    --notes "${RELEASE_NOTES}" || error "Failed to create GitHub release" \
+    --latest=false
+
+REPO_URL=$(git config --get remote.origin.url | sed 's/\.git$//' | sed 's|git@github.com:|https://github.com/|')
+RELEASE_URL="${REPO_URL}/releases/tag/${NEW_TAG}"
+success "GitHub release created: ${RELEASE_URL}"
 
 # Deploy to production
 log "Deploying to production..."
 ./bin/deploy.sh "prod" || error "Failed to deploy to production"
-
-# Get the repository URL from git config
-REPO_URL=$(git config --get remote.origin.url | sed 's/\.git$//' | sed 's|git@github.com:|https://github.com/|')
-RELEASE_URL="${REPO_URL}/releases/tag/${NEW_TAG}"
 
 success "Release completed successfully!"
 success "- GitHub release created: ${RELEASE_URL}"
