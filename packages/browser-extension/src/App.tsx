@@ -40,6 +40,7 @@ import {
   useActiveMapMediaExcerpts,
 } from "./sync/hooks";
 import { ChromeRuntimeMessage } from "./extension/chromeRuntimeMessages";
+import { isValidContentTab } from "./extension/tabs";
 
 const App: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -135,9 +136,7 @@ function connectToReloadedTabs(
 }
 
 function connectToTab(tab: chrome.tabs.Tab) {
-  // Discarded tabs aren't listening for us to connect, and URLs
-  // lacking a URL are ineligble to connect (chrome internal pages etc.)
-  if (!tab.id || tab.discarded || !tab.url) {
+  if (!isValidContentTab(tab)) {
     return;
   }
   try {

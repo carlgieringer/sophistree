@@ -2,6 +2,7 @@ import { BasisOutcome, MediaExcerpt, UrlInfo } from "@sophistree/common";
 import { AddMediaExcerptData } from "../store/entitiesSlice";
 import { serializeMap } from "./serialization";
 import * as appLogger from "../logging/contentLogging";
+import { isValidContentTab } from "./tabs";
 
 export const sidePanelKeepalivePortName = "keepalive";
 
@@ -74,7 +75,7 @@ export async function sendUpdatedMediaExcerpts({
     remove,
   };
 
-  await sendMessageToAllCompleteTabs(message);
+  await sendMessageToAllContentTabs(message);
 }
 
 export async function sendUpdatedMediaExcerptOutcomes(
@@ -86,7 +87,7 @@ export async function sendUpdatedMediaExcerptOutcomes(
     serializedUpdatedOutcomes,
   };
 
-  await sendMessageToAllCompleteTabs(message);
+  await sendMessageToAllContentTabs(message);
 }
 
 export async function notifyTabsOfDeletedMediaExcerpt(mediaExcerptId: string) {
@@ -94,15 +95,14 @@ export async function notifyTabsOfDeletedMediaExcerpt(mediaExcerptId: string) {
     action: "notifyTabsOfDeletedMediaExcerpts",
     mediaExcerptId,
   };
-  await sendMessageToAllCompleteTabs(message);
+  await sendMessageToAllContentTabs(message);
 }
 
-async function sendMessageToAllCompleteTabs(message: ContentMessage) {
+async function sendMessageToAllContentTabs(message: ContentMessage) {
   const tabs = await getCompleteTabs();
   return Promise.all(
     tabs.map(async (tab) => {
-      if (!tab.id) {
-        appLogger.error("Tab id is undefined");
+      if (!isValidContentTab(tab)) {
         return;
       }
       try {
