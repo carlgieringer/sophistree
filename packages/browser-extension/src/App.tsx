@@ -136,8 +136,6 @@ function connectToReloadedTabs(
 }
 
 function connectToTab(tab: chrome.tabs.Tab) {
-  // Discarded tabs aren't listening for us to connect, and URLs
-  // lacking a URL are ineligble to connect (chrome internal pages etc.)
   if (!isValidContentTab(tab)) {
     return;
   }

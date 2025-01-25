@@ -11,5 +11,7 @@ export type ValidContentTab = Omit<
 export function isValidContentTab(
   tab: chrome.tabs.Tab,
 ): tab is ValidContentTab {
+  // Tabs missing a tab ID or URL are ineligble to connect (chrome internal pages etc.)
+  // Discarded tabs aren't listening for us to connect
   return !!tab.id && !tab.discarded && !!tab.url;
 }
