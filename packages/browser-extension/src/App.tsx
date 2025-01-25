@@ -41,6 +41,8 @@ import {
 } from "./sync/hooks";
 import { ChromeRuntimeMessage } from "./extension/chromeRuntimeMessages";
 
+import "./App.scss";
+
 const App: React.FC = () => {
   const dispatch = useAppDispatch();
   useSyncMediaExcerptsWithContent();
