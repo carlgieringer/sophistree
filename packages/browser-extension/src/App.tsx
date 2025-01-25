@@ -42,6 +42,8 @@ import {
 import { ChromeRuntimeMessage } from "./extension/chromeRuntimeMessages";
 import { isValidContentTab } from "./extension/tabs";
 
+import "./App.scss";
+
 const App: React.FC = () => {
   const dispatch = useAppDispatch();
   useSyncMediaExcerptsWithContent();
