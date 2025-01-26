@@ -40,7 +40,7 @@ import {
   useActiveMapMediaExcerpts,
 } from "./sync/hooks";
 import { ChromeRuntimeMessage } from "./extension/chromeRuntimeMessages";
-import { isValidContentTab } from "./extension/tabs";
+import { doWithContentTab } from "./extension/tabs";
 
 import "./App.scss";
 
@@ -114,9 +114,7 @@ function useContentScriptKeepAliveConnection() {
 async function connectToOpenTabs() {
   try {
     const tabs = await chrome.tabs.query({});
-    for (const tab of tabs) {
-      connectToTab(tab);
-    }
+    await Promise.all(tabs.map(connectToTab));
   } catch (error) {
     appLogger.error("Failed to connect to open tabs", error);
   }
@@ -133,21 +131,26 @@ function connectToReloadedTabs(
   if (info.status === "complete") {
     // For some reason connecting immediately to just opened tabs fails silently.
     // So wait a little bit before connecting.
-    setTimeout(() => connectToTab(tab), tabConnectDelayMillis);
+    setTimeout(
+      () =>
+        void connectToTab(tab).catch((reason) => {
+          appLogger.error(`Failed to connect to reloaded tab`, reason);
+        }),
+      tabConnectDelayMillis,
+    );
   }
 }
 
-function connectToTab(tab: chrome.tabs.Tab) {
-  if (!isValidContentTab(tab)) {
-    return;
-  }
-  try {
-    chrome.tabs.connect(tab.id, {
-      name: sidePanelKeepalivePortName,
-    });
-  } catch (error) {
-    appLogger.error("Failed to connect to tab", error);
-  }
+async function connectToTab(tab: chrome.tabs.Tab) {
+  await doWithContentTab(tab, (tab) => {
+    try {
+      chrome.tabs.connect(tab.id, {
+        name: sidePanelKeepalivePortName,
+      });
+    } catch (error) {
+      appLogger.error("Failed to connect to tab", error);
+    }
+  });
 }
 
 function useSyncMediaExcerptsWithContent() {
