@@ -2,28 +2,21 @@
   {
     "id": 1,
     "priority": 1,
+    "condition": {
+      "resourceTypes": ["main_frame"],
+      "regexFilter": "^file://[^?#]+\\.pdf"
+    },
     "action": {
       "type": "redirect",
       "redirect": {
         "regexSubstitution": "chrome-extension://mjcdfjnpgilfkhnolcjellbknlehekem/pdfjs/web/viewer.html?file=\\0",
         "regex": ".*"
       }
-    },
-    "condition": {
-      "resourceTypes": ["main_frame"],
-      "regexFilter": "^https?://[^?#]+\\.pdf([?#].*)?$"
     }
   },
   {
     "id": 2,
     "priority": 2,
-    "action": {
-      "type": "redirect",
-      "redirect": {
-        "regexSubstitution": "chrome-extension://mjcdfjnpgilfkhnolcjellbknlehekem/pdfjs/web/viewer.html?file=\\0",
-        "regex": ".*"
-      }
-    },
     "condition": {
       "resourceTypes": ["main_frame"],
       "responseHeaders": [
@@ -33,6 +26,13 @@
         }
       ],
       "regexFilter": "^https?://"
+    },
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "regexSubstitution": "chrome-extension://mjcdfjnpgilfkhnolcjellbknlehekem/pdfjs/web/viewer.html?file=\\0",
+        "regex": ".*"
+      }
     }
   },
   {
