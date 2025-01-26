@@ -2,7 +2,7 @@ import { BasisOutcome, MediaExcerpt, UrlInfo } from "@sophistree/common";
 import { AddMediaExcerptData } from "../store/entitiesSlice";
 import { serializeMap } from "./serialization";
 import * as appLogger from "../logging/contentLogging";
-import { isValidContentTab } from "./tabs";
+import { doWithContentTab } from "./tabs";
 
 export const sidePanelKeepalivePortName = "keepalive";
 
@@ -10,6 +10,7 @@ export interface CreateMediaExcerptMessage {
   action: "createMediaExcerpt";
   selectedText: string;
 }
+
 export interface FocusMediaExcerptMessage {
   action: "focusMediaExcerpt";
   mediaExcerptId: string;
@@ -102,17 +103,13 @@ async function sendMessageToAllContentTabs(message: ContentMessage) {
   const tabs = await getCompleteTabs();
   return Promise.all(
     tabs.map(async (tab) => {
-      if (!isValidContentTab(tab)) {
-        return;
-      }
-      try {
-        return (await chrome.tabs.sendMessage(
-          tab.id,
-          message,
-        )) as Promise<unknown>;
-      } catch (error) {
-        appLogger.warn("Error sending message to tab:", error);
-      }
+      await doWithContentTab(tab, (tab) => {
+        try {
+          return chrome.tabs.sendMessage(tab.id, message);
+        } catch (error) {
+          appLogger.warn("Error sending message to tab:", error);
+        }
+      });
     }),
   );
 }
