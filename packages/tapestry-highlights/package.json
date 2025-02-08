@@ -1,6 +1,6 @@
 {
   "name": "tapestry-highlights",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "A web page highlighting library supporting overlapping highlights.",
   "type": "module",
   "exports": {

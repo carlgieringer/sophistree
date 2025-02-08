@@ -3,7 +3,9 @@ import { GenerateFragmentStatus } from "text-fragments-polyfill/dist/fragment-ge
 import type { TextFragment } from "text-fragments-polyfill/dist/fragment-generation-utils.js";
 import { processTextFragmentDirective } from "text-fragments-polyfill/text-fragment-utils";
 import { generateFragmentFromRange } from "text-fragments-polyfill/dist/fragment-generation-utils.js";
+
 import type { Logger } from "../logger.js";
+import { normalizeRange } from "./ranges.js";
 
 export interface DomAnchor {
   fragment?: TextFragment;
@@ -36,7 +38,11 @@ export function getRangesFromDomAnchor(
     }
   }
   const range = textQuote.toRange(root, domAnchor.text);
-  return range ? [range] : [];
+  if (!range) {
+    return [];
+  }
+
+  return [range];
 }
 
 export function makeDomAnchorFromSelection(selection: Selection): DomAnchor {
@@ -44,7 +50,11 @@ export function makeDomAnchorFromSelection(selection: Selection): DomAnchor {
   return makeDomAnchorFromRange(range);
 }
 
-export function makeDomAnchorFromRange(range: Range): DomAnchor {
+export function makeDomAnchorFromRange(
+  range: Range,
+  logger: Logger = console,
+): DomAnchor {
+  normalizeRange(range, logger);
   const text = textQuote.fromRange(window.document.body, range);
   const result = generateFragmentFromRange(range);
   const fragment =
