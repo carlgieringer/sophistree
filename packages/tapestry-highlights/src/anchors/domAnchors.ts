@@ -38,11 +38,7 @@ export function getRangesFromDomAnchor(
     }
   }
   const range = textQuote.toRange(root, domAnchor.text);
-  if (!range) {
-    return [];
-  }
-
-  return [range];
+  return range ? [range] : [];
 }
 
 export function makeDomAnchorFromSelection(selection: Selection): DomAnchor {
