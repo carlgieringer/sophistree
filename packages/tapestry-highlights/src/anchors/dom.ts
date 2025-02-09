@@ -50,23 +50,79 @@ export function nodePositionCompare(node1: Node, node2: Node) {
   return 1;
 }
 
-export function getPreviousLeafNode(node: Node, logger: Logger = console) {
-  // previousSibling is null for first child of a node
-  let prevLeafNode: Node | undefined = node;
-  while (prevLeafNode && !prevLeafNode.previousSibling) {
-    prevLeafNode = prevLeafNode.parentNode || undefined;
-  }
-  if (!prevLeafNode) {
-    logger.error(
-      "Unable to return previous leaf node because we exhausted parents while looking for a previous sibling.",
-    );
+export function getPreviousLeafNode(node: Node, logger: Logger = console): Node | undefined {
+  if (!node) {
     return undefined;
   }
-  prevLeafNode = prevLeafNode.previousSibling || undefined;
-  while (prevLeafNode && prevLeafNode.childNodes.length) {
-    prevLeafNode = prevLeafNode.childNodes[prevLeafNode.childNodes.length - 1];
+
+  // If the node has children, start with its first child
+  let prevLeafNode = node.childNodes.length && node.firstChild ? node.firstChild : node;
+
+  // If we're at a non-leaf node, traverse to its last descendant
+  while (prevLeafNode && prevLeafNode.childNodes.length > 0) {
+    const lastChildIndex: number = prevLeafNode.childNodes.length - 1;
+    const lastChild = prevLeafNode.childNodes[lastChildIndex];
+    if (!lastChild) break;
+    prevLeafNode = lastChild;
   }
-  return prevLeafNode || undefined;
+
+  if (!prevLeafNode) {
+    return undefined;
+  }
+
+  // If we're already at a leaf node, find the previous one
+  const previousSibling = prevLeafNode.previousSibling;
+  if (!previousSibling) {
+    // Go up until we find a parent with a previous sibling
+    let current: Node | null = prevLeafNode;
+    while (current && current.parentNode && !current.previousSibling) {
+      current = current.parentNode;
+    }
+
+    if (!current || !current.previousSibling) {
+      logger.error(
+        "Unable to return previous leaf node because we exhausted parents while looking for a previous sibling.",
+      );
+      return undefined;
+    }
+
+    // Found a previous sibling, now traverse to its last descendant
+    prevLeafNode = current.previousSibling;
+    while (prevLeafNode && prevLeafNode.childNodes.length > 0) {
+      const lastChildIndex: number = prevLeafNode.childNodes.length - 1;
+      const lastChild: Node | null = prevLeafNode.childNodes[lastChildIndex] || null;
+      if (!lastChild) break;
+      prevLeafNode = lastChild;
+    }
+  } else {
+    prevLeafNode = previousSibling;
+    // Traverse to last descendant of the previous sibling
+    while (prevLeafNode && prevLeafNode.childNodes.length > 0) {
+      const lastChildIndex: number = prevLeafNode.childNodes.length - 1;
+      const lastChild: Node | null = prevLeafNode.childNodes[lastChildIndex] || null;
+      if (!lastChild) break;
+      prevLeafNode = lastChild;
+    }
+  }
+
+  if (!prevLeafNode) {
+    return undefined;
+  }
+
+  // Skip empty text nodes
+  if (isEmptyTextNode(prevLeafNode)) {
+    const nextPrev: Node | undefined = getPreviousLeafNode(prevLeafNode, logger);
+    if (!nextPrev) {
+      return undefined;
+    }
+    prevLeafNode = nextPrev;
+  }
+
+  return prevLeafNode;
+}
+
+function isEmptyTextNode(node: Node | undefined): node is Text {
+  return !!node && isTextNode(node) && /^\s*$/.test(node.textContent || "");
 }
 
 export function isTextNode(node: Node): node is Text {
