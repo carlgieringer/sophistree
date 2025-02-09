@@ -50,13 +50,17 @@ export function nodePositionCompare(node1: Node, node2: Node) {
   return 1;
 }
 
-export function getPreviousLeafNode(node: Node, logger: Logger = console): Node | undefined {
+export function getPreviousLeafNode(
+  node: Node,
+  logger: Logger = console,
+): Node | undefined {
   if (!node) {
     return undefined;
   }
 
   // If the node has children, start with its first child
-  let prevLeafNode = node.childNodes.length && node.firstChild ? node.firstChild : node;
+  let prevLeafNode =
+    node.childNodes.length && node.firstChild ? node.firstChild : node;
 
   // If we're at a non-leaf node, traverse to its last descendant
   while (prevLeafNode && prevLeafNode.childNodes.length > 0) {
@@ -90,7 +94,8 @@ export function getPreviousLeafNode(node: Node, logger: Logger = console): Node 
     prevLeafNode = current.previousSibling;
     while (prevLeafNode && prevLeafNode.childNodes.length > 0) {
       const lastChildIndex: number = prevLeafNode.childNodes.length - 1;
-      const lastChild: Node | null = prevLeafNode.childNodes[lastChildIndex] || null;
+      const lastChild: Node | null =
+        prevLeafNode.childNodes[lastChildIndex] || null;
       if (!lastChild) break;
       prevLeafNode = lastChild;
     }
@@ -99,7 +104,8 @@ export function getPreviousLeafNode(node: Node, logger: Logger = console): Node 
     // Traverse to last descendant of the previous sibling
     while (prevLeafNode && prevLeafNode.childNodes.length > 0) {
       const lastChildIndex: number = prevLeafNode.childNodes.length - 1;
-      const lastChild: Node | null = prevLeafNode.childNodes[lastChildIndex] || null;
+      const lastChild: Node | null =
+        prevLeafNode.childNodes[lastChildIndex] || null;
       if (!lastChild) break;
       prevLeafNode = lastChild;
     }
@@ -111,7 +117,10 @@ export function getPreviousLeafNode(node: Node, logger: Logger = console): Node 
 
   // Skip empty text nodes
   if (isEmptyTextNode(prevLeafNode)) {
-    const nextPrev: Node | undefined = getPreviousLeafNode(prevLeafNode, logger);
+    const nextPrev: Node | undefined = getPreviousLeafNode(
+      prevLeafNode,
+      logger,
+    );
     if (!nextPrev) {
       return undefined;
     }
