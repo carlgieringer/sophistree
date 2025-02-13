@@ -25,7 +25,14 @@ const ArgumentMapView = ({
   isActive: boolean;
 }) => {
   const neededIds = useMemo(
-    () => Array.from(new Set(map.conclusions.flatMap((c) => c.propositionIds))),
+    () =>
+      Array.from(
+        new Set(
+          map.conclusions
+            .flatMap((c) => c.propositionInfos)
+            .map((i) => i.propositionId),
+        ),
+      ),
     [map.conclusions],
   );
 
@@ -37,37 +44,72 @@ const ArgumentMapView = ({
           {map.name} {titleButton} {isActive && <Chip>Active</Chip>}
         </Title>
         <Paragraph>Entities: {map.entities.length}</Paragraph>
-        <Text variant="titleMedium" style={{ marginTop: 20, marginBottom: 10 }}>
-          Conclusions
-        </Text>
         {map.conclusions.map((conclusion, index) => {
-          const propositionTexts = conclusion.propositionIds.map(
-            (id) => propositionTextById[id],
+          const propositionTexts = conclusion.propositionInfos.map(
+            ({ propositionId }) => propositionTextById[propositionId],
           );
           return (
             <View key={index}>
-              <Text variant="titleSmall">Propositions</Text>
+              <Text
+                variant="titleLarge"
+                style={{ marginTop: 20, marginBottom: 10 }}
+              >
+                Conclusions
+              </Text>
               <List.Section>
                 {propositionTexts.map((text, i) => (
                   <List.Item key={i} title={`• ${text}`} />
                 ))}
               </List.Section>
 
-              <Text variant="titleSmall">Sources</Text>
-              <List.Section>
-                {conclusion.sourceNames.map((source, i) => (
-                  <List.Item key={i} title={`• ${source}`} />
-                ))}
-              </List.Section>
+              {conclusion.appearanceInfo.sourceNames.length ? (
+                <>
+                  <Text variant="titleMedium">Appearing in</Text>
+                  <Text variant="titleSmall">Sources</Text>
+                  <List.Section>
+                    {conclusion.appearanceInfo.sourceNames.map((source, i) => (
+                      <List.Item key={i} title={`• ${source}`} />
+                    ))}
+                  </List.Section>
 
-              <Text variant="titleSmall">URLs</Text>
-              <List.Section>
-                {conclusion.urls.map((url, i) => (
-                  <Tooltip title={url} key={url}>
-                    <List.Item key={i} title={`• ${url}`} />
-                  </Tooltip>
-                ))}
-              </List.Section>
+                  <Text variant="titleSmall">URLs</Text>
+                  <List.Section>
+                    {conclusion.appearanceInfo.urls.map((url, i) => (
+                      <Tooltip title={url} key={url}>
+                        <List.Item key={i} title={`• ${url}`} />
+                      </Tooltip>
+                    ))}
+                  </List.Section>
+                </>
+              ) : (
+                <Text>Appearing in no sources.</Text>
+              )}
+              {conclusion.mediaExcerptJustificationInfo.sourceNames.length ? (
+                <>
+                  <Text variant="titleMedium">Based on evidence from</Text>
+                  <Text variant="titleSmall">Sources</Text>
+                  <List.Section>
+                    {conclusion.mediaExcerptJustificationInfo.sourceNames.map(
+                      (source, i) => (
+                        <List.Item key={i} title={`• ${source}`} />
+                      ),
+                    )}
+                  </List.Section>
+
+                  <Text variant="titleSmall">URLs</Text>
+                  <List.Section>
+                    {conclusion.mediaExcerptJustificationInfo.urls.map(
+                      (url, i) => (
+                        <Tooltip title={url} key={url}>
+                          <List.Item key={i} title={`• ${url}`} />
+                        </Tooltip>
+                      ),
+                    )}
+                  </List.Section>
+                </>
+              ) : (
+                <Text>Based on no evidence</Text>
+              )}
 
               {index < map.conclusions.length - 1 && <Divider />}
             </View>
