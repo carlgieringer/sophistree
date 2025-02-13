@@ -45,26 +45,27 @@ const ArgumentMapView = ({
         </Title>
         <Paragraph>Entities: {map.entities.length}</Paragraph>
         {map.conclusions.map((conclusion, index) => {
-          const propositionTexts = conclusion.propositionInfos.map(
-            ({ propositionId }) => propositionTextById[propositionId],
-          );
           return (
             <View key={index}>
-              <Text
-                variant="titleLarge"
-                style={{ marginTop: 20, marginBottom: 10 }}
-              >
+              <Text variant="titleLarge" style={{ marginTop: 20 }}>
                 Conclusions
               </Text>
               <List.Section>
-                {propositionTexts.map((text, i) => (
-                  <List.Item key={i} title={`• ${text}`} />
-                ))}
+                {conclusion.propositionInfos.map(
+                  ({ propositionId, outcome }, i) => {
+                    const text = propositionTextById[propositionId];
+                    return (
+                      <List.Item key={i} title={`• [${outcome}] ${text}`} />
+                    );
+                  },
+                )}
               </List.Section>
 
               {conclusion.appearanceInfo.sourceNames.length ? (
                 <>
-                  <Text variant="titleMedium">Appearing in</Text>
+                  <Text variant="titleMedium" style={{ marginBottom: 5 }}>
+                    Appearing in
+                  </Text>
                   <Text variant="titleSmall">Sources</Text>
                   <List.Section>
                     {conclusion.appearanceInfo.sourceNames.map((source, i) => (
@@ -82,11 +83,15 @@ const ArgumentMapView = ({
                   </List.Section>
                 </>
               ) : (
-                <Text>Appearing in no sources.</Text>
+                <Text variant="titleMedium" style={{ marginBottom: 10 }}>
+                  Appearing in no sources.
+                </Text>
               )}
               {conclusion.mediaExcerptJustificationInfo.sourceNames.length ? (
                 <>
-                  <Text variant="titleMedium">Based on evidence from</Text>
+                  <Text variant="titleMedium" style={{ marginBottom: 5 }}>
+                    Based on evidence from
+                  </Text>
                   <Text variant="titleSmall">Sources</Text>
                   <List.Section>
                     {conclusion.mediaExcerptJustificationInfo.sourceNames.map(
@@ -108,7 +113,9 @@ const ArgumentMapView = ({
                   </List.Section>
                 </>
               ) : (
-                <Text>Based on no evidence</Text>
+                <Text variant="titleMedium" style={{ marginBottom: 5 }}>
+                  Based on no evidence
+                </Text>
               )}
 
               {index < map.conclusions.length - 1 && <Divider />}
