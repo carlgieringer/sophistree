@@ -1,4 +1,8 @@
-import { Doc, DocHandleChangePayload } from "@automerge/automerge-repo";
+import {
+  Doc,
+  DocHandleChangePayload,
+  DocumentId,
+} from "@automerge/automerge-repo";
 import { useEffect, useState, useMemo } from "react";
 
 import {
@@ -26,17 +30,67 @@ export const useAllMaps = () => {
   const [maps, setMaps] = useState<Doc<ArgumentMap>[]>([]);
 
   useEffect(() => {
+    const docChangeListeners = new Map<
+      DocumentId,
+      (payload: DocHandleChangePayload<ArgumentMap>) => void
+    >();
+
     const updateMaps = () => {
-      void getAllDocs().then((maps) => {
-        setMaps(maps);
-      });
+      getAllDocs()
+        .then((newMaps) => {
+          // Remove listeners from documents that are no longer present
+          docChangeListeners.forEach((listener, docId) => {
+            if (
+              !newMaps.find(
+                (map) =>
+                  map.automergeDocumentId === (docId as unknown as string),
+              )
+            ) {
+              const handle = getDocHandle(docId);
+              handle?.off("change", listener);
+              docChangeListeners.delete(docId);
+            }
+          });
+
+          // Set up listeners for new documents
+          newMaps.forEach((map) => {
+            const documentId = map.automergeDocumentId as unknown as DocumentId;
+            if (!docChangeListeners.has(documentId)) {
+              const handle = getDocHandle(documentId);
+              if (handle) {
+                const listener = ({
+                  doc,
+                }: DocHandleChangePayload<ArgumentMap>) => {
+                  setMaps((currentMaps) =>
+                    currentMaps.map((currentMap) =>
+                      currentMap.automergeDocumentId === doc.automergeDocumentId
+                        ? doc
+                        : currentMap,
+                    ),
+                  );
+                };
+                handle.on("change", listener);
+                docChangeListeners.set(documentId, listener);
+              }
+            }
+          });
+
+          setMaps(newMaps);
+        })
+        .catch((reason) => appLogger.error("Failed to updateMaps", reason));
     };
 
     updateMaps();
 
     addDocChangeListener(updateMaps);
+
     return () => {
       removeDocChangeListener(updateMaps);
+      // Clean up all document change listeners
+      docChangeListeners.forEach((listener, docId) => {
+        const handle = getDocHandle(docId); // docId is already DocumentId from Map
+        handle?.off("change", listener);
+      });
     };
   }, []);
 
