@@ -6,7 +6,6 @@ type PrismaArgumentMapWithEntities = Prisma.ArgumentMapGetPayload<{
   include: { entities: true };
 }>;
 
-// Then create a type that preserves all ArgumentMap fields but properly types the entities
 export type ArgumentMapWithParsedEntities = Omit<
   PrismaArgumentMapWithEntities,
   "entities"

@@ -16,7 +16,7 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["src", "../ui-common/src/components/ArgumentMapCard.tsx"],
+  "include": ["src"],
   "references": [
     { "path": "../tapestry-highlights/tsconfig-dist.json" },
     { "path": "../ui-common/tsconfig.json" }

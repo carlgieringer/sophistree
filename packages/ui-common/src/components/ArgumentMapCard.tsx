@@ -56,7 +56,7 @@ export function ArgumentMapCard({
         }
         return map;
       }, new Map<string, string>()),
-    [],
+    [conclusionIds, logger, map.entities],
   );
 
   return (
