@@ -9,7 +9,6 @@ import {
   HighlightManagerOptions,
   PDFViewerApplication,
 } from "tapestry-highlights";
-import "tapestry-highlights/rotation-colors.css";
 import {
   MediaExcerpt,
   UrlInfo,

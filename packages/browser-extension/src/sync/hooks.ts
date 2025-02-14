@@ -1,8 +1,4 @@
-import {
-  Doc,
-  DocHandleChangePayload,
-  DocumentId,
-} from "@automerge/automerge-repo";
+import { Doc, DocHandleChangePayload } from "@automerge/automerge-repo";
 import { useEffect, useState, useMemo } from "react";
 
 import {
@@ -95,63 +91,6 @@ export const useSelectedEntitiesForEdit = () => {
     () => selectedEntities.filter((e: Entity) => e.type !== "Appearance"),
     [selectedEntities],
   );
-};
-
-export const usePropositionTexts = (propositionIds: string[]) => {
-  const [propositionTextById, setPropositionTextById] = useState<
-    Record<string, string>
-  >({});
-  const maps = useAllMaps();
-
-  useEffect(() => {
-    const initialTexts: Record<string, string> = {};
-
-    // Get initial texts
-    maps.forEach((map) => {
-      map.entities.forEach((entity) => {
-        if (
-          entity.type === "Proposition" &&
-          propositionIds.includes(entity.id)
-        ) {
-          initialTexts[entity.id] = entity.text;
-        }
-      });
-    });
-
-    setPropositionTextById(initialTexts);
-
-    // Set up listeners for each map that might contain our propositions
-    const cleanup = maps.map((map) => {
-      const handle = getDocHandle(map.automergeDocumentId as DocumentId);
-      if (!handle) return () => {};
-
-      const onDocChange = ({ doc }: DocHandleChangePayload<ArgumentMap>) => {
-        const updatedTexts: Record<string, string> = {};
-        let hasChanges = false;
-
-        doc.entities.forEach((entity) => {
-          if (
-            entity.type === "Proposition" &&
-            propositionIds.includes(entity.id)
-          ) {
-            updatedTexts[entity.id] = entity.text;
-            hasChanges = true;
-          }
-        });
-
-        if (hasChanges) {
-          setPropositionTextById((prev) => ({ ...prev, ...updatedTexts }));
-        }
-      };
-
-      handle.on("change", onDocChange);
-      return () => handle.off("change", onDocChange);
-    });
-
-    return () => cleanup.forEach((fn) => fn());
-  }, [maps, propositionIds]);
-
-  return propositionTextById;
 };
 
 export const useActiveMapEntitiesOutcomes = () => {

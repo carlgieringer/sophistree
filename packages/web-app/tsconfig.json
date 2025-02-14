@@ -26,6 +26,9 @@
   "exclude": ["node_modules"],
   "references": [
     {
+      "path": "../common/tsconfig.json"
+    },
+    {
       "path": "../ui-common/tsconfig.json"
     }
   ]

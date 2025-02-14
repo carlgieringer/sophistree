@@ -8,9 +8,12 @@ import {
   List,
   ActivityIndicator,
   useTheme,
+  Button,
 } from "react-native-paper";
 import { Provider } from "react-redux";
 import { useRouter } from "next/navigation";
+
+import { ArgumentMapCard } from "@sophistree/ui-common";
 
 import { store } from "../store/store";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
@@ -73,12 +76,12 @@ function HomeContent() {
           ) : (
             <View>
               {argumentMaps.map((map) => (
-                <List.Item
+                <ArgumentMapCard
                   key={map.id}
-                  title={map.name}
-                  description={`Last updated: ${new Date(map.updatedAt).toLocaleDateString()}`}
-                  style={{ borderBottomWidth: 1, borderBottomColor: "#eee" }}
-                  onPress={() => handleMapClick(map.id)}
+                  map={map}
+                  titleButton={
+                    <Button onPress={() => handleMapClick(map.id)}>Open</Button>
+                  }
                 />
               ))}
             </View>

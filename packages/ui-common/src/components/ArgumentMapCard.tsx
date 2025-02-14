@@ -1,4 +1,4 @@
-import React, { ReactNode, useMemo } from "react";
+import { ReactNode, useMemo } from "react";
 import { View } from "react-native";
 import {
   Card,
@@ -12,31 +12,53 @@ import {
 } from "react-native-paper";
 
 import { ArgumentMap } from "@sophistree/common";
+import type { Logger } from "@sophistree/common";
 
-import { usePropositionTexts } from "../sync/hooks";
+export interface ArgumentMapCardProps {
+  map: ArgumentMapCardInfo;
+  titleButton: ReactNode;
+  isActive?: boolean;
+  logger?: Logger;
+  updatedAt?: Date;
+}
 
-const ArgumentMapView = ({
+export type ArgumentMapCardInfo = Pick<
+  ArgumentMap,
+  "name" | "conclusions" | "entities"
+>;
+
+export function ArgumentMapCard({
   map,
   titleButton,
-  isActive,
-}: {
-  map: ArgumentMap;
-  titleButton: ReactNode;
-  isActive: boolean;
-}) => {
-  const neededIds = useMemo(
+  updatedAt,
+  isActive = false,
+  logger = console,
+}: ArgumentMapCardProps) {
+  const conclusionIds = useMemo(
     () =>
-      Array.from(
-        new Set(
-          map.conclusions
-            .flatMap((c) => c.propositionInfos)
-            .map((i) => i.propositionId),
-        ),
+      new Set(
+        map.conclusions
+          .flatMap((c) => c.propositionInfos)
+          .map((i) => i.propositionId),
       ),
     [map.conclusions],
   );
 
-  const propositionTextById = usePropositionTexts(neededIds);
+  const propositionTextById = useMemo(
+    () =>
+      map.entities.reduce((map, entity) => {
+        if (conclusionIds.has(entity.id)) {
+          if (entity.type !== "Proposition") {
+            logger.error("Conclusion must be a Proposition.");
+            return map;
+          }
+          map.set(entity.id, entity.text);
+        }
+        return map;
+      }, new Map<string, string>()),
+    [],
+  );
+
   return (
     <Card style={{ marginTop: 16 }}>
       <Card.Content>
@@ -44,6 +66,9 @@ const ArgumentMapView = ({
           {map.name} {titleButton} {isActive && <Chip>Active</Chip>}
         </Title>
         <Paragraph>Entities: {map.entities.length}</Paragraph>
+        {updatedAt && (
+          <Paragraph>Last updated: {updatedAt.toLocaleDateString()}</Paragraph>
+        )}
         {map.conclusions.map((conclusion, index) => {
           return (
             <View key={index}>
@@ -53,7 +78,7 @@ const ArgumentMapView = ({
               <List.Section>
                 {conclusion.propositionInfos.map(
                   ({ propositionId, outcome }, i) => {
-                    const text = propositionTextById[propositionId];
+                    const text = propositionTextById.get(propositionId);
                     return (
                       <List.Item key={i} title={`• [${outcome}] ${text}`} />
                     );
@@ -125,6 +150,4 @@ const ArgumentMapView = ({
       </Card.Content>
     </Card>
   );
-};
-
-export default ArgumentMapView;
+}
