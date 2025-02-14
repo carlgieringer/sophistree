@@ -1,5 +1,7 @@
 import { DomAnchor } from "tapestry-highlights";
 
+import { BasisOutcome } from "./outcomes";
+
 interface BaseEntity {
   id: string;
   // if explicitVisibility is missing, falls back to autoVisibility
@@ -73,16 +75,32 @@ export interface Appearance extends BaseEntity {
  * streamlined display.
  */
 export interface ConclusionInfo {
-  /** The proposition IDs of the conclusions. */
-  propositionIds: string[];
-  /** The distinct sourceInfo.names for appearances of the proposition.  */
-  sourceNames: string[];
-  /** The distinct preferred URLs for appearances of the proposition. */
-  urls: string[];
+  propositionInfos: PropositionInfo[];
+  appearanceInfo: {
+    /** The distinct sourceInfo.names for appearances of the propositions.  */
+    sourceNames: string[];
+    /** The distinct preferred URLs for appearances of the propositions. */
+    urls: string[];
+  };
+  mediaExcerptJustificationInfo: {
+    /** The distinct sourceInfo.names for all MediaExcerpts that are the basis of Justifications under
+     *  the propositions.  */
+    sourceNames: string[];
+    /** The distinct preferred URLs for all MediaExcerpts that are the basis of Justifications under
+     *  the propositions.  */
+    urls: string[];
+  };
+}
+
+export interface PropositionInfo {
+  propositionId: string;
+  outcome: BasisOutcome;
 }
 
 export interface ArgumentMap {
   id: string;
+  // The data format version. If missing, implied to be minAutomergeMapVersion.
+  version?: number;
   automergeDocumentId: string;
   name: string;
   entities: Entity[];

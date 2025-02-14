@@ -9,63 +9,6 @@ import {
 } from "../entities";
 
 describe("determineOutcomes", () => {
-  const defaultProps = { autoVisibility: "Visible" as const };
-
-  const createMediaExcerpt = (id: string): MediaExcerpt => ({
-    id,
-    type: "MediaExcerpt",
-    quotation: "",
-    urlInfo: { url: "" },
-    sourceInfo: { name: "" },
-    domAnchor: {
-      text: { prefix: "prefix", exact: "exact", suffix: "suffix" },
-    },
-    ...defaultProps,
-  });
-
-  const createProposition = (id: string): Proposition => ({
-    id,
-    type: "Proposition",
-    text: "",
-    ...defaultProps,
-  });
-
-  const createJustification = (
-    id: string,
-    basisId: string,
-    targetId: string,
-    polarity: "Positive" | "Negative",
-  ): Justification => ({
-    id,
-    type: "Justification",
-    basisId,
-    targetId,
-    polarity,
-    ...defaultProps,
-  });
-
-  const createPropositionCompound = (
-    id: string,
-    atomIds: string[],
-  ): PropositionCompound => ({
-    id,
-    type: "PropositionCompound",
-    atomIds,
-    ...defaultProps,
-  });
-
-  const createAppearance = (
-    id: string,
-    apparitionId: string,
-    mediaExcerptId: string,
-  ): Appearance => ({
-    id,
-    type: "Appearance",
-    apparitionId,
-    mediaExcerptId,
-    ...defaultProps,
-  });
-
   test("MediaExcerpt is always Presumed", () => {
     const entities: Entity[] = [createMediaExcerpt("m1")];
     const { basisOutcomes } = determineOutcomes(entities);
@@ -235,3 +178,70 @@ describe("determineOutcomes", () => {
     expect(justificationOutcomes.get("j3")).toBe("Unknown");
   });
 });
+
+const defaultProps = { autoVisibility: "Visible" as const };
+
+function createMediaExcerpt(id: string): MediaExcerpt {
+  return {
+    id,
+    type: "MediaExcerpt",
+    quotation: "",
+    urlInfo: { url: "" },
+    sourceInfo: { name: "" },
+    domAnchor: {
+      text: { prefix: "prefix", exact: "exact", suffix: "suffix" },
+    },
+    ...defaultProps,
+  };
+}
+
+function createProposition(id: string): Proposition {
+  return {
+    id,
+    type: "Proposition",
+    text: "",
+    ...defaultProps,
+  };
+}
+
+function createJustification(
+  id: string,
+  basisId: string,
+  targetId: string,
+  polarity: "Positive" | "Negative",
+): Justification {
+  return {
+    id,
+    type: "Justification",
+    basisId,
+    targetId,
+    polarity,
+    ...defaultProps,
+  };
+}
+
+function createPropositionCompound(
+  id: string,
+  atomIds: string[],
+): PropositionCompound {
+  return {
+    id,
+    type: "PropositionCompound",
+    atomIds,
+    ...defaultProps,
+  };
+}
+
+function createAppearance(
+  id: string,
+  apparitionId: string,
+  mediaExcerptId: string,
+): Appearance {
+  return {
+    id,
+    type: "Appearance",
+    apparitionId,
+    mediaExcerptId,
+    ...defaultProps,
+  };
+}

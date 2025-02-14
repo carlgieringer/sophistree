@@ -1,15 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import prismaPromise from "../../../db/client";
 import { getOrCreateUserFromAuth } from "../../../auth/authUser";
+import {
+  ArgumentMapResource,
+  ArgumentMapWithParsedEntities,
+  parseArgumentMapEntities,
+} from "../../../entities";
+import { calculateConclusions } from "@sophistree/common";
 
-export async function GET(request: NextRequest) {
+export async function GET(
+  request: NextRequest,
+): Promise<
+  NextResponse<ArgumentMapResource[] | { error: "Failed to fetch maps" }>
+> {
   try {
     const prisma = await prismaPromise;
-    const maps = await prisma.argumentMap.findMany({
+    const dbMaps = await prisma.argumentMap.findMany({
       orderBy: {
         updatedAt: "desc",
       },
+      include: {
+        entities: {
+          orderBy: {
+            createdAt: "desc",
+          },
+        },
+      },
     });
+
+    const parsedMaps = dbMaps.map(parseArgumentMapEntities);
+    const maps = addConclusionsToMaps(parsedMaps);
 
     return NextResponse.json(maps);
   } catch (error) {
@@ -19,6 +40,13 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
+}
+
+function addConclusionsToMaps(maps: ArgumentMapWithParsedEntities[]) {
+  return maps.map((m) => ({
+    ...m,
+    conclusions: calculateConclusions(m.entities),
+  }));
 }
 
 export async function POST(request: NextRequest) {

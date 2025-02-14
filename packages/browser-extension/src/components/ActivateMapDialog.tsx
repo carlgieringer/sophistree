@@ -8,16 +8,18 @@ import {
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { DocumentId, isValidDocumentId } from "@automerge/automerge-repo";
 
+import { ArgumentMapCard } from "@sophistree/ui-common";
+
 import {
   openSyncedMap,
   setActiveMap,
   useActiveMapAutomergeDocumentId,
   useIsOpeningSyncedMap,
 } from "../store/entitiesSlice";
-import ArgumentMapView from "./ArgumentMapView";
 import { useAllMaps } from "../sync/hooks";
 import { useAppDispatch } from "../store";
 import { useDefaultSyncServerAddresses } from "../sync/defaultSyncServerAddresses";
+import * as appLogger from "../logging/appLogging";
 
 export default function ActiveMapDialog({
   onDismiss,
@@ -40,7 +42,7 @@ export default function ActiveMapDialog({
   const mapCards = maps.map((map) => {
     const isActive = map.automergeDocumentId === activeMapId;
     return (
-      <ArgumentMapView
+      <ArgumentMapCard
         key={map.id}
         map={map}
         isActive={isActive}
@@ -56,6 +58,7 @@ export default function ActiveMapDialog({
             </Button>
           )
         }
+        logger={appLogger}
       />
     );
   });

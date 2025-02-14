@@ -1,13 +1,13 @@
 import { produce } from "immer";
+import { PersistedState } from "redux-persist";
+import { DocumentId } from "@automerge/automerge-repo";
 
 import { ArgumentMap, Entity, MediaExcerpt } from "@sophistree/common";
 
-import { updateConclusions } from "./entitiesSlice";
-import { PersistedState } from "redux-persist";
-import { DocumentId } from "@automerge/automerge-repo";
+import { updateConclusions } from "./conclusions";
 import { createDoc } from "../sync";
 
-export const persistedStateVersion = 8;
+export const persistedStateVersion = 9;
 
 type MapsState =
   | {
@@ -97,7 +97,7 @@ interface MediaExcerptv2 extends MediaExcerpt {
   sourceName?: string;
 }
 
-const mapMigrations = {
+export const mapMigrations = {
   2: (map: { entities: unknown[] }) => {
     map.entities.forEach((e: unknown) => {
       const entity = e as MediaExcerptv2;
@@ -122,6 +122,14 @@ const mapMigrations = {
   },
   6: (map: ArgumentMap) => {
     addSourceNameOverrides(map);
+  },
+  9: (map: ArgumentMap) => {
+    for (const conclusion of map.conclusions) {
+      conclusion.appearanceInfo = { sourceNames: [], urls: [] };
+      conclusion.mediaExcerptJustificationInfo = { sourceNames: [], urls: [] };
+      conclusion.propositionInfos = [];
+    }
+    updateConclusions(map);
   },
 };
 

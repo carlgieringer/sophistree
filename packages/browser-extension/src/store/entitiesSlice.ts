@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import deepEqual from "deep-equal";
-import { deleteAt, insertAt } from "@automerge/automerge/next";
+import { deleteAt } from "@automerge/automerge/next";
 
 import { DomAnchor } from "tapestry-highlights";
 import {
@@ -10,8 +10,6 @@ import {
   MediaExcerpt,
   Entity,
   Justification,
-  preferredUrl,
-  ConclusionInfo,
   Visibility,
   PropositionCompound,
   UrlInfo,
@@ -30,6 +28,7 @@ import {
 import { DocumentId } from "@automerge/automerge-repo";
 import { useSelector } from "react-redux";
 import { createAppSlice } from "./createAppSlice";
+import { updateConclusions } from "./conclusions";
 
 export const defaultVisibilityProps = { autoVisibility: "Visible" as const };
 
@@ -567,165 +566,6 @@ function updateSourceNameOverrides(
     sourceNameOverrides[pdfFingerprint] = sourceName;
   }
   sourceNameOverrides[url] = sourceName;
-}
-
-export function updateConclusions(map: ArgumentMap) {
-  const {
-    propositionIds,
-    justificationBasisIds,
-    justificationTargetIds,
-    mediaExcerptsById,
-    propositionCompoundAtomIds,
-  } = map.entities.reduce(
-    (acc, entity) => {
-      if (entity.type === "Justification") {
-        acc.justificationBasisIds.add(entity.basisId);
-        if (!acc.justificationBasisIds.has(entity.targetId)) {
-          acc.justificationTargetIds.add(entity.targetId);
-        }
-      } else if (entity.type === "Proposition") {
-        acc.propositionIds.add(entity.id);
-      } else if (entity.type === "MediaExcerpt") {
-        acc.mediaExcerptsById.set(entity.id, entity);
-      } else if (entity.type === "PropositionCompound") {
-        entity.atomIds.forEach((id) => acc.propositionCompoundAtomIds.add(id));
-      }
-      return acc;
-    },
-    {
-      propositionIds: new Set<string>(),
-      justificationBasisIds: new Set<string>(),
-      justificationTargetIds: new Set<string>(),
-      mediaExcerptsById: new Map<string, MediaExcerpt>(),
-      propositionCompoundAtomIds: new Set<string>(),
-    },
-  );
-
-  const { sourceNamesByPropositionId, urlsByPropositionId } =
-    map.entities.reduce(
-      (acc, entity) => {
-        if (entity.type === "Appearance") {
-          const mediaExcerpt = mediaExcerptsById.get(entity.mediaExcerptId);
-          if (mediaExcerpt) {
-            if (!acc.sourceNamesByPropositionId.has(entity.apparitionId)) {
-              acc.sourceNamesByPropositionId.set(
-                entity.apparitionId,
-                new Set(),
-              );
-            }
-            acc.sourceNamesByPropositionId
-              .get(entity.apparitionId)!
-              .add(mediaExcerpt.sourceInfo.name);
-
-            if (!acc.urlsByPropositionId.has(entity.apparitionId)) {
-              acc.urlsByPropositionId.set(entity.apparitionId, new Set());
-            }
-            acc.urlsByPropositionId
-              .get(entity.apparitionId)!
-              .add(preferredUrl(mediaExcerpt.urlInfo));
-          } else {
-            appLogger.warn(
-              `MediaExcerpt not found for Appearance: ${entity.id}`,
-            );
-          }
-        }
-        return acc;
-      },
-      {
-        sourceNamesByPropositionId: new Map<string, Set<string>>(),
-        urlsByPropositionId: new Map<string, Set<string>>(),
-      },
-    );
-
-  // Conclusions must be propositions that are not the basis of any justification.
-  // Because PropositionCompounds only exist to be justification bases, we exclude
-  // any proposition that is an atom.
-  const conclusionPropositionIds = [...justificationTargetIds].filter(
-    (id) =>
-      propositionIds.has(id) &&
-      !justificationBasisIds.has(id) &&
-      !propositionCompoundAtomIds.has(id),
-  );
-
-  // Group conclusions by their source names and URLs
-  const { conclusionGroups } = conclusionPropositionIds.reduce(
-    (acc, id) => {
-      const sourceNames = Array.from(
-        sourceNamesByPropositionId.get(id) || [],
-      ).sort();
-      const urls = Array.from(urlsByPropositionId.get(id) || []).sort();
-      const key = JSON.stringify({ sourceNames, urls });
-
-      if (!acc.conclusionGroups.has(key)) {
-        acc.conclusionGroups.set(key, {
-          propositionIds: [],
-          sourceNames,
-          urls,
-        });
-      }
-      acc.conclusionGroups.get(key)!.propositionIds.push(id);
-      return acc;
-    },
-    { conclusionGroups: new Map<string, ConclusionInfo>() },
-  );
-
-  let oldIndex = 0;
-  let newIndex = 0;
-  let mergedIndex = 0;
-  const newConclusions = Array.from(conclusionGroups.entries())
-    .sort(([key1], [key2]) => key1.localeCompare(key2))
-    .map(([, info]) => info);
-  const oldConclusions = Array.from(map.conclusions);
-  while (oldIndex < oldConclusions.length && newIndex < newConclusions.length) {
-    const oldConclusion = oldConclusions[oldIndex];
-    const newConclusion = newConclusions[newIndex];
-    if (deepEqual(oldConclusion, newConclusion)) {
-      // The conclusions are equal and there's nothing to change.
-      oldIndex++;
-      newIndex++;
-      mergedIndex++;
-    } else {
-      const key1 = JSON.stringify({
-        sourceNames: oldConclusion.sourceNames,
-        urls: oldConclusion.urls,
-      });
-      const key2 = JSON.stringify({
-        sourceNames: newConclusion.sourceNames,
-        urls: newConclusion.urls,
-      });
-      const comparison = key1.localeCompare(key2);
-      if (comparison > 0) {
-        // The new conclusion comes before the old one
-        insertAt(map.conclusions, mergedIndex);
-        mergedIndex++;
-        newIndex++;
-      } else if (comparison < 0) {
-        // The new conclusion comes after the old one
-        oldIndex++;
-      } else {
-        // The new conclusion replaces the old one
-        map.conclusions.splice(oldIndex, 1, newConclusion);
-        oldIndex++;
-        newIndex++;
-        mergedIndex++;
-      }
-    }
-  }
-  const remainingNewConclusions = newConclusions.slice(newIndex);
-  if (mergedIndex < map.conclusions.length) {
-    map.conclusions.splice(
-      mergedIndex,
-      oldConclusions.length - oldIndex,
-      ...remainingNewConclusions,
-    );
-  } else {
-    // Automerge list proxies don't support using splice to insert at the end of an array.
-    insertAt(
-      map.conclusions,
-      map.conclusions.length,
-      ...remainingNewConclusions,
-    );
-  }
 }
 
 function applyDeleteOperation(

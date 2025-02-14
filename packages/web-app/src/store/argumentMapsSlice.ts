@@ -1,8 +1,8 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import type { ArgumentMap } from "@prisma/client";
+import { ArgumentMapResource } from "../entities";
 
 interface ArgumentMapsState {
-  items: ArgumentMap[];
+  items: ArgumentMapResource[];
   isLoading: boolean;
   error: string | null;
   isCreating: boolean;

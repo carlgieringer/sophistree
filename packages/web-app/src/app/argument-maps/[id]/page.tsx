@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { useParams } from "next/navigation";
 import { useEffect } from "react";
 import { Surface, Text, Banner } from "react-native-paper";
-import { View } from "react-native";
 
 import { Entity } from "@sophistree/common";
 
