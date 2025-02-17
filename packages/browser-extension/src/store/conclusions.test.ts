@@ -96,7 +96,7 @@ describe("updateConclusions", () => {
     expect(map.conclusions).toHaveLength(2);
     map.conclusions.forEach((conclusion) => {
       expect(conclusion.appearanceInfo.sourceNames).toHaveLength(1);
-      expect(conclusion.appearanceInfo.urls).toHaveLength(1);
+      expect(conclusion.appearanceInfo.domains).toHaveLength(1);
     });
   });
 
@@ -195,8 +195,8 @@ describe("updateConclusions", () => {
     expect(
       conclusion1Info?.mediaExcerptJustificationInfo.sourceNames,
     ).toContain(`Source m1`);
-    expect(conclusion1Info?.mediaExcerptJustificationInfo.urls).toContain(
-      `https://example.com/m1`,
+    expect(conclusion1Info?.mediaExcerptJustificationInfo.domains).toContain(
+      `example.com`,
     );
 
     // Check compound justification
@@ -206,9 +206,6 @@ describe("updateConclusions", () => {
     expect(
       conclusion2Info?.mediaExcerptJustificationInfo.sourceNames,
     ).toContain(`Source m2`);
-    expect(conclusion2Info?.mediaExcerptJustificationInfo.urls).toContain(
-      `https://example.com/m2`,
-    );
   });
 });
 

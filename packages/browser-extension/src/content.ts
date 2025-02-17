@@ -9,12 +9,7 @@ import {
   HighlightManagerOptions,
   PDFViewerApplication,
 } from "tapestry-highlights";
-import {
-  MediaExcerpt,
-  UrlInfo,
-  BasisOutcome,
-  outcomeValence,
-} from "@sophistree/common";
+import { MediaExcerpt, UrlInfo, BasisOutcome } from "@sophistree/common";
 
 import { AddMediaExcerptData } from "./store/entitiesSlice";
 import {
@@ -36,6 +31,7 @@ import {
 } from "./extension/chromeRuntimeMessages";
 
 import "./highlights/outcome-colors.scss";
+import { getOutcomeColorClass } from "./highlights/outcomeColors";
 
 chrome.runtime.onConnect.addListener(getMediaExcerptsWhenSidePanelConnects);
 chrome.runtime.onMessage.addListener(
@@ -405,11 +401,7 @@ function updateMediaExcerptOutcomes(
 
 function getHighlightClass(mediaExcerptId: string) {
   const outcome = mediaExcerptOutcomes.get(mediaExcerptId);
-  if (!outcome) {
-    return "highlight-color-default";
-  }
-  const valence = outcomeValence(outcome);
-  return `highlight-color-${valence}`;
+  return getOutcomeColorClass(outcome);
 }
 
 function createHighlight(mediaExcerptId: string, domAnchor: DomAnchor) {
