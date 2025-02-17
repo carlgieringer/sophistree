@@ -4,15 +4,15 @@ import {
   Card,
   Title,
   Paragraph,
-  List,
   Divider,
   Text,
-  Tooltip,
   Chip,
 } from "react-native-paper";
 
 import { ArgumentMap } from "@sophistree/common";
 import type { Logger } from "@sophistree/common";
+
+import { getOutcomeColorStyle } from "../outcomes/outcomeColors";
 
 export interface ArgumentMapCardProps {
   map: ArgumentMapCardInfo;
@@ -75,72 +75,68 @@ export function ArgumentMapCard({
               <Text variant="titleLarge" style={{ marginTop: 20 }}>
                 Conclusions
               </Text>
-              <List.Section>
+              <View>
                 {conclusion.propositionInfos.map(
-                  ({ propositionId, outcome }, i) => {
-                    const text = propositionTextById.get(propositionId);
+                  ({ propositionId, outcome }) => {
+                    const text = propositionTextById.get(propositionId)!;
+                    const colorStyle = getOutcomeColorStyle(outcome);
                     return (
-                      <List.Item key={i} title={`• [${outcome}] ${text}`} />
+                      <Paragraph
+                        style={{ marginBottom: 10 }}
+                        key={propositionId}
+                      >
+                        {text} <Text style={colorStyle}>[{outcome}]</Text>
+                      </Paragraph>
                     );
                   },
                 )}
-              </List.Section>
+              </View>
 
-              {conclusion.appearanceInfo.sourceNames.length ? (
+              {!!conclusion.appearanceInfo.sourceNames.length && (
                 <>
                   <Text variant="titleMedium" style={{ marginBottom: 5 }}>
                     Appearing in
                   </Text>
                   <Text variant="titleSmall">Sources</Text>
-                  <List.Section>
-                    {conclusion.appearanceInfo.sourceNames.map((source, i) => (
-                      <List.Item key={i} title={`• ${source}`} />
-                    ))}
-                  </List.Section>
 
-                  <Text variant="titleSmall">URLs</Text>
-                  <List.Section>
-                    {conclusion.appearanceInfo.urls.map((url, i) => (
-                      <Tooltip title={url} key={url}>
-                        <List.Item key={i} title={`• ${url}`} />
-                      </Tooltip>
-                    ))}
-                  </List.Section>
+                  {conclusion.appearanceInfo.sourceNames.map((source) => (
+                    <Paragraph style={{ marginBottom: 10 }} key={source}>
+                      {source}
+                    </Paragraph>
+                  ))}
+
+                  <Text variant="titleSmall">Domains</Text>
+                  {conclusion.appearanceInfo.domains.map((domain) => (
+                    <Paragraph style={{ marginBottom: 10 }} key={domain}>
+                      {domain}
+                    </Paragraph>
+                  ))}
                 </>
-              ) : (
-                <Text variant="titleMedium" style={{ marginBottom: 10 }}>
-                  Appearing in no sources.
-                </Text>
               )}
-              {conclusion.mediaExcerptJustificationInfo.sourceNames.length ? (
+              {!!conclusion.mediaExcerptJustificationInfo.sourceNames
+                .length && (
                 <>
                   <Text variant="titleMedium" style={{ marginBottom: 5 }}>
                     Based on evidence from
                   </Text>
                   <Text variant="titleSmall">Sources</Text>
-                  <List.Section>
-                    {conclusion.mediaExcerptJustificationInfo.sourceNames.map(
-                      (source, i) => (
-                        <List.Item key={i} title={`• ${source}`} />
-                      ),
-                    )}
-                  </List.Section>
+                  {conclusion.mediaExcerptJustificationInfo.sourceNames.map(
+                    (source) => (
+                      <Paragraph style={{ marginBottom: 10 }} key={source}>
+                        {source}
+                      </Paragraph>
+                    ),
+                  )}
 
-                  <Text variant="titleSmall">URLs</Text>
-                  <List.Section>
-                    {conclusion.mediaExcerptJustificationInfo.urls.map(
-                      (url, i) => (
-                        <Tooltip title={url} key={url}>
-                          <List.Item key={i} title={`• ${url}`} />
-                        </Tooltip>
-                      ),
-                    )}
-                  </List.Section>
+                  <Text variant="titleSmall">Domains</Text>
+                  {conclusion.mediaExcerptJustificationInfo.domains.map(
+                    (domain) => (
+                      <Paragraph style={{ marginBottom: 10 }} key={domain}>
+                        {domain}
+                      </Paragraph>
+                    ),
+                  )}
                 </>
-              ) : (
-                <Text variant="titleMedium" style={{ marginBottom: 5 }}>
-                  Based on no evidence
-                </Text>
               )}
 
               {index < map.conclusions.length - 1 && <Divider />}

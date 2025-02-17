@@ -1,4 +1,5 @@
-import { ConclusionInfo, Entity, MediaExcerpt, preferredUrl } from "./entities";
+import { extractHostname } from "./urls";
+import { ConclusionInfo, Entity, MediaExcerpt } from "./entities";
 import { Logger } from "./logging";
 import { determineOutcomes } from "./outcomes";
 
@@ -46,7 +47,7 @@ export function calculateConclusions(
 
   const {
     sourceNamesByPropositionId,
-    urlsByPropositionId,
+    hostnamesByPropositionId,
     mediaExcerptIds,
     justificationIdsByBasisId,
     targetIdByJustificationId,
@@ -66,12 +67,12 @@ export function calculateConclusions(
             .get(entity.apparitionId)!
             .add(mediaExcerpt.sourceInfo.name);
 
-          if (!acc.urlsByPropositionId.has(entity.apparitionId)) {
-            acc.urlsByPropositionId.set(entity.apparitionId, new Set());
+          if (!acc.hostnamesByPropositionId.has(entity.apparitionId)) {
+            acc.hostnamesByPropositionId.set(entity.apparitionId, new Set());
           }
-          acc.urlsByPropositionId
+          acc.hostnamesByPropositionId
             .get(entity.apparitionId)!
-            .add(preferredUrl(mediaExcerpt.urlInfo));
+            .add(extractHostname(mediaExcerpt.urlInfo));
           break;
         }
         case "MediaExcerpt": {
@@ -83,7 +84,7 @@ export function calculateConclusions(
           // Then for every MediaExcerpt follow the path, abandoning it
           // if the justification is countered by a valid justification.
           // Upon arriving at a conclusion, add the MediaExcerpt's SourceInfo.name
-          // and preferred URL to the conclusion.
+          // and hostname to the conclusion.
           if (!acc.justificationIdsByBasisId.has(entity.basisId)) {
             acc.justificationIdsByBasisId.set(entity.basisId, []);
           }
@@ -97,7 +98,7 @@ export function calculateConclusions(
     },
     {
       sourceNamesByPropositionId: new Map<string, Set<string>>(),
-      urlsByPropositionId: new Map<string, Set<string>>(),
+      hostnamesByPropositionId: new Map<string, Set<string>>(),
       mediaExcerptIds: new Set<string>(),
       justificationIdsByBasisId: new Map<string, string[]>(),
       targetIdByJustificationId: new Map<string, string>(),
@@ -121,7 +122,7 @@ export function calculateConclusions(
     string,
     Set<string>
   >();
-  const mediaExcerptJustificationUrlsByPropositionId = new Map<
+  const mediaExcerptJustificationHostnamesByPropositionId = new Map<
     string,
     Set<string>
   >();
@@ -169,12 +170,15 @@ export function calculateConclusions(
         mediaExcerptJustificationSourceNamesByPropositionId
           .get(targetId)!
           .add(mediaExcerpt.sourceInfo.name);
-        if (!mediaExcerptJustificationUrlsByPropositionId.has(targetId)) {
-          mediaExcerptJustificationUrlsByPropositionId.set(targetId, new Set());
+        if (!mediaExcerptJustificationHostnamesByPropositionId.has(targetId)) {
+          mediaExcerptJustificationHostnamesByPropositionId.set(
+            targetId,
+            new Set(),
+          );
         }
-        mediaExcerptJustificationUrlsByPropositionId
+        mediaExcerptJustificationHostnamesByPropositionId
           .get(targetId)!
-          .add(preferredUrl(mediaExcerpt.urlInfo));
+          .add(extractHostname(mediaExcerpt.urlInfo));
       } else {
         const compoundId = compoundIdByAtomId.get(targetId);
         if (!compoundId) {
@@ -196,18 +200,18 @@ export function calculateConclusions(
     }
   }
 
-  // Group conclusions by their source names and URLs
+  // Group conclusions by their source names and domains
   const { conclusionGroups } = [...conclusionPropositionIds].reduce(
     (acc, id) => {
       const appearanceSourceNames = Array.from(
         sourceNamesByPropositionId.get(id) || [],
       ).sort();
-      const appearanceUrls = Array.from(
-        urlsByPropositionId.get(id) || [],
+      const appearanceHostnames = Array.from(
+        hostnamesByPropositionId.get(id) || [],
       ).sort();
       const key = JSON.stringify({
         sourceNames: appearanceSourceNames,
-        urls: appearanceUrls,
+        hostnames: appearanceHostnames,
       });
 
       if (!acc.conclusionGroups.has(key)) {
@@ -215,11 +219,11 @@ export function calculateConclusions(
           propositionInfos: [],
           appearanceInfo: {
             sourceNames: appearanceSourceNames,
-            urls: appearanceUrls,
+            domains: appearanceHostnames,
           },
           mediaExcerptJustificationInfo: {
             sourceNames: [],
-            urls: [],
+            domains: [],
           },
         });
       }
@@ -230,8 +234,8 @@ export function calculateConclusions(
       const mediaExcerptJustificationSourceNames = Array.from(
         mediaExcerptJustificationSourceNamesByPropositionId.get(id) || [],
       ).sort();
-      const mediaExcerptJustificationUrls = Array.from(
-        mediaExcerptJustificationUrlsByPropositionId.get(id) || [],
+      const mediaExcerptJustificationHostnames = Array.from(
+        mediaExcerptJustificationHostnamesByPropositionId.get(id) || [],
       ).sort();
       const mediaExcerptJustificationInfo =
         acc.conclusionGroups.get(key)!.mediaExcerptJustificationInfo;
@@ -241,10 +245,10 @@ export function calculateConclusions(
         0,
         ...mediaExcerptJustificationSourceNames,
       );
-      mediaExcerptJustificationInfo.urls.splice(
-        mediaExcerptJustificationInfo.urls.length,
+      mediaExcerptJustificationInfo.domains.splice(
+        mediaExcerptJustificationInfo.domains.length,
         0,
-        ...mediaExcerptJustificationUrls,
+        ...mediaExcerptJustificationHostnames,
       );
       return acc;
     },
