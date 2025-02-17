@@ -21,11 +21,11 @@ export function updateConclusions(map: ArgumentMap) {
     } else {
       const key1 = JSON.stringify({
         sourceNames: oldConclusion.appearanceInfo.sourceNames,
-        urls: oldConclusion.appearanceInfo.urls,
+        domains: oldConclusion.appearanceInfo.domains,
       });
       const key2 = JSON.stringify({
         sourceNames: newConclusion.appearanceInfo.sourceNames,
-        urls: newConclusion.appearanceInfo.urls,
+        domains: newConclusion.appearanceInfo.domains,
       });
       const comparison = key1.localeCompare(key2);
       if (comparison > 0) {

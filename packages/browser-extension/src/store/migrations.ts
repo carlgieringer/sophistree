@@ -2,12 +2,17 @@ import { produce } from "immer";
 import { PersistedState } from "redux-persist";
 import { DocumentId } from "@automerge/automerge-repo";
 
-import { ArgumentMap, Entity, MediaExcerpt } from "@sophistree/common";
+import {
+  ArgumentMap,
+  ConclusionInfo,
+  Entity,
+  MediaExcerpt,
+} from "@sophistree/common";
 
 import { updateConclusions } from "./conclusions";
 import { createDoc } from "../sync";
 
-export const persistedStateVersion = 9;
+export const persistedStateVersion = 10;
 
 type MapsState =
   | {
@@ -124,9 +129,32 @@ export const mapMigrations = {
     addSourceNameOverrides(map);
   },
   9: (map: ArgumentMap) => {
-    for (const conclusion of map.conclusions) {
+    type UrlSourceInfo = {
+      sourceNames: string[];
+      urls: string[];
+    };
+    type UrlConclusionInfo = Omit<
+      ConclusionInfo,
+      "appearanceInfo" | "mediaExcerptJustificationInfo"
+    > & {
+      appearanceInfo: UrlSourceInfo;
+      mediaExcerptJustificationInfo: UrlSourceInfo;
+    };
+    const conclusions = map.conclusions as unknown[] as UrlConclusionInfo[];
+    for (const conclusion of conclusions) {
       conclusion.appearanceInfo = { sourceNames: [], urls: [] };
       conclusion.mediaExcerptJustificationInfo = { sourceNames: [], urls: [] };
+      conclusion.propositionInfos = [];
+    }
+    updateConclusions(map);
+  },
+  10: (map: ArgumentMap) => {
+    for (const conclusion of map.conclusions) {
+      conclusion.appearanceInfo = { sourceNames: [], domains: [] };
+      conclusion.mediaExcerptJustificationInfo = {
+        sourceNames: [],
+        domains: [],
+      };
       conclusion.propositionInfos = [];
     }
     updateConclusions(map);

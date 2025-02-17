@@ -190,7 +190,6 @@ export const entitiesSlice = createAppSlice({
 
       handle.change((doc) => {
         doc.entities.push(proposition);
-        updateConclusions(doc);
       });
     }),
     addMediaExcerpt: create.reducer<AddMediaExcerptData>((state, action) => {
@@ -369,6 +368,8 @@ export const entitiesSlice = createAppSlice({
         }
 
         Object.assign(mediaExcerpt, updates);
+
+        updateConclusions(map);
       });
     }),
     updateJustification: create.reducer<{

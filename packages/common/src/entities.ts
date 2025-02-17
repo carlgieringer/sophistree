@@ -79,16 +79,16 @@ export interface ConclusionInfo {
   appearanceInfo: {
     /** The distinct sourceInfo.names for appearances of the propositions.  */
     sourceNames: string[];
-    /** The distinct preferred URLs for appearances of the propositions. */
-    urls: string[];
+    /** The distinct domains for appearances of the propositions. */
+    domains: string[];
   };
   mediaExcerptJustificationInfo: {
     /** The distinct sourceInfo.names for all MediaExcerpts that are the basis of Justifications under
      *  the propositions.  */
     sourceNames: string[];
-    /** The distinct preferred URLs for all MediaExcerpts that are the basis of Justifications under
+    /** The distinct domains for all MediaExcerpts that are the basis of Justifications under
      *  the propositions.  */
-    urls: string[];
+    domains: string[];
   };
 }
 
@@ -114,22 +114,4 @@ export interface ArgumentMap {
    * URL.)
    */
   sourceNameOverrides: Record<string, string>;
-}
-
-export function preferredUrl(urlInfo: UrlInfo): string {
-  return urlInfo.canonicalUrl ?? urlInfo.url;
-}
-
-/** Whether the MediaExcerpt should be displayed on the page with the given UrlInfo. */
-export function isMatchingUrlInfo(
-  mediaExcerptUrlInfo: UrlInfo,
-  pageUrlInfo: UrlInfo,
-) {
-  if (mediaExcerptUrlInfo.pdfFingerprint) {
-    return mediaExcerptUrlInfo.pdfFingerprint === pageUrlInfo.pdfFingerprint;
-  }
-  if (mediaExcerptUrlInfo.canonicalUrl) {
-    return mediaExcerptUrlInfo.canonicalUrl === pageUrlInfo.canonicalUrl;
-  }
-  return mediaExcerptUrlInfo.url === pageUrlInfo.url;
 }
