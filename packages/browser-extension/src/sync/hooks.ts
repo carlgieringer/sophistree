@@ -50,26 +50,28 @@ export const useAllMaps = () => {
           // Set up listeners for new documents
           newMaps.forEach((map) => {
             const documentId = map.automergeDocumentId as DocumentId;
-            if (!docChangeListeners.has(documentId)) {
-              const handle = getDocHandle(documentId);
-              if (!handle) {
-                return;
-              }
-
-              const listener = ({
-                doc,
-              }: DocHandleChangePayload<ArgumentMap>) => {
-                setMaps((prevMaps) =>
-                  prevMaps.map((prevMap) =>
-                    prevMap.automergeDocumentId === doc.automergeDocumentId
-                      ? doc
-                      : prevMap,
-                  ),
-                );
-              };
-              handle.on("change", listener);
-              docChangeListeners.set(documentId, listener);
+            if (docChangeListeners.has(documentId)) {
+              return;
             }
+            const handle = getDocHandle(documentId);
+            if (!handle) {
+              appLogger.error(
+                `Unable to add listeners for document that had no handle. Document ID: ${documentId}`,
+              );
+              return;
+            }
+
+            const listener = ({ doc }: DocHandleChangePayload<ArgumentMap>) => {
+              setMaps((prevMaps) =>
+                prevMaps.map((prevMap) =>
+                  prevMap.automergeDocumentId === doc.automergeDocumentId
+                    ? doc
+                    : prevMap,
+                ),
+              );
+            };
+            handle.on("change", listener);
+            docChangeListeners.set(documentId, listener);
           });
 
           setMaps(newMaps);
@@ -78,7 +80,6 @@ export const useAllMaps = () => {
     };
 
     updateMaps();
-
     addDocChangeListener(updateMaps);
 
     return () => {
