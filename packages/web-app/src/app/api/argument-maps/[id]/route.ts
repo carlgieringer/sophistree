@@ -90,8 +90,8 @@ export async function PUT(
         where: {
           id_mapId: {
             id,
-            mapId
-          }
+            mapId,
+          },
         },
         update: {
           type,
