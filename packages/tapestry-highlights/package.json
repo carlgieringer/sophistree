@@ -77,7 +77,7 @@
     "babel-jest": "^29.7.0",
     "concurrently": "^9.0.1",
     "dom-anchor-text-quote": "^4.0.2",
-    "esbuild": "0.23.1",
+    "esbuild": "^0.25.0",
     "esbuild-plugin-clean": "^1.0.1",
     "esbuild-plugin-copy": "^2.1.1",
     "esbuild-sass-plugin": "^3.3.1",

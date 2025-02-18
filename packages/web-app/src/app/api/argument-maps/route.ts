@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     const { data } = body;
 
     // Transform the entities and conclusions data to match Prisma's expected format
-    const transformedData = {
+    const mapCreateArgs = {
       id: data.id,
       name: data.name,
       userId,
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     const prisma = await prismaPromise;
     const map = await prisma.argumentMap.create({
-      data: transformedData,
+      data: mapCreateArgs,
       include: {
         entities: true, // Include the created entities in the response
       },

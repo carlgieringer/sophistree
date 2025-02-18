@@ -95,26 +95,41 @@ export default function GraphView({
     undefined as ElementDataDefinition | undefined,
   );
 
+  const layoutGraph = useCallback((fit = false) => {
+    cyRef.current?.layout(getLayout(fit)).run();
+  }, []);
+
+  const toggleCollapse = useCallback(
+    (id: string) => {
+      onToggleCollapse(id);
+      // Nodes that appear after uncollapsing don't layout properly. So
+      // Watch for them to appear and then trigger a relayout after their
+      // first layout ends.
+      cyRef.current?.one("add", "node", () => {
+        cyRef.current?.one("layoutstop", () => {
+          layoutGraph();
+        });
+      });
+    },
+    [onToggleCollapse, layoutGraph],
+  );
+
   useReactNodes(
     cyRef,
     activeGraphId,
     setVisitAppearancesDialogProposition,
     onFocusMediaExcerpt,
-    onToggleCollapse,
+    toggleCollapse,
     logger,
   );
 
   const { zoomIn, zoomOut } = useZoomEventHandlers(cyRef, logger);
 
-  const layoutGraph = useCallback((fit = false) => {
-    cyRef.current?.layout(getLayout(fit)).run();
-  }, []);
-
   const contextMenu = useContextMenus({
     cyRef,
     onDeleteEntity,
     onAddNewProposition,
-    onToggleCollapse,
+    onToggleCollapse: toggleCollapse,
     zoomIn,
     zoomOut,
     setDebugElementData,
