@@ -42,7 +42,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params: { id: mapId } }: { params: { id: string } },
 ) {
   try {
     const result = await getOrCreateUserFromAuth(request);
@@ -53,7 +53,7 @@ export async function PUT(
 
     const prisma = await prismaPromise;
     const existingMap = await prisma.argumentMap.findUnique({
-      where: { id: params.id },
+      where: { id: mapId },
       include: {
         entities: true,
       },
@@ -84,33 +84,39 @@ export async function PUT(
       (id) => !updatedEntityIds.has(id),
     );
 
-    const formattedEntities = entities?.map((entity: any) => {
-      const { id, type, explicitVisibility, ...entityData } = entity;
+    const entityUpserts = entities?.map((entity: any) => {
+      const { id, type } = entity;
       return {
-        where: { id },
+        where: {
+          id_mapId: {
+            id,
+            mapId
+          }
+        },
         update: {
-          data: { id, type, explicitVisibility, ...entityData },
+          type,
+          data: entity,
         },
         create: {
           id,
           type,
-          data: { id, type, explicitVisibility, ...entityData },
+          data: entity,
         },
       };
     });
 
     const map = await prisma.argumentMap.update({
-      where: { id: params.id },
+      where: { id: mapId },
       data: {
         name,
         entities: {
           deleteMany:
             entityIdsToDelete.length > 0
               ? {
-                  id: { in: entityIdsToDelete },
+                  AND: [{ id: { in: entityIdsToDelete } }, { mapId }],
                 }
               : undefined,
-          upsert: formattedEntities,
+          upsert: entityUpserts,
         },
       },
       include: {

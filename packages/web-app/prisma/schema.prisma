@@ -38,7 +38,7 @@ model ArgumentMap {
 }
 
 model Entity {
-  id        String      @id
+  id        String
   mapId     String
   type      String
   data      Json
@@ -46,5 +46,6 @@ model Entity {
   updatedAt DateTime    @updatedAt
   map       ArgumentMap @relation(fields: [mapId], references: [id])
 
+  @@id([id, mapId])
   @@map("entities")
 }

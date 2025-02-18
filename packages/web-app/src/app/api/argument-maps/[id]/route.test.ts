@@ -160,13 +160,13 @@ describe("Argument maps individual resource", () => {
         entities: [
           {
             id: "entity1", // Existing entity
-            type: "CLAIM",
-            text: "Updated claim",
+            type: "Proposition",
+            text: "Updated proposition",
           },
           {
             id: "new-entity1", // New entity
             type: "Proposition",
-            text: "New Proposition 1",
+            text: "New Proposition",
           },
         ],
       };
@@ -203,19 +203,19 @@ describe("Argument maps individual resource", () => {
           expect.objectContaining({
             id: "entity1",
             type: "Proposition",
-            data: expect.objectContaining({ text: "Updated claim" }),
+            data: expect.objectContaining({ text: "Updated proposition" }),
           }),
           expect.objectContaining({
             id: "new-entity1",
             type: "Proposition",
-            data: expect.objectContaining({ text: "New Proposition 1" }),
+            data: expect.objectContaining({ text: "New Proposition" }),
           }),
         ]),
       );
 
       // Verify entity2 was deleted
       const entity2 = await prisma.entity.findUnique({
-        where: { id: "entity2" },
+        where: { id_mapId: { id: "entity2", mapId: testMap.id } },
       });
       expect(entity2).toBeNull();
     });
