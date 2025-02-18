@@ -23,8 +23,8 @@ export default function WebGraphView({
   entities: Entity[];
 }) {
   const [selectedEntityIds, setSelectedEntityIds] = useState<string[]>([]);
-  const [collapsedEntityIds, setCollapsedEntityIds] = useState<Set<string>>(
-    new Set(),
+  const [collapsedEntityIds, setCollapsedEntityIds] = useState(
+    new Set<string>(entities.filter((e) => e.isCollapsed).map((e) => e.id)),
   );
 
   const handleSelectEntities = useCallback((entityIds: string[]) => {
