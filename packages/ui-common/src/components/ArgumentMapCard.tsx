@@ -27,7 +27,6 @@ export interface ArgumentMapCardProps {
   userInfo?: {
     id: string;
     displayName: string;
-    pictureUrl?: string;
   };
 }
 

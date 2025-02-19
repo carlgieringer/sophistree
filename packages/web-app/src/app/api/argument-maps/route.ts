@@ -31,7 +31,6 @@ export async function GET(
             id: true,
             name: true,
             pseudonym: true,
-            pictureUrl: true,
           },
         },
       },

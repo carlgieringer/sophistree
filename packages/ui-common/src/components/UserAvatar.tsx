@@ -3,12 +3,13 @@ import { Avatar } from "react-native-paper";
 export interface UserAvatarProps {
   id: string;
   displayName: string;
+  size?: number;
 }
 
-export function UserAvatar({ id, displayName }: UserAvatarProps) {
+export function UserAvatar({ id, displayName, size = 24 }: UserAvatarProps) {
   return (
     <Avatar.Text
-      size={24}
+      size={size}
       label={getInitials(displayName)}
       color={generateColor(id)}
     />

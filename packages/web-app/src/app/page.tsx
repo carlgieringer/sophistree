@@ -94,7 +94,6 @@ function HomeContent() {
                         ? {
                             id: map.createdBy.id,
                             displayName,
-                            pictureUrl: map.createdBy.pictureUrl || undefined,
                           }
                         : undefined
                     }

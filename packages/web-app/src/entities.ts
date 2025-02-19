@@ -11,7 +11,6 @@ type PrismaArgumentMapWithEntities = Prisma.ArgumentMapGetPayload<{
         id: true;
         name: true;
         pseudonym: true;
-        pictureUrl: true;
       };
     };
   };
@@ -31,7 +30,6 @@ export type ArgumentMapResourceServer = ArgumentMapWithParsedEntities &
       id: string;
       name: string | null;
       pseudonym: string;
-      pictureUrl: string | null;
     } | null;
   };
 
