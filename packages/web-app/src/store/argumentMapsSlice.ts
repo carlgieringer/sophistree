@@ -1,8 +1,9 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { ArgumentMapResource } from "../entities";
+import { ArgumentMapResourceResponse } from "../entities";
+import { DateTime } from "luxon";
 
 interface ArgumentMapsState {
-  items: ArgumentMapResource[];
+  items: ArgumentMapResourceResponse[];
   isLoading: boolean;
   error: string | null;
   isCreating: boolean;

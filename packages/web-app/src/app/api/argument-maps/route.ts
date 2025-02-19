@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prismaPromise from "../../../db/client";
 import { getOrCreateUserFromAuth } from "../../../auth/authUser";
 import {
-  ArgumentMapResource,
+  ArgumentMapResourceServer,
   ArgumentMapWithParsedEntities,
   parseArgumentMapEntities,
 } from "../../../entities";
@@ -12,7 +12,7 @@ import { calculateConclusions } from "@sophistree/common";
 export async function GET(
   request: NextRequest,
 ): Promise<
-  NextResponse<ArgumentMapResource[] | { error: "Failed to fetch maps" }>
+  NextResponse<ArgumentMapResourceServer[] | { error: "Failed to fetch maps" }>
 > {
   try {
     const prisma = await prismaPromise;
@@ -26,10 +26,21 @@ export async function GET(
             createdAt: "desc",
           },
         },
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+            pseudonym: true,
+            pictureUrl: true,
+          },
+        },
       },
     });
 
-    const parsedMaps = dbMaps.map(parseArgumentMapEntities);
+    const parsedMaps = dbMaps.map((map) => ({
+      ...parseArgumentMapEntities(map),
+      createdBy: map.createdBy,
+    }));
     const maps = addConclusionsToMaps(parsedMaps);
 
     return NextResponse.json(maps);

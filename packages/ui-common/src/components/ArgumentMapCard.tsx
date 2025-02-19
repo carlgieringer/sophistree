@@ -2,24 +2,33 @@ import { ReactNode, useMemo } from "react";
 import { View } from "react-native";
 import {
   Card,
-  Title,
   Paragraph,
   Divider,
   Text,
   Chip,
+  Tooltip,
 } from "react-native-paper";
+
+import { UserAvatar } from "./UserAvatar";
 
 import { ArgumentMap } from "@sophistree/common";
 import type { Logger } from "@sophistree/common";
 
 import { getOutcomeColorStyle } from "../outcomes/outcomeColors";
+import { DateTime } from "luxon";
 
 export interface ArgumentMapCardProps {
   map: ArgumentMapCardInfo;
   titleButton: ReactNode;
   isActive?: boolean;
   logger?: Logger;
-  updatedAt?: Date;
+  createdAt?: string;
+  updatedAt?: string;
+  userInfo?: {
+    id: string;
+    displayName: string;
+    pictureUrl?: string;
+  };
 }
 
 export type ArgumentMapCardInfo = Pick<
@@ -30,9 +39,11 @@ export type ArgumentMapCardInfo = Pick<
 export function ArgumentMapCard({
   map,
   titleButton,
+  createdAt,
   updatedAt,
   isActive = false,
   logger = console,
+  userInfo,
 }: ArgumentMapCardProps) {
   const conclusionIds = useMemo(
     () =>
@@ -59,16 +70,62 @@ export function ArgumentMapCard({
     [conclusionIds, logger, map.entities],
   );
 
+  const createdAtDateTime = useMemo(
+    () => createdAt && DateTime.fromISO(createdAt),
+    [createdAt],
+  );
+  const updatedAtDateTime = useMemo(
+    () => updatedAt && DateTime.fromISO(updatedAt),
+    [updatedAt],
+  );
+
   return (
     <Card style={{ marginTop: 16 }}>
+      <Card.Title
+        title={
+          <>
+            {map.name} {titleButton} {isActive && <Chip>Active</Chip>}
+          </>
+        }
+        subtitle={
+          <>
+            <Paragraph>Entities: {map.entities.length}</Paragraph>
+            {(createdAt || updatedAt) && (
+              <Paragraph>
+                {createdAtDateTime && (
+                  <>
+                    {" "}
+                    <Tooltip title={createdAtDateTime.toISO() || ""}>
+                      <Text>
+                        Created: {createdAtDateTime.toRelativeCalendar()}
+                      </Text>
+                    </Tooltip>
+                  </>
+                )}
+                {updatedAtDateTime && (
+                  <>
+                    {" "}
+                    <Tooltip title={updatedAtDateTime.toISO() || ""}>
+                      <Text>
+                        Updated: {updatedAtDateTime.toRelativeCalendar()}
+                      </Text>
+                    </Tooltip>
+                  </>
+                )}
+              </Paragraph>
+            )}
+          </>
+        }
+        left={(props) =>
+          userInfo && (
+            <Tooltip title={`Published by ${userInfo.displayName}`}>
+              <UserAvatar {...userInfo} {...props} />
+            </Tooltip>
+          )
+        }
+      />
+
       <Card.Content>
-        <Title>
-          {map.name} {titleButton} {isActive && <Chip>Active</Chip>}
-        </Title>
-        <Paragraph>Entities: {map.entities.length}</Paragraph>
-        {updatedAt && (
-          <Paragraph>Last updated: {updatedAt.toLocaleDateString()}</Paragraph>
-        )}
         {map.conclusions.map((conclusion, index) => {
           return (
             <View key={index}>

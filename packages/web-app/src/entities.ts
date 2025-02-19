@@ -1,9 +1,20 @@
 import { Prisma } from "@prisma/client";
+import { DateTime } from "luxon";
 
 import { ArgumentMap, Entity } from "@sophistree/common";
 
 type PrismaArgumentMapWithEntities = Prisma.ArgumentMapGetPayload<{
-  include: { entities: true };
+  include: {
+    entities: true;
+    createdBy: {
+      select: {
+        id: true;
+        name: true;
+        pseudonym: true;
+        pictureUrl: true;
+      };
+    };
+  };
 }>;
 
 export type ArgumentMapWithParsedEntities = Omit<
@@ -14,8 +25,23 @@ export type ArgumentMapWithParsedEntities = Omit<
     Entity)[];
 };
 
-export type ArgumentMapResource = ArgumentMapWithParsedEntities &
-  Pick<ArgumentMap, "conclusions">;
+export type ArgumentMapResourceServer = ArgumentMapWithParsedEntities &
+  Pick<ArgumentMap, "conclusions"> & {
+    createdBy: {
+      id: string;
+      name: string | null;
+      pseudonym: string;
+      pictureUrl: string | null;
+    } | null;
+  };
+
+export type ArgumentMapResourceResponse = Omit<
+  ArgumentMapResourceServer,
+  "createdAt" | "updatedAt"
+> & {
+  createdAt: string;
+  updatedAt: string;
+};
 
 export function parseArgumentMapEntities(
   map: PrismaArgumentMapWithEntities,
