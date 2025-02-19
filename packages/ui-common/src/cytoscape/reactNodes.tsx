@@ -20,7 +20,7 @@ export default function register(cs: typeof cytoscape) {
   cs("core", "reactNodes", reactNodes);
 }
 
-interface ReactNodesOptions {
+export interface ReactNodesOptions {
   nodes: ReactNodeOptions[];
   layoutOptions: LayoutOptions;
   // The time in milliseconds during which newly added nodes will request a relayout.
@@ -34,7 +34,7 @@ interface ReactNodesOptions {
 
 export interface ReactNodeOptions {
   query: string;
-  template: (data: cytoscape.NodeDataDefinition) => JSX.Element;
+  component: React.ComponentType<{ data: cytoscape.NodeDataDefinition }>;
   mode?: "replace";
   /** CSS classes to copy from the node to the HTML container */
   syncClasses?: string[];
@@ -59,7 +59,7 @@ const defaultOptions: PassthroughOptions = {
 
 const defaultReactNodeOptions: ReactNodeOptions = {
   query: "node", // selector for nodes to apply HTML to
-  template: function (data: cytoscape.NodeDataDefinition) {
+  component: function (data: cytoscape.NodeDataDefinition) {
     // function to generate HTML
     return <div>{data.id}</div>;
   },
@@ -322,8 +322,8 @@ function makeReactNode(
     }
 
     function renderJsxElement(root: ReactDOM.Root) {
-      const jsxElement = options.template(node.data() as NodeDataDefinition);
-      root.render(jsxElement);
+      const Component = options.component;
+      root.render(<Component data={node.data() as NodeDataDefinition} />);
     }
 
     function syncNodeClasses() {
