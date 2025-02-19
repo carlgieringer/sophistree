@@ -1,6 +1,6 @@
-import { MutableRefObject, UIEvent } from "react";
+import { MutableRefObject, UIEvent, useState } from "react";
 import cn from "classnames";
-import cytoscape, { NodeDataDefinition } from "cytoscape";
+import cytoscape from "cytoscape";
 import { useEffect, useMemo } from "react";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
@@ -12,6 +12,7 @@ import { GraphViewLogger, PropositionNodeData } from "./graphTypes";
 import { nodeOutcomeClasses } from "./useOutcomes";
 import { getLayout } from "./layout";
 import { OnToggleCollapse } from "./collapsing";
+import { ReactNodeOptions } from "../cytoscape/reactNodes";
 
 export function useReactNodes(
   cyRef: MutableRefObject<cytoscape.Core | undefined>,
@@ -23,11 +24,11 @@ export function useReactNodes(
   onToggleCollapse: OnToggleCollapse,
   logger: GraphViewLogger,
 ) {
-  const reactNodesConfig = useMemo(
+  const reactNodesConfig: ReactNodeOptions[] = useMemo(
     () => [
       {
         query: `node[entity.type="Proposition"]`,
-        template: function (data: NodeDataDefinition) {
+        component: function PropositionGraphNode({ data }) {
           const nodeData = data as PropositionNodeData;
           const appearanceCount = nodeData.appearances?.length;
           const appearanceNoun =
@@ -78,12 +79,42 @@ export function useReactNodes(
       },
       {
         query: `node[entity.type="MediaExcerpt"]`,
-        template: function (data: NodeDataDefinition) {
+        component: function MediaExcerptGraphNode({ data }) {
           const mediaExcerpt = data.entity as MediaExcerpt;
           const url = preferredUrl(mediaExcerpt.urlInfo);
+          const [isElided, setIsElided] = useState(true);
+          const isLong = mediaExcerpt.quotation.length > 200;
+          const displayQuotation =
+            isLong && isElided
+              ? mediaExcerpt.quotation.slice(0, 200) + "…"
+              : mediaExcerpt.quotation;
+
           return (
             <>
-              <p>{mediaExcerpt.quotation}</p>
+              <p>
+                {displayQuotation}
+                {isLong && (
+                  <span
+                    className="elide-control"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsElided(!isElided);
+                    }}
+                    style={{
+                      cursor: "pointer",
+                      marginLeft: "0.5em",
+                      color: "#fff",
+                    }}
+                  >
+                    <Icon
+                      name={
+                        isElided ? "chevron-double-down" : "chevron-double-up"
+                      }
+                    />
+                  </span>
+                )}
+              </p>
               <a
                 href={url}
                 title={url}

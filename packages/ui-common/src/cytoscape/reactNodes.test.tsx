@@ -52,7 +52,7 @@ describe("reactNodes Cytoscape extension", () => {
         nodes: [
           {
             query: "node",
-            template: (data: NodeDataDefinition) => (
+            component: ({ data }) => (
               <div data-testid="react-node">{data.id}</div>
             ),
           },
@@ -90,7 +90,7 @@ describe("reactNodes Cytoscape extension", () => {
         nodes: [
           {
             query: "node",
-            template: (data: NodeDataDefinition) => (
+            component: ({ data }) => (
               <div data-testid="react-node">{(data as TestNodeData).label}</div>
             ),
           },
@@ -121,7 +121,7 @@ describe("reactNodes Cytoscape extension", () => {
         nodes: [
           {
             query: "node",
-            template: (data: NodeDataDefinition) => (
+            component: ({ data }) => (
               <div data-testid="react-node">{data.id}</div>
             ),
             selectedStyle,
@@ -157,7 +157,7 @@ describe("reactNodes Cytoscape extension", () => {
         nodes: [
           {
             query: "node",
-            template: (data: NodeDataDefinition) => (
+            component: ({ data }) => (
               <div data-testid="react-node">{data.id}</div>
             ),
             syncClasses,
@@ -188,7 +188,7 @@ describe("reactNodes Cytoscape extension", () => {
         nodes: [
           {
             query: "node",
-            template: (data: NodeDataDefinition) => (
+            component: ({ data }) => (
               <div data-testid="react-node">{data.id}</div>
             ),
           },
@@ -221,7 +221,7 @@ describe("reactNodes Cytoscape extension", () => {
         nodes: [
           {
             query: "node",
-            template: (data: NodeDataDefinition) => (
+            component: ({ data }) => (
               <div data-testid="react-node">{data.id}</div>
             ),
           },
