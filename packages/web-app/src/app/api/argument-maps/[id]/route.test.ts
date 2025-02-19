@@ -268,6 +268,7 @@ describe("Argument maps individual resource", () => {
         familyName: "User",
         authId: "other-external-id",
         pictureUrl: "https://example.com/other.jpg",
+        isVerifiedEmail: true,
       });
 
       const request = new NextRequest(
@@ -380,6 +381,7 @@ describe("Argument maps individual resource", () => {
         familyName: "User",
         authId: "other-external-id",
         pictureUrl: "https://example.com/other.jpg",
+        isVerifiedEmail: true,
       });
 
       const request = new NextRequest(

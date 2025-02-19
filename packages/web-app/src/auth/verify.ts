@@ -1,4 +1,5 @@
 import prismaPromise from "../db/client";
+import { createPseudonym } from "./pseudonyms";
 
 interface AuthUserInfo {
   email: string;
@@ -7,13 +8,18 @@ interface AuthUserInfo {
   familyName: string;
   authId: string;
   pictureUrl: string;
+  isVerifiedEmail: boolean;
 }
 
+// I couldn't find where this was well-documented. But here are is what I found:
+// https://googleapis.dev/ruby/google-api-client/latest/Google/Apis/Oauth2V2/Userinfo.html
+// https://googleapis.dev/nodejs/googleapis/latest/oauth2/classes/Resource$Userinfo.html
 interface GoogleUserInfo {
   email: string;
   family_name: string;
   given_name: string;
   id: string;
+  hd: string;
   name: string;
   picture: string;
   verified_email: boolean;
@@ -43,6 +49,7 @@ async function verifyGoogleToken(token: string): Promise<AuthUserInfo> {
     familyName: userInfo.family_name,
     authId: userInfo.id,
     pictureUrl: userInfo.picture,
+    isVerifiedEmail: userInfo.verified_email,
   };
 }
 
@@ -77,6 +84,38 @@ export async function getOrCreateUser(
         authProvider: provider,
         email: authUserInfo.email,
         name: authUserInfo.fullName,
+        pseudonym: "initial-pseudonym",
+        pictureUrl: authUserInfo.pictureUrl,
+        isVerifiedEmail: authUserInfo.isVerifiedEmail,
+      },
+    });
+    const pseudonym = createPseudonym(user.id);
+    await prisma.user.update({
+      where: {
+        authExternalId_authProvider: {
+          authExternalId: authUserInfo.authId,
+          authProvider: provider,
+        },
+      },
+      data: {
+        pseudonym,
+      },
+    });
+  } else {
+    const pseudonym = createPseudonym(user.id);
+    await prisma.user.update({
+      where: {
+        authExternalId_authProvider: {
+          authExternalId: authUserInfo.authId,
+          authProvider: provider,
+        },
+      },
+      data: {
+        email: authUserInfo.email,
+        name: authUserInfo.fullName,
+        pseudonym,
+        pictureUrl: authUserInfo.pictureUrl,
+        isVerifiedEmail: authUserInfo.isVerifiedEmail,
       },
     });
   }

@@ -39,7 +39,8 @@ async function authenticate(details: chrome.identity.TokenDetails) {
     );
   }
 
-  return (await response.json()) as User;
+  const user = (await response.json()) as User;
+  return user;
 }
 
 async function broadcastAuthChange() {

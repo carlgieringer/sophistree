@@ -75,15 +75,31 @@ function HomeContent() {
             <Text style={{ color: "black" }}>No maps.</Text>
           ) : (
             <View>
-              {argumentMaps.map((map) => (
-                <ArgumentMapCard
-                  key={map.id}
-                  map={map}
-                  titleButton={
-                    <Button onPress={() => handleMapClick(map.id)}>Open</Button>
-                  }
-                />
-              ))}
+              {argumentMaps.map((map) => {
+                const displayName =
+                  map.createdBy.name || map.createdBy.pseudonym;
+                return (
+                  <ArgumentMapCard
+                    key={map.id}
+                    map={map}
+                    titleButton={
+                      <Button onPress={() => handleMapClick(map.id)}>
+                        Open
+                      </Button>
+                    }
+                    createdAt={map.createdAt}
+                    updatedAt={map.updatedAt}
+                    userInfo={
+                      map.createdBy
+                        ? {
+                            id: map.createdBy.id,
+                            displayName,
+                          }
+                        : undefined
+                    }
+                  />
+                );
+              })}
             </View>
           )}
         </View>

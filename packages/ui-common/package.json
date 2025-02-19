@@ -22,11 +22,13 @@
     "cytoscape-elk": "^2.2.0",
     "lodash.debounce": "^4.0.8",
     "lodash.throttle": "^4.1.1",
+    "luxon": "^3.5.0",
     "react": "^18.2.0",
     "react-cytoscapejs": "^2.0.0",
     "react-native-paper": "^5.11.1",
     "react-native-vector-icons": "^10.0.0",
-    "type-fest": "^4.6.0"
+    "type-fest": "^4.6.0",
+    "unique-names-generator": "^4.7.1"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
@@ -39,6 +41,7 @@
     "@types/cytoscape": "^3.19.11",
     "@types/lodash.debounce": "^4.0.9",
     "@types/lodash.throttle": "^4.1.9",
+    "@types/luxon": "^3.4.2",
     "@types/react": "^18.2.15",
     "babel-jest": "^29.7.0",
     "identity-obj-proxy": "^3.0.0",

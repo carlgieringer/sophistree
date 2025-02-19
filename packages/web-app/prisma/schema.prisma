@@ -8,16 +8,19 @@ datasource db {
 }
 
 model User {
-  id             String        @id @default(uuid())
-  email          String        @unique
-  authExternalId String        @unique
-  authProvider   String
-  name           String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  argumentMaps   ArgumentMap[]
+  id              String        @id @default(uuid())
+  email           String        @unique
+  authExternalId  String
+  authProvider    String
+  name            String?
+  pseudonym       String        @default("default-pseudonym")
+  pictureUrl      String?
+  isVerifiedEmail Boolean?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  argumentMaps    ArgumentMap[]
 
-  @@index([authExternalId, authProvider])
+  @@unique([authExternalId, authProvider])
   @@map("users")
 }
 
