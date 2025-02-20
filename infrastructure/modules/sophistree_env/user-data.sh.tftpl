@@ -111,6 +111,7 @@ echo "DATABASE_URL=postgresql://sophistree:$db_password@sophistree-db:5432/sophi
 chmod 400 web-app-migrator.env
 
 echo "PGHOST=sophistree-db
+PGOPTIONS="-c search_path=sync_service"
 PGDATABASE=sophistree
 PGUSER=sophistree
 PGPASSWORD=$db_password

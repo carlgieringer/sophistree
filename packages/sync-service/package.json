@@ -1,6 +1,6 @@
 {
   "name": "@sophistree/sync-service",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Synchronizes clients for collab editing",
   "private": true,
   "type": "module",

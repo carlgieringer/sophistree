@@ -1,6 +1,6 @@
 {
   "name": "@sophistree/browser-extension",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "description": "A browser extension for mapping arguments appearing in web pages",
   "main": "index.js",
   "scripts": {

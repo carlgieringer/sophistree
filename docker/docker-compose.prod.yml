@@ -7,6 +7,7 @@ services:
         awslogs-stream: web-app
 
   web-app-migrator:
+    build: null
     env_file: web-app-migrator.env
     logging:
       options:
@@ -20,6 +21,7 @@ services:
         awslogs-stream: sync-service
 
   sync-service-migrator:
+    build: null
     env_file: sync-service-migrator.env
     logging:
       options:
@@ -34,8 +36,8 @@ services:
       - /mnt/postgres_data:/var/lib/postgresql/data
 
   caddy:
-    env_file: caddy.env
     build: null
+    env_file: caddy.env
     logging:
       options:
         awslogs-stream: caddy
