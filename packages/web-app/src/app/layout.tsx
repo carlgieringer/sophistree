@@ -19,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" style={{ height: "100%" }}>
+    <html lang="en">
       <style jsx global>{`
         html {
           font-family: ${roboto.style.fontFamily};
@@ -31,8 +31,11 @@ export default function RootLayout({
         [style*="font-family: MaterialCommunityIcons;"] {
           font-family: ${materialCommunityIcons.style.fontFamily} !important;
         }
+        [data-testid="tooltip-container"] {
+          position: fixed;
+        }
       `}</style>
-      <body style={{ height: "100%", margin: 0 }}>
+      <body style={{ margin: 0 }}>
         <Providers>{children}</Providers>
       </body>
     </html>

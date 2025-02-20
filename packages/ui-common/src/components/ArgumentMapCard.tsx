@@ -16,6 +16,7 @@ import type { Logger } from "@sophistree/common";
 
 import { getOutcomeColorStyle } from "../outcomes/outcomeColors";
 import { DateTime } from "luxon";
+import { Props as CardTitleProps } from "react-native-paper/lib/typescript/components/Card/CardTitle";
 
 export interface ArgumentMapCardProps {
   map: ArgumentMapCardInfo;
@@ -78,6 +79,14 @@ export function ArgumentMapCard({
     [updatedAt],
   );
 
+  const leftAvatarProps = userInfo && {
+    left: ((props) => (
+      <Tooltip title={`Published by ${userInfo.displayName}`}>
+        <UserAvatar {...userInfo} {...props} />
+      </Tooltip>
+    )) as CardTitleProps["left"],
+  };
+
   return (
     <Card style={{ marginTop: 16 }}>
       <Card.Title
@@ -115,13 +124,7 @@ export function ArgumentMapCard({
             )}
           </>
         }
-        left={(props) =>
-          userInfo && (
-            <Tooltip title={`Published by ${userInfo.displayName}`}>
-              <UserAvatar {...userInfo} {...props} />
-            </Tooltip>
-          )
-        }
+        {...leftAvatarProps}
       />
 
       <Card.Content>
