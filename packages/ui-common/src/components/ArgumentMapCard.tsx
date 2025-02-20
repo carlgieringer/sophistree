@@ -10,6 +10,7 @@ import {
 } from "react-native-paper";
 
 import { UserAvatar } from "./UserAvatar";
+import { BulletedList } from "./BulletedList";
 
 import { ArgumentMap } from "@sophistree/common";
 import type { Logger } from "@sophistree/common";
@@ -154,19 +155,16 @@ export function ArgumentMapCard({
                     Appearing in
                   </Text>
                   <Text variant="titleSmall">Sources</Text>
-
-                  {conclusion.appearanceInfo.sourceNames.map((source) => (
-                    <Paragraph style={{ marginBottom: 10 }} key={source}>
-                      {source}
-                    </Paragraph>
-                  ))}
+                  <BulletedList
+                    items={conclusion.appearanceInfo.sourceNames}
+                    style={{ marginTop: 4, marginBottom: 12 }}
+                  />
 
                   <Text variant="titleSmall">Domains</Text>
-                  {conclusion.appearanceInfo.domains.map((domain) => (
-                    <Paragraph style={{ marginBottom: 10 }} key={domain}>
-                      {domain}
-                    </Paragraph>
-                  ))}
+                  <BulletedList
+                    items={conclusion.appearanceInfo.domains}
+                    style={{ marginTop: 4 }}
+                  />
                 </>
               )}
               {!!conclusion.mediaExcerptJustificationInfo.sourceNames
@@ -176,22 +174,16 @@ export function ArgumentMapCard({
                     Based on evidence from
                   </Text>
                   <Text variant="titleSmall">Sources</Text>
-                  {conclusion.mediaExcerptJustificationInfo.sourceNames.map(
-                    (source) => (
-                      <Paragraph style={{ marginBottom: 10 }} key={source}>
-                        {source}
-                      </Paragraph>
-                    ),
-                  )}
+                  <BulletedList
+                    items={conclusion.mediaExcerptJustificationInfo.sourceNames}
+                    style={{ marginTop: 4, marginBottom: 12 }}
+                  />
 
                   <Text variant="titleSmall">Domains</Text>
-                  {conclusion.mediaExcerptJustificationInfo.domains.map(
-                    (domain) => (
-                      <Paragraph style={{ marginBottom: 10 }} key={domain}>
-                        {domain}
-                      </Paragraph>
-                    ),
-                  )}
+                  <BulletedList
+                    items={conclusion.mediaExcerptJustificationInfo.domains}
+                    style={{ marginTop: 4 }}
+                  />
                 </>
               )}
 
