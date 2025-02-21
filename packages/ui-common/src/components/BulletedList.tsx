@@ -1,8 +1,9 @@
 import { View } from "react-native";
 import { Text } from "react-native-paper";
+import React from "react";
 
 interface BulletedListProps {
-  items: string[];
+  items: React.ReactNode[];
   style?: object;
 }
 
@@ -19,7 +20,9 @@ export function BulletedList({ items, style = {} }: BulletedListProps) {
           }}
         >
           <Text style={{ marginRight: 8, userSelect: "none" }}>•</Text>
-          <Text style={{ flex: 1 }}>{item}</Text>
+          <View style={{ flex: 1 }}>
+            {typeof item === "string" ? <Text>{item}</Text> : item}
+          </View>
         </View>
       ))}
     </View>
