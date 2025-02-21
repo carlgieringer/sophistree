@@ -16,9 +16,10 @@
     "packages/browser-extension"
   ],
   "scripts": {
-    "check-all": "time (npx package-lock-utd && npm run type-check-all && npm run lint-all && npm run format-check-all && npm run test-all) || { echo 'Checks failed'; exit 1; }",
-    "build-and-deploy-dev": "npm run build-and-push-containers && ./bin/deploy.sh dev",
+    "check-all": "time (npm run check-package-lock && npm run type-check-all && npm run lint-all && npm run format-check-all && npm run test-all) || { echo 'Checks failed'; exit 1; }",
+    "build-and-deploy-dev": "npm run check-package-lock && npm run build-and-push-containers && ./bin/deploy.sh dev",
     "build-and-push-containers": "./bin/build-and-push-containers.sh",
+    "check-package-lock": "npx package-lock-utd",
     "format-check-all": "npm run format-check --workspaces --if-present",
     "lint-all": "npm run lint --workspaces --if-present",
     "test-all": "npm run test --workspaces --if-present",
