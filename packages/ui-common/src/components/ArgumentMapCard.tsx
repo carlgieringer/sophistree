@@ -1,13 +1,6 @@
 import { ReactNode, useMemo } from "react";
 import { View } from "react-native";
-import {
-  Card,
-  Paragraph,
-  Divider,
-  Text,
-  Chip,
-  Tooltip,
-} from "react-native-paper";
+import { Card, Divider, Text, Chip, Tooltip, Title } from "react-native-paper";
 
 import { UserAvatar } from "./UserAvatar";
 import { BulletedList } from "./BulletedList";
@@ -17,7 +10,6 @@ import type { Logger } from "@sophistree/common";
 
 import { getOutcomeColorStyle } from "../outcomes/outcomeColors";
 import { DateTime } from "luxon";
-import { Props as CardTitleProps } from "react-native-paper/lib/typescript/components/Card/CardTitle";
 
 export interface ArgumentMapCardProps {
   map: ArgumentMapCardInfo;
@@ -80,76 +72,74 @@ export function ArgumentMapCard({
     [updatedAt],
   );
 
-  const leftAvatarProps = userInfo && {
-    left: ((props) => (
-      <Tooltip title={`Published by ${userInfo.displayName}`}>
-        <UserAvatar {...userInfo} {...props} />
-      </Tooltip>
-    )) as CardTitleProps["left"],
-  };
-
   return (
     <Card style={{ marginTop: 16 }}>
-      <Card.Title
-        title={
-          <>
-            {map.name} {titleButton} {isActive && <Chip>Active</Chip>}
-          </>
-        }
-        subtitle={
-          <>
-            <Paragraph>Entities: {map.entities.length}</Paragraph>
-            {(createdAt || updatedAt) && (
-              <Paragraph>
-                {createdAtDateTime && (
-                  <>
-                    {" "}
-                    <Tooltip title={createdAtDateTime.toISO() || ""}>
-                      <Text>
-                        Created: {createdAtDateTime.toRelativeCalendar()}
-                      </Text>
-                    </Tooltip>
-                  </>
-                )}
-                {updatedAtDateTime && (
-                  <>
-                    {" "}
-                    <Tooltip title={updatedAtDateTime.toISO() || ""}>
-                      <Text>
-                        Updated: {updatedAtDateTime.toRelativeCalendar()}
-                      </Text>
-                    </Tooltip>
-                  </>
-                )}
-              </Paragraph>
-            )}
-          </>
-        }
-        {...leftAvatarProps}
-      />
-
       <Card.Content>
+        <Title>
+          {map.name} {titleButton} {isActive && <Chip>Active</Chip>}
+        </Title>
+
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            gap: 8,
+            alignItems: "center",
+          }}
+        >
+          {userInfo && (
+            <Tooltip title={`Published by ${userInfo.displayName}`}>
+              <UserAvatar {...userInfo} size={12} />
+            </Tooltip>
+          )}
+          <Text>Entities: {map.entities.length}</Text>
+          {(createdAt || updatedAt) && (
+            <>
+              {createdAtDateTime && (
+                <>
+                  {" "}
+                  <Tooltip title={createdAtDateTime.toISO() || ""}>
+                    <Text>
+                      Created: {createdAtDateTime.toRelativeCalendar()}
+                    </Text>
+                  </Tooltip>
+                </>
+              )}
+              {updatedAtDateTime && (
+                <>
+                  {" "}
+                  <Tooltip title={updatedAtDateTime.toISO() || ""}>
+                    <Text>
+                      Updated: {updatedAtDateTime.toRelativeCalendar()}
+                    </Text>
+                  </Tooltip>
+                </>
+              )}
+            </>
+          )}
+        </View>
+
         {map.conclusions.map((conclusion, index) => {
           return (
             <View key={index}>
-              <Text variant="titleLarge" style={{ marginTop: 20 }}>
+              <Text variant="titleLarge" style={{ marginTop: 12 }}>
                 Conclusions
               </Text>
               <View>
-                {conclusion.propositionInfos.map(
-                  ({ propositionId, outcome }) => {
-                    const text = propositionTextById.get(propositionId)!;
-                    const colorStyle = getOutcomeColorStyle(outcome);
-                    return (
-                      <Paragraph
-                        style={{ marginBottom: 10 }}
-                        key={propositionId}
-                      >
-                        {text} <Text style={colorStyle}>[{outcome}]</Text>
-                      </Paragraph>
-                    );
-                  },
-                )}
+                <BulletedList
+                  items={conclusion.propositionInfos.map(
+                    ({ propositionId, outcome }) => {
+                      const text = propositionTextById.get(propositionId)!;
+                      const colorStyle = getOutcomeColorStyle(outcome);
+                      return (
+                        <Text key={propositionId}>
+                          {text} <Text style={colorStyle}>[{outcome}]</Text>
+                        </Text>
+                      );
+                    },
+                  )}
+                  style={{ marginTop: 4 }}
+                />
               </View>
 
               {!!conclusion.appearanceInfo.sourceNames.length && (
@@ -160,7 +150,7 @@ export function ArgumentMapCard({
                   <Text variant="titleSmall">Sources</Text>
                   <BulletedList
                     items={conclusion.appearanceInfo.sourceNames}
-                    style={{ marginTop: 4, marginBottom: 12 }}
+                    style={{ marginTop: 4 }}
                   />
 
                   <Text variant="titleSmall">Domains</Text>
@@ -179,7 +169,7 @@ export function ArgumentMapCard({
                   <Text variant="titleSmall">Sources</Text>
                   <BulletedList
                     items={conclusion.mediaExcerptJustificationInfo.sourceNames}
-                    style={{ marginTop: 4, marginBottom: 12 }}
+                    style={{ marginTop: 4 }}
                   />
 
                   <Text variant="titleSmall">Domains</Text>
