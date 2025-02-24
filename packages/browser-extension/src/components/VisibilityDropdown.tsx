@@ -1,5 +1,4 @@
 import React from "react";
-import { useDispatch } from "react-redux";
 
 import { Entity } from "@sophistree/common";
 
@@ -10,9 +9,11 @@ import {
 } from "../store/entitiesSlice";
 import { Button, Menu } from "react-native-paper";
 import { useState } from "react";
+import { useAppDispatch } from "../store";
+import * as appLogger from "../logging/appLogging";
 
 export default function VisibilityDropdown({ entity }: { entity: Entity }) {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
 
   const [isMenuVisible, setMenuVisible] = useState(false);
 
@@ -25,17 +26,25 @@ export default function VisibilityDropdown({ entity }: { entity: Entity }) {
   }
 
   function setVisible() {
-    dispatch(showEntity(entity.id));
+    dispatch(showEntity(entity.id))
+      .unwrap()
+      .catch((reason) => appLogger.error("Failed to show entity", reason));
     hideMenu();
   }
 
   function setHidden() {
-    dispatch(hideEntity(entity.id));
+    dispatch(hideEntity(entity.id))
+      .unwrap()
+      .catch((reason) => appLogger.error("Failed to hide entity", reason));
     hideMenu();
   }
 
   function unsetVisibility() {
-    dispatch(automateEntityVisibility(entity.id));
+    dispatch(automateEntityVisibility(entity.id))
+      .unwrap()
+      .catch((reason) =>
+        appLogger.error("Failed to automate entity visibility", reason),
+      );
     hideMenu();
   }
 
