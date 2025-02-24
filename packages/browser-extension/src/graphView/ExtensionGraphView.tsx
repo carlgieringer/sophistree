@@ -38,27 +38,50 @@ export default function ExtensionGraphView({
     [],
   );
   const onSelectEntities = useCallback(
-    (ids: string[]) => dispatch(selectEntities(ids)),
+    (ids: string[]) => {
+      dispatch(selectEntities(ids))
+        .unwrap()
+        .catch((reason) =>
+          appLogger.error("Faildd to select entities", reason),
+        );
+    },
     [dispatch],
   );
   const onResetSelection = useCallback(
     () => dispatch(resetSelection()),
     [dispatch],
   );
-  const onAddNewProposition = useCallback(
-    () => dispatch(addNewProposition()),
-    [dispatch],
-  );
+  const onAddNewProposition = useCallback(() => {
+    dispatch(addNewProposition())
+      .unwrap()
+      .catch((reason) =>
+        appLogger.error("Faildd to add new proposition", reason),
+      );
+  }, [dispatch]);
   const onDeleteEntity = useCallback(
-    (id: string) => dispatch(deleteEntity(id)),
+    (id: string) => {
+      dispatch(deleteEntity(id))
+        .unwrap()
+        .catch((reason) => appLogger.error("Faildd to delete entity", reason));
+    },
     [dispatch],
   );
   const onCompleteDrag = useCallback(
-    (ids: DragPayload) => dispatch(completeDrag(ids)),
+    (ids: DragPayload) => {
+      dispatch(completeDrag(ids))
+        .unwrap()
+        .catch((reason) => appLogger.error("Faildd to complete drag", reason));
+    },
     [dispatch],
   );
   const onToggleCollapse = useCallback(
-    (id: string) => dispatch(toggleCollapsed(id)),
+    (id: string) => {
+      dispatch(toggleCollapsed(id))
+        .unwrap()
+        .catch((reason) =>
+          appLogger.error("Faildd to toggle collapse", reason),
+        );
+    },
     [dispatch],
   );
 

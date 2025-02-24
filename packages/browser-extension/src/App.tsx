@@ -235,11 +235,19 @@ function useHandleChromeRuntimeMessage() {
             })();
             break;
           case "addMediaExcerpt":
-            dispatch(addMediaExcerpt(message.data));
+            dispatch(addMediaExcerpt(message.data))
+              .unwrap()
+              .catch((reason) =>
+                appLogger.error("Failed to add MediaExcerpt", reason),
+              );
             void notifyTabsOfNewMediaExcerpt(sender.tab, message.data);
             break;
           case "selectMediaExcerpt":
-            dispatch(selectEntities([message.data.mediaExcerptId]));
+            dispatch(selectEntities([message.data.mediaExcerptId]))
+              .unwrap()
+              .catch((reason) =>
+                appLogger.error("Failed to select MediaExcerpt", reason),
+              );
             break;
           case "getMediaExcerpt": {
             sendResponse(

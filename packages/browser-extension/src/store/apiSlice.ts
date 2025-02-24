@@ -15,7 +15,7 @@ export const publishMap = createAsyncThunk(
       throw new Error("No active map to publish");
     }
 
-    const activeMap = getDoc(documentId);
+    const activeMap = await getDoc(documentId);
     if (!activeMap) {
       appLogger.error(`Doc ID ${documentId} did not have a doc.`);
       return;

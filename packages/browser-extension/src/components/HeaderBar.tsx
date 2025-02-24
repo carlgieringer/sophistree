@@ -142,7 +142,9 @@ function HeaderBar({ id }: { id?: string }) {
       leadingIcon="sync"
       key="sync-map-locally"
       onPress={() => {
-        dispatch(syncActiveMapLocally());
+        dispatch(syncActiveMapLocally())
+          .unwrap()
+          .catch((reason) => appLogger.error("Failed to sync locally", reason));
         hideMenu();
       }}
     />
@@ -160,7 +162,13 @@ function HeaderBar({ id }: { id?: string }) {
           hideMenu();
           return;
         }
-        dispatch(syncActiveMapRemotely(defaultSyncServerAddresses));
+        dispatch(
+          syncActiveMapRemotely({ addresses: defaultSyncServerAddresses }),
+        )
+          .unwrap()
+          .catch((reason) =>
+            appLogger.error("Failed to sync active map remotely", reason),
+          );
         hideMenu();
       }}
     />
