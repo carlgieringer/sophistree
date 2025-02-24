@@ -10,7 +10,7 @@ import {
   Repo,
 } from "@automerge/automerge-repo";
 import { ArgumentMap } from "@sophistree/common";
-import { triggerMigrationIfNecessary } from "./sync";
+import { triggerMigrationIfNecessary } from "./migrations";
 
 /** A cache of repos we have opened keyed based on their sync server addresses. */
 const reposBySyncServers = new Map<string, Repo>();
