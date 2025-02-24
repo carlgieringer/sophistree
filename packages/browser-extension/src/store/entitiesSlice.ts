@@ -13,6 +13,7 @@ import {
   Visibility,
   PropositionCompound,
   UrlInfo,
+  Appearance,
 } from "@sophistree/common";
 
 import * as appLogger from "../logging/appLogging";
@@ -37,6 +38,9 @@ export interface DragPayload {
   targetId: string;
   polarity?: Polarity;
 }
+
+// Use the exact same type as Appearance from @sophistree/common for type safety
+export type AppearanceEntity = Appearance;
 
 const initialState = {
   activeMapAutomergeDocumentId: undefined as DocumentId | undefined,
@@ -80,45 +84,55 @@ export const entitiesSlice = createAppSlice({
       const handle = createDoc(newMap);
       state.activeMapAutomergeDocumentId = handle.documentId;
     }),
+
     deleteMap: create.reducer<DocumentId>((state, action) => {
       deleteDoc(action.payload);
       if (state.activeMapAutomergeDocumentId === action.payload) {
         state.activeMapAutomergeDocumentId = undefined;
       }
     }),
-    syncActiveMapRemotely: create.reducer<string[]>((state, action) => {
-      const documentId = state.activeMapAutomergeDocumentId;
-      if (!documentId) {
-        appLogger.error(
-          "Cannot sync active map because there is no active map.",
-        );
-        return;
-      }
-      const addresses = action.payload;
-      if (!addresses?.length) {
-        appLogger.error(
-          "Cannot sync active map because no sync server addresses provided.",
-        );
-        return;
-      }
-      state.activeMapAutomergeDocumentId = setDocSyncServerAddresses(
-        documentId,
-        addresses,
-      );
-    }),
-    syncActiveMapLocally: create.reducer((state) => {
-      const documentId = state.activeMapAutomergeDocumentId;
-      if (!documentId) {
-        appLogger.error(
-          "Cannot sync active map because there is no active map.",
-        );
-        return;
-      }
-      state.activeMapAutomergeDocumentId = setDocSyncServerAddresses(
-        documentId,
-        [],
-      );
-    }),
+
+    syncActiveMapRemotely: create.asyncThunk(
+      async ({ addresses }: { addresses: string[] }, { getState }) => {
+        const state = getState() as { entities: State };
+        const documentId = state.entities.activeMapAutomergeDocumentId;
+        if (!documentId) {
+          throw new Error(
+            "Cannot sync active map because there is no active map.",
+          );
+        }
+        if (!addresses?.length) {
+          throw new Error(
+            "Cannot sync active map because no sync server addresses provided.",
+          );
+        }
+        return await setDocSyncServerAddresses(documentId, addresses);
+      },
+      {
+        fulfilled: (state, action) => {
+          state.activeMapAutomergeDocumentId = action.payload;
+        },
+      },
+    ),
+
+    syncActiveMapLocally: create.asyncThunk(
+      async (_, { getState }) => {
+        const state = getState() as { entities: State };
+        const documentId = state.entities.activeMapAutomergeDocumentId;
+        if (!documentId) {
+          throw new Error(
+            "Cannot sync active map because there is no active map.",
+          );
+        }
+        return await setDocSyncServerAddresses(documentId, []);
+      },
+      {
+        fulfilled: (state, action) => {
+          state.activeMapAutomergeDocumentId = action.payload;
+        },
+      },
+    ),
+
     openSyncedMap: create.asyncThunk(
       async (
         {
@@ -127,8 +141,8 @@ export const entitiesSlice = createAppSlice({
         }: { documentId: DocumentId; syncServerAddresses: string[] },
         thunkAPI,
       ) => {
-        const handle = openDoc(documentId, syncServerAddresses);
-        const map = await handle.doc();
+        const handle = await openDoc(documentId, syncServerAddresses);
+        const map = handle.doc();
         if (!map) {
           return thunkAPI.rejectWithValue(
             `Failed to open synced map ${documentId}`,
@@ -150,34 +164,124 @@ export const entitiesSlice = createAppSlice({
         },
       },
     ),
+
     setActiveMap: create.reducer<DocumentId | undefined>((state, action) => {
       state.activeMapAutomergeDocumentId = action.payload;
     }),
-    renameActiveMap: create.reducer<string>((state, action) => {
-      const documentId = state.activeMapAutomergeDocumentId;
-      if (!documentId) {
-        appLogger.error(
-          "Cannot rename active map because there is no active map.",
-        );
-        return;
-      }
-      const handle = getDocHandle(documentId);
-      handle.change((doc) => (doc.name = action.payload));
+
+    resetSelection: create.reducer((state) => {
+      state.selectedEntityIds = emptySelection;
     }),
-    addNewProposition: create.reducer((state) => {
-      const documentId = state.activeMapAutomergeDocumentId;
-      if (!documentId) {
-        appLogger.error(
-          "Cannot add new proposition to active map because there is no active map.",
+
+    selectEntities: create.asyncThunk(
+      async (selectedEntityIds: string[], { getState }) => {
+        const state = getState() as { entities: State };
+        const documentId = state.entities.activeMapAutomergeDocumentId;
+        if (!documentId) {
+          throw new Error(
+            "Cannot update an entity of the active map because there is no active map.",
+          );
+        }
+
+        const handle = await getDocHandle(documentId);
+        const activeMap = handle.doc();
+        if (!activeMap) {
+          throw new Error(`Doc ID ${documentId} did not have a doc.`);
+        }
+
+        const appearances = activeMap.entities.filter(
+          (entity: Entity): entity is AppearanceEntity =>
+            entity.type === "Appearance" &&
+            "mediaExcerptId" in entity &&
+            selectedEntityIds.includes(entity.mediaExcerptId),
         );
-        return;
+        return {
+          selectedEntityIds: [
+            ...selectedEntityIds,
+            ...appearances.map((appearance) => appearance.id),
+          ],
+        };
+      },
+      {
+        fulfilled: (state, action) => {
+          state.selectedEntityIds = action.payload.selectedEntityIds;
+        },
+      },
+    ),
+
+    addMediaExcerpt: create.asyncThunk(
+      async (data: AddMediaExcerptData, { getState }) => {
+        const state = getState() as { entities: State };
+        const documentId = state.entities.activeMapAutomergeDocumentId;
+        if (!documentId) {
+          throw new Error(
+            "Cannot add new media excerpt because there is no active map.",
+          );
+        }
+
+        const handle = await getDocHandle(documentId);
+        const activeMap = handle.doc();
+        if (!activeMap) {
+          throw new Error(`Doc ID ${documentId} did not have a doc.`);
+        }
+
+        const extantMediaExcerpt = activeMap.entities.find((e) =>
+          isEquivalentMediaExcerpt(e, {
+            url: data.url,
+            canonicalUrl: data.canonicalUrl,
+            pdfFingerprint: data.pdfFingerprint,
+            domAnchor: data.domAnchor,
+          }),
+        );
+        if (extantMediaExcerpt) {
+          appLogger.warn("Declining to create a duplicative MediaExcerpt.");
+          return;
+        }
+
+        const sourceNameOverride = getSourceNameOverride(
+          activeMap.sourceNameOverrides,
+          {
+            url: data.url,
+            canonicalUrl: data.canonicalUrl,
+            pdfFingerprint: data.pdfFingerprint,
+          },
+        );
+
+        const urlInfo: UrlInfo = { url: data.url };
+        if (data.canonicalUrl !== undefined)
+          urlInfo.canonicalUrl = data.canonicalUrl;
+        if (data.pdfFingerprint !== undefined)
+          urlInfo.pdfFingerprint = data.pdfFingerprint;
+
+        const mediaExcerpt: MediaExcerpt = {
+          type: "MediaExcerpt",
+          ...defaultVisibilityProps,
+          id: data.id,
+          quotation: data.quotation,
+          urlInfo,
+          sourceInfo: { name: sourceNameOverride ?? data.sourceName },
+          domAnchor: data.domAnchor,
+        };
+
+        handle.change((map) => {
+          map.entities.push(mediaExcerpt);
+        });
+      },
+    ),
+
+    addNewProposition: create.asyncThunk(async (_, { getState }) => {
+      const state = getState() as { entities: State };
+      const documentId = state.entities.activeMapAutomergeDocumentId;
+      if (!documentId) {
+        throw new Error(
+          "Cannot add new proposition because there is no active map.",
+        );
       }
 
-      const handle = getDocHandle(documentId);
-      const doc = handle.docSync();
+      const handle = await getDocHandle(documentId);
+      const doc = handle.doc();
       if (!doc) {
-        appLogger.error(`Doc ID ${documentId} did not have a doc.`);
-        return;
+        throw new Error(`Doc ID ${documentId} did not have a doc.`);
       }
 
       const nextNewPropositionNumber = getNextNewPropositionNumber(doc);
@@ -192,339 +296,315 @@ export const entitiesSlice = createAppSlice({
         doc.entities.push(proposition);
       });
     }),
-    addMediaExcerpt: create.reducer<AddMediaExcerptData>((state, action) => {
-      const documentId = state.activeMapAutomergeDocumentId;
-      if (!documentId) {
-        appLogger.error(
-          "Cannot add new proposition to active map because there is no active map.",
-        );
-        return;
-      }
 
-      const {
-        quotation,
-        url,
-        canonicalUrl,
-        pdfFingerprint,
-        sourceName,
-        domAnchor,
-        id,
-      } = action.payload;
-
-      const handle = getDocHandle(documentId);
-      const activeMap = handle.docSync();
-      if (!activeMap) {
-        appLogger.error(`Doc ID ${documentId} did not have a doc.`);
-        return;
-      }
-
-      const extantMediaExcerpt = activeMap.entities.find((e) =>
-        isEquivalentMediaExcerpt(e, {
-          url,
-          canonicalUrl,
-          pdfFingerprint,
-          domAnchor,
-        }),
-      );
-      if (extantMediaExcerpt) {
-        appLogger.warn("Declining to create a duplicative MediaExcerpt.");
-        return;
-      }
-
-      const sourceNameOverride = getSourceNameOverride(
-        activeMap.sourceNameOverrides,
-        {
-          url,
-          canonicalUrl,
-          pdfFingerprint,
-        },
-      );
-
-      // Automerge's IndexedDB storage does not support undefined values.
-      const urlInfo: UrlInfo = { url };
-      if (canonicalUrl !== undefined) urlInfo.canonicalUrl = canonicalUrl;
-      if (pdfFingerprint !== undefined) urlInfo.pdfFingerprint = pdfFingerprint;
-
-      const mediaExcerpt: MediaExcerpt = {
-        type: "MediaExcerpt",
-        ...defaultVisibilityProps,
-        id,
-        quotation,
-        urlInfo,
-        sourceInfo: { name: sourceNameOverride ?? sourceName },
-        domAnchor,
-      };
-      handle.change((map) => map.entities.push(mediaExcerpt));
-    }),
-    updateEntity: create.reducer<{
-      id: string;
-      updates: Partial<Omit<Entity, "type">>;
-    }>((state, action) => {
-      const documentId = state.activeMapAutomergeDocumentId;
-      if (!documentId) {
-        appLogger.error(
-          "Cannot update an entity of the active map because there is no active map.",
-        );
-        return;
-      }
-
-      const handle = getDocHandle(documentId);
-      const activeMap = handle.docSync();
-      if (!activeMap) {
-        appLogger.error(`Doc ID ${documentId} did not have a doc.`);
-        return;
-      }
-
-      const index = activeMap.entities.findIndex(
-        (entity) => entity.id === action.payload.id,
-      );
-      if (index < 0) {
-        appLogger.error(
-          `Cannot update entity ${action.payload.id} because it is not present in the active map ${documentId}`,
-        );
-        return;
-      }
-      handle.change((map) => {
-        Object.assign(map.entities[index], action.payload.updates);
-        updateConclusions(map);
-      });
-    }),
-    updateProposition: create.reducer<{
-      id: string;
-      updates: Partial<Omit<Proposition, "type">>;
-    }>((state, action) => {
-      const documentId = state.activeMapAutomergeDocumentId;
-      if (!documentId) {
-        appLogger.error(
-          "Cannot update an entity of the active map because there is no active map.",
-        );
-        return;
-      }
-
-      const handle = getDocHandle(documentId);
-      const activeMap = handle.docSync();
-      if (!activeMap) {
-        appLogger.error(`Doc ID ${documentId} did not have a doc.`);
-        return;
-      }
-
-      const index = activeMap.entities.findIndex(
-        (entity) => entity.id === action.payload.id,
-      );
-      if (index === -1) {
-        appLogger.error(
-          `Cannot update proposition ${action.payload.id} because it was not present in the active map ${documentId}`,
-        );
-        return;
-      }
-
-      handle.change((map) => {
-        Object.assign(map.entities[index], action.payload.updates);
-        updateConclusions(map);
-      });
-    }),
-    updateMediaExerpt: create.reducer<{
-      id: string;
-      updates: Partial<Omit<MediaExcerpt, "type">>;
-    }>((state, action) => {
-      const documentId = state.activeMapAutomergeDocumentId;
-      if (!documentId) {
-        appLogger.error(
-          "Cannot update an entity of the active map because there is no active map.",
-        );
-        return;
-      }
-
-      const handle = getDocHandle(documentId);
-      const activeMap = handle.docSync();
-      if (!activeMap) {
-        appLogger.error(`Doc ID ${documentId} did not have a doc.`);
-        return;
-      }
-
-      const index = activeMap.entities.findIndex(
-        (e) => e.id === action.payload.id,
-      );
-      if (index === -1) {
-        appLogger.error(
-          `Cannot update MediaExcerpt ${action.payload.id} because it was not present in the active map ${documentId}`,
-        );
-        return;
-      }
-
-      handle.change((map) => {
-        const mediaExcerpt = map.entities[index] as unknown as MediaExcerpt;
-
-        const updates = action.payload.updates;
-        const sourceName = updates.sourceInfo?.name;
-
-        if (sourceName) {
-          const { url, canonicalUrl, pdfFingerprint } = mediaExcerpt.urlInfo;
-          updateSourceNameOverrides(
-            map.sourceNameOverrides,
-            { url, canonicalUrl, pdfFingerprint },
-            sourceName,
+    automateEntityVisibility: create.asyncThunk(
+      async (entityId: string, { getState }) => {
+        const state = getState() as { entities: State };
+        const documentId = state.entities.activeMapAutomergeDocumentId;
+        if (!documentId) {
+          throw new Error(
+            "Cannot update entity visibility because there is no active map.",
           );
         }
 
-        Object.assign(mediaExcerpt, updates);
+        const handle = await getDocHandle(documentId);
+        handle.change((map) => {
+          const entity = map.entities.find((e) => e.id === entityId);
+          if (!entity) {
+            throw new Error(
+              `Unable to update entity visibility because the entity with ID ${entityId} was not found.`,
+            );
+          }
+          delete entity.explicitVisibility;
+        });
+      },
+    ),
 
-        updateConclusions(map);
-      });
-    }),
-    updateJustification: create.reducer<{
-      id: string;
-      updates: Partial<Omit<Justification, "type">>;
-    }>((state, action) => {
-      const documentId = state.activeMapAutomergeDocumentId;
-      if (!documentId) {
-        appLogger.error(
-          "Cannot update an entity of the active map because there is no active map.",
-        );
-        return;
-      }
-
-      const handle = getDocHandle(documentId);
-      const activeMap = handle.docSync();
-      if (!activeMap) {
-        appLogger.error(`Doc ID ${documentId} did not have a doc.`);
-        return;
-      }
-
-      const index = activeMap.entities.findIndex(
-        (e) => e.id === action.payload.id,
-      );
-      if (index === -1) {
-        appLogger.error(
-          `Cannot update MediaExcerpt ${action.payload.id} because it was not present in the active map ${documentId}`,
-        );
-        return;
-      }
-
-      handle.change((map) => {
-        Object.assign(map.entities[index], action.payload.updates);
-      });
-    }),
-    completeDrag: create.reducer<DragPayload>((state, action) => {
-      const documentId = state.activeMapAutomergeDocumentId;
-      if (!documentId) {
-        appLogger.error(
-          "Cannot update an entity of the active map because there is no active map.",
-        );
-        return;
-      }
-
-      const handle = getDocHandle(documentId);
-      const activeMap = handle.docSync();
-      if (!activeMap) {
-        appLogger.error(`Doc ID ${documentId} did not have a doc.`);
-        return;
-      }
-
-      const { sourceId, targetId, polarity: actionPolarity } = action.payload;
-
-      handle.change((map) => {
-        const source = map.entities.find((n) => n.id === sourceId);
-        if (!source) {
-          appLogger.error(`Drag source node with id ${sourceId} not found`);
-          return;
+    completeDrag: create.asyncThunk(
+      async (
+        { sourceId, targetId, polarity: actionPolarity }: DragPayload,
+        { getState },
+      ) => {
+        const state = getState() as { entities: State };
+        const documentId = state.entities.activeMapAutomergeDocumentId;
+        if (!documentId) {
+          throw new Error(
+            "Cannot complete drag because there is no active map.",
+          );
         }
-        const target = map.entities.find((n) => n.id === targetId);
-        if (!target) {
-          appLogger.error(`Drag target node with id ${targetId} not found`);
-          return;
+
+        const handle = await getDocHandle(documentId);
+        const activeMap = handle.doc();
+        if (!activeMap) {
+          throw new Error(`Doc ID ${documentId} did not have a doc.`);
         }
-        applyDragOperation(map, source, target, actionPolarity);
-        updateConclusions(map);
-      });
-    }),
-    selectEntities: create.reducer<string[]>((state, action) => {
-      const documentId = state.activeMapAutomergeDocumentId;
+
+        handle.change((map) => {
+          const source = map.entities.find((e) => e.id === sourceId);
+          if (!source) {
+            throw new Error(`Drag source node with id ${sourceId} not found`);
+          }
+          const target = map.entities.find((e) => e.id === targetId);
+          if (!target) {
+            throw new Error(`Drag target node with id ${targetId} not found`);
+          }
+          applyDragOperation(map, source, target, actionPolarity);
+          updateConclusions(map);
+        });
+      },
+    ),
+
+    deleteEntity: create.asyncThunk(async (entityId: string, { getState }) => {
+      const state = getState() as { entities: State };
+      const documentId = state.entities.activeMapAutomergeDocumentId;
       if (!documentId) {
-        appLogger.error(
-          "Cannot update an entity of the active map because there is no active map.",
-        );
-        return;
+        throw new Error("Cannot delete entity because there is no active map.");
       }
 
-      const handle = getDocHandle(documentId);
-      const activeMap = handle.docSync();
-      if (!activeMap) {
-        appLogger.error(`Doc ID ${documentId} did not have a doc.`);
-        return;
-      }
-
-      const selectedEntityIds = action.payload;
-
-      // Whenever we select a MediaExcerpt, also select its Appearances
-      const appearances = activeMap.entities.filter(
-        (e) =>
-          e.type === "Appearance" &&
-          selectedEntityIds.includes(e.mediaExcerptId),
-      );
-      state.selectedEntityIds = [
-        ...selectedEntityIds,
-        ...appearances.map((a) => a.id),
-      ];
-    }),
-    resetSelection: create.reducer((state) => {
-      state.selectedEntityIds = emptySelection;
-    }),
-    deleteEntity: create.reducer<string>((state, action) => {
-      const documentId = state.activeMapAutomergeDocumentId;
-      if (!documentId) {
-        appLogger.error(
-          "Cannot update an entity of the active map because there is no active map.",
-        );
-        return;
-      }
-
-      const handle = getDocHandle(documentId);
-
+      const handle = await getDocHandle(documentId);
       handle.change((map) => {
-        const entityIdToDelete = action.payload;
-        const entity = map.entities.find((e) => e.id === entityIdToDelete);
-
-        applyDeleteOperation(state, map, entityIdToDelete);
+        const entity = map.entities.find((e) => e.id === entityId);
+        applyDeleteOperation(state.entities, map, entityId);
         updateConclusions(map);
 
         if (entity?.type === "MediaExcerpt") {
-          // TODO: #3 - remove this side effect. Maybe detect the removal via useState in a component?
-          void notifyTabsOfDeletedMediaExcerpt(entityIdToDelete);
+          void notifyTabsOfDeletedMediaExcerpt(entityId);
         } else if (entity?.type === "Appearance") {
           updateMediaExcerptAutoVisibility(map, entity.mediaExcerptId);
         }
       });
     }),
-    showEntity: create.reducer<string>((state, action) => {
-      updateEntityVisibility(state, action.payload, "Visible");
-    }),
-    hideEntity: create.reducer<string>((state, action) => {
-      updateEntityVisibility(state, action.payload, "Hidden");
-    }),
-    automateEntityVisibility: create.reducer<string>((state, action) => {
-      removeEntityExplicitVisibility(state, action.payload);
-    }),
-    toggleCollapsed: create.reducer<string>((state, action) => {
-      const documentId = state.activeMapAutomergeDocumentId;
+
+    hideEntity: create.asyncThunk(async (entityId: string, { getState }) => {
+      const state = getState() as { entities: State };
+      const documentId = state.entities.activeMapAutomergeDocumentId;
       if (!documentId) {
-        appLogger.error(
-          "Cannot update an entity of the active map because there is no active map.",
+        throw new Error(
+          "Cannot update entity visibility because there is no active map.",
         );
-        return;
       }
 
-      getDocHandle(documentId).change((map) => {
-        const entity = map.entities.find((e) => e.id === action.payload);
+      const handle = await getDocHandle(documentId);
+      handle.change((map) => {
+        const entity = map.entities.find((e) => e.id === entityId);
         if (!entity) {
-          appLogger.error(
-            `Cannot toggle entity collapsed because there is no entity with id ${action.payload}`,
+          throw new Error(
+            `Unable to update entity visibility because the entity with ID ${entityId} was not found.`,
           );
-          return;
         }
-        entity.isCollapsed = !entity.isCollapsed;
+        entity.explicitVisibility = "Hidden";
       });
     }),
+
+    showEntity: create.asyncThunk(async (entityId: string, { getState }) => {
+      const state = getState() as { entities: State };
+      const documentId = state.entities.activeMapAutomergeDocumentId;
+      if (!documentId) {
+        throw new Error(
+          "Cannot update entity visibility because there is no active map.",
+        );
+      }
+
+      const handle = await getDocHandle(documentId);
+      handle.change((map) => {
+        const entity = map.entities.find((e) => e.id === entityId);
+        if (!entity) {
+          throw new Error(
+            `Unable to update entity visibility because the entity with ID ${entityId} was not found.`,
+          );
+        }
+        entity.explicitVisibility = "Visible";
+      });
+    }),
+
+    toggleCollapsed: create.asyncThunk(
+      async (entityId: string, { getState }) => {
+        const state = getState() as { entities: State };
+        const documentId = state.entities.activeMapAutomergeDocumentId;
+        if (!documentId) {
+          throw new Error(
+            "Cannot toggle entity collapsed state because there is no active map.",
+          );
+        }
+
+        const handle = await getDocHandle(documentId);
+        handle.change((map) => {
+          const entity = map.entities.find((e) => e.id === entityId);
+          if (!entity) {
+            throw new Error(
+              `Cannot toggle entity collapsed because there is no entity with id ${entityId}`,
+            );
+          }
+          entity.isCollapsed = !entity.isCollapsed;
+        });
+      },
+    ),
+
+    updateEntity: create.asyncThunk(
+      async (
+        { id, updates }: { id: string; updates: Partial<Omit<Entity, "type">> },
+        { getState },
+      ) => {
+        const state = getState() as { entities: State };
+        const documentId = state.entities.activeMapAutomergeDocumentId;
+        if (!documentId) {
+          throw new Error(
+            "Cannot update entity because there is no active map.",
+          );
+        }
+
+        const handle = await getDocHandle(documentId);
+        const activeMap = handle.doc();
+        if (!activeMap) {
+          throw new Error(`Doc ID ${documentId} did not have a doc.`);
+        }
+
+        const index = activeMap.entities.findIndex((e) => e.id === id);
+        if (index < 0) {
+          throw new Error(
+            `Cannot update entity ${id} because it is not present in the active map ${documentId}`,
+          );
+        }
+
+        handle.change((map) => {
+          Object.assign(map.entities[index], updates);
+          updateConclusions(map);
+        });
+      },
+    ),
+
+    updateJustification: create.asyncThunk(
+      async (
+        {
+          id,
+          updates,
+        }: { id: string; updates: Partial<Omit<Justification, "type">> },
+        { getState },
+      ) => {
+        const state = getState() as { entities: State };
+        const documentId = state.entities.activeMapAutomergeDocumentId;
+        if (!documentId) {
+          throw new Error(
+            "Cannot update justification because there is no active map.",
+          );
+        }
+
+        const handle = await getDocHandle(documentId);
+        const activeMap = handle.doc();
+        if (!activeMap) {
+          throw new Error(`Doc ID ${documentId} did not have a doc.`);
+        }
+
+        const index = activeMap.entities.findIndex((e) => e.id === id);
+        if (index === -1) {
+          throw new Error(
+            `Cannot update justification ${id} because it was not present in the active map ${documentId}`,
+          );
+        }
+
+        handle.change((map) => {
+          Object.assign(map.entities[index], updates);
+        });
+      },
+    ),
+
+    updateMediaExerpt: create.asyncThunk(
+      async (
+        {
+          id,
+          updates,
+        }: { id: string; updates: Partial<Omit<MediaExcerpt, "type">> },
+        { getState },
+      ) => {
+        const state = getState() as { entities: State };
+        const documentId = state.entities.activeMapAutomergeDocumentId;
+        if (!documentId) {
+          throw new Error(
+            "Cannot update media excerpt because there is no active map.",
+          );
+        }
+
+        const handle = await getDocHandle(documentId);
+        const activeMap = handle.doc();
+        if (!activeMap) {
+          throw new Error(`Doc ID ${documentId} did not have a doc.`);
+        }
+
+        const index = activeMap.entities.findIndex((e) => e.id === id);
+        if (index === -1) {
+          throw new Error(
+            `Cannot update media excerpt ${id} because it was not present in the active map ${documentId}`,
+          );
+        }
+
+        handle.change((map) => {
+          const mediaExcerpt = map.entities[index] as MediaExcerpt;
+          const sourceName = updates.sourceInfo?.name;
+
+          if (sourceName) {
+            const { url, canonicalUrl, pdfFingerprint } = mediaExcerpt.urlInfo;
+            updateSourceNameOverrides(
+              map.sourceNameOverrides,
+              { url, canonicalUrl, pdfFingerprint },
+              sourceName,
+            );
+          }
+
+          Object.assign(mediaExcerpt, updates);
+          updateConclusions(map);
+        });
+      },
+    ),
+
+    renameActiveMap: create.asyncThunk(
+      async ({ name }: { name: string }, { getState }) => {
+        const state = getState() as { entities: State };
+        const documentId = state.entities.activeMapAutomergeDocumentId;
+        if (!documentId) {
+          throw new Error(
+            "Cannot rename active map because there is no active map.",
+          );
+        }
+        const handle = await getDocHandle(documentId);
+        handle.change((doc) => (doc.name = name));
+      },
+    ),
+
+    updateProposition: create.asyncThunk(
+      async (
+        {
+          id,
+          updates,
+        }: { id: string; updates: Partial<Omit<Proposition, "type">> },
+        { getState },
+      ) => {
+        const state = getState() as { entities: State };
+        const documentId = state.entities.activeMapAutomergeDocumentId;
+        if (!documentId) {
+          throw new Error(
+            "Cannot update proposition because there is no active map.",
+          );
+        }
+
+        const handle = await getDocHandle(documentId);
+        const activeMap = handle.doc();
+        if (!activeMap) {
+          throw new Error(`Doc ID ${documentId} did not have a doc.`);
+        }
+
+        const index = activeMap.entities.findIndex((e) => e.id === id);
+        if (index === -1) {
+          throw new Error(
+            `Cannot update proposition ${id} because it was not present in the active map ${documentId}`,
+          );
+        }
+
+        handle.change((map) => {
+          Object.assign(map.entities[index], updates);
+          updateConclusions(map);
+        });
+      },
+    ),
   }),
 });
 
@@ -800,56 +880,6 @@ function updateMediaExcerptAutoVisibilityForDeletedJustifications(
   );
 }
 
-function updateEntityVisibility(
-  state: State,
-  entityId: string,
-  visibility: Visibility,
-) {
-  const documentId = state.activeMapAutomergeDocumentId;
-  if (!documentId) {
-    appLogger.error(
-      "Cannot update an entity of the active map because there is no active map.",
-    );
-    return;
-  }
-
-  const handle = getDocHandle(documentId);
-
-  handle.change((map) => {
-    const entity = map.entities.find((entity) => entity.id === entityId);
-    if (!entity) {
-      appLogger.error(
-        `Unable to update entity visibility because the entity with ID ${entityId} was not found.`,
-      );
-      return;
-    }
-    entity.explicitVisibility = visibility;
-  });
-}
-
-function removeEntityExplicitVisibility(state: State, entityId: string) {
-  const documentId = state.activeMapAutomergeDocumentId;
-  if (!documentId) {
-    appLogger.error(
-      "Cannot update an entity of the active map because there is no active map.",
-    );
-    return;
-  }
-
-  const handle = getDocHandle(documentId);
-
-  handle.change((map) => {
-    const entity = map.entities.find((entity) => entity.id === entityId);
-    if (!entity) {
-      appLogger.error(
-        `Unable to update entity visibility because the entity with ID ${entityId} was not found.`,
-      );
-      return;
-    }
-    delete entity.explicitVisibility;
-  });
-}
-
 function updatePropositionCompound(
   entity: PropositionCompound,
   entityIdToDelete: string,
@@ -928,7 +958,6 @@ export function isEquivalentMediaExcerpt(
   );
 }
 
-/** Whether the two UrlInfos are equivalent and represent the exact same source. */
 export function isEquivalentUrlInfo(urlInfo1: UrlInfo, urlInfo2: UrlInfo) {
   return (
     urlInfo1.url === urlInfo2.url &&

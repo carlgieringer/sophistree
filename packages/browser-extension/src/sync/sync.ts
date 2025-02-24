@@ -10,7 +10,7 @@ import {
   setSyncServerAddresses,
 } from "./syncServerStorage";
 import { getRepo } from "./repos";
-import { triggerMigrationIfNecessary } from "./migrations";
+import { ensureMapMigrations } from "./migrations";
 
 export function createDoc(map: NewArgumentMap) {
   const repo = getRepo([]);
@@ -21,40 +21,47 @@ export function createDoc(map: NewArgumentMap) {
   return handle;
 }
 
-export function getDocHandle(id: DocumentId): DocHandle<ArgumentMap> {
+export async function getDocHandle(
+  id: DocumentId,
+): Promise<DocHandle<ArgumentMap>> {
   if (!isValidDocumentId(id)) {
     throw new Error(`Invalid document ID: ${id as string}`);
   }
   const syncServerAddresses = getSyncServerAddresses(id);
-  const handle = getRepo(syncServerAddresses).find<ArgumentMap>(id);
+  const handle = await getRepo(syncServerAddresses).find<ArgumentMap>(id);
 
-  triggerMigrationIfNecessary(handle);
+  ensureMapMigrations(handle);
 
   return handle;
 }
 
-export function getDoc(id: DocumentId) {
-  return getDocHandle(id).docSync();
+export async function getDoc(id: DocumentId) {
+  const handle = await getDocHandle(id);
+  return handle.doc();
 }
 
-export function openDoc(
+export async function openDoc(
   id: DocumentId,
   syncServerAddresses: string[],
-): DocHandle<ArgumentMap> {
+): Promise<DocHandle<ArgumentMap>> {
   setSyncServerAddresses(id, syncServerAddresses);
-  const handle = getRepo(syncServerAddresses).find<ArgumentMap>(id);
+  const handle = await getRepo(syncServerAddresses).find<ArgumentMap>(id);
 
-  triggerMigrationIfNecessary(handle);
+  ensureMapMigrations(handle);
 
   return handle;
 }
 
-export function setDocSyncServerAddresses(
+export async function setDocSyncServerAddresses(
   oldId: DocumentId,
   syncServerAddresses: string[],
 ) {
   const oldRepo = getRepoForDoc(oldId);
-  const doc = oldRepo.find<ArgumentMap>(oldId).docSync();
+  const oldHandle = await oldRepo.find<ArgumentMap>(oldId);
+  if (!oldHandle) {
+    throw new Error(`Could not find document with ID: ${oldId}`);
+  }
+  const doc = oldHandle.doc();
   const newRepo = getRepo(syncServerAddresses);
   const handle = newRepo.create<ArgumentMap>(doc);
   const newId = handle.documentId;
@@ -64,7 +71,7 @@ export function setDocSyncServerAddresses(
   oldRepo.delete(oldId);
   setSyncServerAddresses(newId, syncServerAddresses, oldId);
 
-  triggerMigrationIfNecessary(handle);
+  ensureMapMigrations(handle);
 
   return newId;
 }
