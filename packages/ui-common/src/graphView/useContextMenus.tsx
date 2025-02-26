@@ -20,6 +20,7 @@ interface UseContextMenusProps {
   onDeleteEntity?: OnDeleteEntity;
   onAddNewProposition?: () => void;
   onToggleCollapse: OnToggleCollapse;
+  onEditEntity?: (entityId: string) => void;
   zoomIn: (event: EventObject) => void;
   zoomOut: (event: EventObject) => void;
   setDebugElementData: (data: ElementDataDefinition | undefined) => void;
@@ -35,6 +36,7 @@ export function useContextMenus({
   onDeleteEntity,
   onAddNewProposition,
   onToggleCollapse,
+  onEditEntity,
   zoomIn,
   zoomOut,
   setDebugElementData,
@@ -107,17 +109,33 @@ export function useContextMenus({
       onDismiss={() => setMenuVisible(false)}
       anchor={menuPosition}
     >
-      {menuTarget && onDeleteEntity && (
-        <Menu.Item
-          onPress={() => {
-            const entityId = menuTarget.data("entity.id") as unknown;
-            if (typeof entityId === "string") {
-              onDeleteEntity(entityId);
-            }
-            setMenuVisible(false);
-          }}
-          title="Delete"
-        />
+      {menuTarget && (
+        <>
+          {onEditEntity && (
+            <Menu.Item
+              onPress={() => {
+                const entityId = menuTarget.data("entity.id") as unknown;
+                if (typeof entityId === "string") {
+                  onEditEntity(entityId);
+                }
+                setMenuVisible(false);
+              }}
+              title="Edit..."
+            />
+          )}
+          {onDeleteEntity && (
+            <Menu.Item
+              onPress={() => {
+                const entityId = menuTarget.data("entity.id") as unknown;
+                if (typeof entityId === "string") {
+                  onDeleteEntity(entityId);
+                }
+                setMenuVisible(false);
+              }}
+              title="Delete"
+            />
+          )}
+        </>
       )}
       {menuTarget?.isNode() && isCollapsible(menuTarget) && (
         <Menu.Item
