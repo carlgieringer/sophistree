@@ -8,7 +8,7 @@ import {
   BasisOutcome,
 } from "@sophistree/common";
 
-import EntityEditor from "./components/EntityEditor";
+import EntityEditorModal from "./components/EntityEditorModal";
 import HeaderBar from "./components/HeaderBar";
 import {
   addMediaExcerpt,
@@ -17,7 +17,11 @@ import {
   useActiveMapAutomergeDocumentId,
 } from "./store/entitiesSlice";
 import EntityList from "./components/EntityList";
-import { showNewMapDialog } from "./store/uiSlice";
+import {
+  showNewMapDialog,
+  selectIsEntityEditorVisible,
+  hideEntityEditor,
+} from "./store/uiSlice";
 import {
   GetMediaExcerptsResponse,
   notifyTabOfNewMediaExcerpt,
@@ -30,7 +34,7 @@ import * as appLogger from "./logging/appLogging";
 import { catchErrors } from "./extension/callbacks";
 import { useRefreshAuth } from "./store/hooks";
 import { refreshAuth } from "./store/authSlice";
-import { useAppDispatch } from "./store";
+import { useAppDispatch, useAppSelector } from "./store";
 import { loadApiEndpointOverride } from "./store/apiConfigSlice";
 import ExtensionGraphView from "./graphView/ExtensionGraphView";
 import {
@@ -46,6 +50,7 @@ import "./App.scss";
 
 const App: React.FC = () => {
   const dispatch = useAppDispatch();
+  const isEntityEditorVisible = useAppSelector(selectIsEntityEditorVisible);
   useSyncMediaExcerptsWithContent();
   useSyncUpdatedMediaExcerptOutcomesWithContent();
   useHandleChromeRuntimeMessage();
@@ -86,15 +91,14 @@ const App: React.FC = () => {
       <View style={styles.content}>
         {graphView}
 
-        <View style={styles.entityEditorContainer}>
-          <Text variant="titleMedium">Entity Editor</Text>
-          <EntityEditor />
-        </View>
-
         <ScrollView style={styles.entityListScrollView}>
           <EntityList />
         </ScrollView>
       </View>
+      <EntityEditorModal
+        visible={isEntityEditorVisible}
+        onDismiss={() => dispatch(hideEntityEditor())}
+      />
     </View>
   );
 };
@@ -347,13 +351,6 @@ const styles = StyleSheet.create({
   entityListScrollView: {
     flexShrink: 0,
     maxHeight: "33%",
-  },
-  entityEditorContainer: {
-    paddingLeft: 16,
-    paddingRight: 16,
-    paddingBottom: 16,
-    flexShrink: 0,
-    maxHeight: "50%",
   },
 });
 

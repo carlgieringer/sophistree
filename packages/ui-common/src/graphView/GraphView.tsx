@@ -53,6 +53,7 @@ interface GraphViewProps {
   onCompleteDrag?: OnCompleteDrag;
   onFocusMediaExcerpt: OnFocusMediaExcerpt;
   onToggleCollapse: OnToggleCollapse;
+  onEditEntity?: (entityId: string) => void;
 }
 
 export default function GraphView({
@@ -70,6 +71,7 @@ export default function GraphView({
   onCompleteDrag,
   onFocusMediaExcerpt,
   onToggleCollapse,
+  onEditEntity,
 }: GraphViewProps) {
   const { elements, focusedNodeIds } = useElements(
     entities,
@@ -134,6 +136,7 @@ export default function GraphView({
     zoomOut,
     setDebugElementData,
     layoutGraph,
+    onEditEntity,
   });
   useSelectionHandlers(cyRef, onSelectEntities, onResetSelection);
   useDblTapToCreateNode(cyRef, onAddNewProposition);
