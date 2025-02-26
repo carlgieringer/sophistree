@@ -61,7 +61,14 @@ const options = {
     ".png": "file",
   },
   assetNames: "assets/[name]-[hash]",
-  define: makeEnvDefines(),
+  define: {
+    // Workaround for https://github.com/callstack/react-native-paper/issues/2908#issue-1001003536.
+    global: "globalThis",
+    // Required by react-native-reanimated
+    __DEV__: `${!prod}`,
+    "process.env.JEST_WORKER_ID": "false",
+    ...makeEnvDefines(),
+  },
   plugins: [
     {
       name: "build logging plugin",
