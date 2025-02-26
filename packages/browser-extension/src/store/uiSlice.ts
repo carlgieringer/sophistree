@@ -5,12 +5,14 @@ interface UiState {
   isNewMapDialogVisible: boolean;
   isEntityEditorVisible: boolean;
   entityEditorEntityId: string | null;
+  isBottomSheetVisible: boolean;
 }
 
 const initialState: UiState = {
   isNewMapDialogVisible: false,
   isEntityEditorVisible: false,
   entityEditorEntityId: null,
+  isBottomSheetVisible: true,
 };
 
 export const selectIsNewMapDialogVisible = (state: RootState) =>
@@ -21,6 +23,9 @@ export const selectIsEntityEditorVisible = (state: RootState) =>
 
 export const selectEntityEditorEntityId = (state: RootState) =>
   state.ui.entityEditorEntityId;
+
+export const selectIsBottomSheetVisible = (state: RootState) =>
+  state.ui.isBottomSheetVisible;
 
 const uiSlice = createSlice({
   name: "ui",
@@ -40,6 +45,12 @@ const uiSlice = createSlice({
       state.isEntityEditorVisible = false;
       state.entityEditorEntityId = null;
     },
+    showBottomSheet: (state) => {
+      state.isBottomSheetVisible = true;
+    },
+    hideBottomSheet: (state) => {
+      state.isBottomSheetVisible = false;
+    },
   },
 });
 
@@ -48,5 +59,7 @@ export const {
   hideNewMapDialog,
   showEntityEditor,
   hideEntityEditor,
+  showBottomSheet,
+  hideBottomSheet,
 } = uiSlice.actions;
 export default uiSlice.reducer;

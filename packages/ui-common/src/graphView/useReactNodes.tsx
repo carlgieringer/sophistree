@@ -91,7 +91,7 @@ export function useReactNodes(
 
           return (
             <>
-              <p>
+              <div>
                 {displayQuotation}
                 {isLong && (
                   <span
@@ -114,7 +114,7 @@ export function useReactNodes(
                     />
                   </span>
                 )}
-              </p>
+              </div>
               <a
                 href={url}
                 title={url}

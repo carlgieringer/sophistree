@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { StyleSheet, View, ScrollView } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { Button, ProgressBar, Text } from "react-native-paper";
 
 import {
@@ -16,7 +16,7 @@ import {
   selectEntities,
   useActiveMapAutomergeDocumentId,
 } from "./store/entitiesSlice";
-import EntityList from "./components/EntityList";
+import AppBottomSheet from "./components/AppBottomSheet";
 import {
   showNewMapDialog,
   selectIsEntityEditorVisible,
@@ -45,6 +45,8 @@ import {
 } from "./sync/hooks";
 import { ChromeRuntimeMessage } from "./extension/chromeRuntimeMessages";
 import { doWithContentTab } from "./extension/tabs";
+import { GestureHandlerRootView } from "./bottomsheet-setup";
+import AppContainer from "./components/AppContainer";
 
 import "./App.scss";
 
@@ -86,20 +88,17 @@ const App: React.FC = () => {
   );
 
   return (
-    <View style={styles.container}>
-      <HeaderBar />
-      <View style={styles.content}>
+    <GestureHandlerRootView style={styles.gestureRoot}>
+      <AppContainer style={styles.container}>
+        <HeaderBar />
         {graphView}
-
-        <ScrollView style={styles.entityListScrollView}>
-          <EntityList />
-        </ScrollView>
-      </View>
-      <EntityEditorModal
-        visible={isEntityEditorVisible}
-        onDismiss={() => dispatch(hideEntityEditor())}
-      />
-    </View>
+        <AppBottomSheet />
+        <EntityEditorModal
+          visible={isEntityEditorVisible}
+          onDismiss={() => dispatch(hideEntityEditor())}
+        />
+      </AppContainer>
+    </GestureHandlerRootView>
   );
 };
 
@@ -318,8 +317,10 @@ function useSyncApiConfig() {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  gestureRoot: {
     flex: 1,
+  },
+  container: {
     display: "flex",
     flexDirection: "column",
   },
@@ -347,10 +348,6 @@ const styles = StyleSheet.create({
   },
   progressText: {
     textAlign: "center",
-  },
-  entityListScrollView: {
-    flexShrink: 0,
-    maxHeight: "33%",
   },
 });
 
