@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { StyleSheet, View, ScrollView } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { Button, ProgressBar, Text } from "react-native-paper";
 
 import {
@@ -8,7 +8,7 @@ import {
   BasisOutcome,
 } from "@sophistree/common";
 
-import EntityEditor from "./components/EntityEditor";
+import EntityEditorModal from "./components/EntityEditorModal";
 import HeaderBar from "./components/HeaderBar";
 import {
   addMediaExcerpt,
@@ -16,8 +16,12 @@ import {
   selectEntities,
   useActiveMapAutomergeDocumentId,
 } from "./store/entitiesSlice";
-import EntityList from "./components/EntityList";
-import { showNewMapDialog } from "./store/uiSlice";
+import AppBottomSheet from "./components/AppBottomSheet";
+import {
+  showNewMapDialog,
+  selectIsEntityEditorVisible,
+  hideEntityEditor,
+} from "./store/uiSlice";
 import {
   GetMediaExcerptsResponse,
   notifyTabOfNewMediaExcerpt,
@@ -30,7 +34,7 @@ import * as appLogger from "./logging/appLogging";
 import { catchErrors } from "./extension/callbacks";
 import { useRefreshAuth } from "./store/hooks";
 import { refreshAuth } from "./store/authSlice";
-import { useAppDispatch } from "./store";
+import { useAppDispatch, useAppSelector } from "./store";
 import { loadApiEndpointOverride } from "./store/apiConfigSlice";
 import ExtensionGraphView from "./graphView/ExtensionGraphView";
 import {
@@ -41,11 +45,14 @@ import {
 } from "./sync/hooks";
 import { ChromeRuntimeMessage } from "./extension/chromeRuntimeMessages";
 import { doWithContentTab } from "./extension/tabs";
+import { GestureHandlerRootView } from "./bottomsheet-setup";
+import AppContainer from "./components/AppContainer";
 
 import "./App.scss";
 
 const App: React.FC = () => {
   const dispatch = useAppDispatch();
+  const isEntityEditorVisible = useAppSelector(selectIsEntityEditorVisible);
   useSyncMediaExcerptsWithContent();
   useSyncUpdatedMediaExcerptOutcomesWithContent();
   useHandleChromeRuntimeMessage();
@@ -81,21 +88,17 @@ const App: React.FC = () => {
   );
 
   return (
-    <View style={styles.container}>
-      <HeaderBar />
-      <View style={styles.content}>
+    <GestureHandlerRootView style={styles.gestureRoot}>
+      <AppContainer style={styles.container}>
+        <HeaderBar />
         {graphView}
-
-        <View style={styles.entityEditorContainer}>
-          <Text variant="titleMedium">Entity Editor</Text>
-          <EntityEditor />
-        </View>
-
-        <ScrollView style={styles.entityListScrollView}>
-          <EntityList />
-        </ScrollView>
-      </View>
-    </View>
+        <AppBottomSheet />
+        <EntityEditorModal
+          visible={isEntityEditorVisible}
+          onDismiss={() => dispatch(hideEntityEditor())}
+        />
+      </AppContainer>
+    </GestureHandlerRootView>
   );
 };
 
@@ -314,8 +317,10 @@ function useSyncApiConfig() {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  gestureRoot: {
     flex: 1,
+  },
+  container: {
     display: "flex",
     flexDirection: "column",
   },
@@ -343,17 +348,6 @@ const styles = StyleSheet.create({
   },
   progressText: {
     textAlign: "center",
-  },
-  entityListScrollView: {
-    flexShrink: 0,
-    maxHeight: "33%",
-  },
-  entityEditorContainer: {
-    paddingLeft: 16,
-    paddingRight: 16,
-    paddingBottom: 16,
-    flexShrink: 0,
-    maxHeight: "50%",
   },
 });
 

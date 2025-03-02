@@ -16,6 +16,7 @@ import {
   useActiveMapAutomergeDocumentId,
   useSelectedEntityIds,
 } from "../store/entitiesSlice";
+import { showEntityEditor } from "../store/uiSlice";
 import * as appLogger from "../logging/appLogging";
 import {
   useActiveMapEntities,
@@ -62,6 +63,11 @@ export default function ExtensionGraphView({
     [dispatch],
   );
 
+  const onEditEntity = useCallback(
+    (id: string) => dispatch(showEntityEditor(id)),
+    [dispatch],
+  );
+
   if (!activeMapId) {
     return "loading";
   }
@@ -80,6 +86,7 @@ export default function ExtensionGraphView({
       onDeleteEntity={onDeleteEntity}
       onCompleteDrag={onCompleteDrag}
       onToggleCollapse={onToggleCollapse}
+      onEditEntity={onEditEntity}
       style={style}
     />
   );
