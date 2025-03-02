@@ -10,7 +10,7 @@ import {
   Repo,
 } from "@automerge/automerge-repo";
 import { ArgumentMap } from "@sophistree/common";
-import { triggerMigrationIfNecessary } from "./sync";
+import { ensureMapMigrations } from "./migrations";
 
 /** A cache of repos we have opened keyed based on their sync server addresses. */
 const reposBySyncServers = new Map<string, Repo>();
@@ -31,10 +31,10 @@ async function getAllDocIds() {
 export async function getAllDocs(): Promise<Doc<ArgumentMap>[]> {
   const docIds = await getAllDocIds();
   const docs = await Promise.all(
-    docIds.map((id) => {
-      const handle = storageOnlyRepo.find<ArgumentMap>(id);
+    docIds.map(async (id) => {
+      const handle = await storageOnlyRepo.find<ArgumentMap>(id);
 
-      triggerMigrationIfNecessary(handle);
+      ensureMapMigrations(handle);
 
       return handle.doc();
     }),

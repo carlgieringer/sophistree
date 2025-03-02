@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from "react";
-import { useDispatch } from "react-redux";
 import { DataTable, Searchbar } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { StyleProp, ViewStyle, View } from "react-native";
@@ -9,11 +8,13 @@ import { Entity, preferredUrl } from "@sophistree/common";
 import { selectEntities, useSelectedEntityIds } from "../store/entitiesSlice";
 import VisibilityDropdown from "./VisibilityDropdown";
 import { useActiveMapEntities } from "../sync/hooks";
+import { useAppDispatch } from "../store";
+import * as appLogger from "../logging/appLogging";
 
 const tableEntityTypes = new Set(["Proposition", "MediaExcerpt"]);
 
 function EntityList({ style }: { style?: StyleProp<ViewStyle> }) {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchbar, setShowSearchbar] = useState(false);
 
@@ -30,7 +31,11 @@ function EntityList({ style }: { style?: StyleProp<ViewStyle> }) {
     );
   }, [allEntities, searchQuery]);
 
-  const selectEntity = (id: string) => dispatch(selectEntities([id]));
+  const selectEntity = (id: string) => {
+    dispatch(selectEntities([id]))
+      .unwrap()
+      .catch((reason) => appLogger.error("Failed to select entities", reason));
+  };
 
   const toggleSearchbar = () => {
     setShowSearchbar(!showSearchbar);

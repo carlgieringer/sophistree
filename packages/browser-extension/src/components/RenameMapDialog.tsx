@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import { TextInput as RNTextInput } from "react-native";
 import { Dialog, TextInput, Button } from "react-native-paper";
-import { useDispatch } from "react-redux";
 
 import { renameActiveMap } from "../store/entitiesSlice";
+import { useAppDispatch } from "../store";
+import * as appLogger from "../logging/appLogging";
 
 interface RenameMapDialogProps {
   visible: boolean;
@@ -16,7 +17,7 @@ const RenameMapDialog: React.FC<RenameMapDialogProps> = ({
   onDismiss,
   mapName,
 }) => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const [newName, setNewName] = useState(mapName);
   const inputRef = useRef<RNTextInput | null>(null);
 
@@ -25,7 +26,11 @@ const RenameMapDialog: React.FC<RenameMapDialogProps> = ({
   }, [visible]);
 
   const handleRename = () => {
-    dispatch(renameActiveMap(newName));
+    dispatch(renameActiveMap({ name: newName }))
+      .unwrap()
+      .catch((reason) =>
+        appLogger.error("Failed to rename active map", reason),
+      );
     onDismiss();
   };
 

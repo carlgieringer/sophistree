@@ -1,5 +1,4 @@
 import React, { useCallback } from "react";
-import { useDispatch } from "react-redux";
 import { TextInput, Text, Surface } from "react-native-paper";
 import { View, StyleSheet } from "react-native";
 
@@ -17,6 +16,8 @@ import {
   updateMediaExerpt,
 } from "../store/entitiesSlice";
 import { useSelectedEntitiesForEdit } from "../sync/hooks";
+import { useAppDispatch } from "../store";
+import * as appLogger from "../logging/appLogging";
 
 const EntityEditor: React.FC = () => {
   const selectedEntities = useSelectedEntitiesForEdit();
@@ -46,11 +47,17 @@ function chooseEditor(entity: Entity) {
 }
 
 function PropositionEditor({ entity }: { entity: Proposition }) {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const id = entity.id;
 
   const onChangeText = useCallback(
-    (text: string) => dispatch(updateProposition({ id, updates: { text } })),
+    (text: string) => {
+      dispatch(updateProposition({ id, updates: { text } }))
+        .unwrap()
+        .catch((reason) =>
+          appLogger.error(`Failed to update proposition`, reason),
+        );
+    },
     [dispatch, id],
   );
 
@@ -67,7 +74,7 @@ function PropositionEditor({ entity }: { entity: Proposition }) {
 }
 
 function JustificationEditor({ entity }: { entity: Justification }) {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
 
   const handlePolarityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     dispatch(
@@ -75,7 +82,11 @@ function JustificationEditor({ entity }: { entity: Justification }) {
         id: entity.id,
         updates: { polarity: e.target.value as Polarity },
       }),
-    );
+    )
+      .unwrap()
+      .catch((reason) =>
+        appLogger.error(`Failed to update justification`, reason),
+      );
   };
   return (
     <View>
@@ -88,7 +99,7 @@ function JustificationEditor({ entity }: { entity: Justification }) {
 }
 
 function MediaExcerptEditor({ entity }: { entity: MediaExcerpt }) {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const id = entity.id;
 
   const onChangeText = useCallback(
@@ -98,7 +109,11 @@ function MediaExcerptEditor({ entity }: { entity: MediaExcerpt }) {
           id,
           updates: { sourceInfo: { name: text } },
         }),
-      );
+      )
+        .unwrap()
+        .catch((reason) =>
+          appLogger.error(`Failed to update MediaExcerpt`, reason),
+        );
     },
     [dispatch, id],
   );

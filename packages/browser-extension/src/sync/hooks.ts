@@ -1,5 +1,6 @@
 import {
   Doc,
+  DocHandle,
   DocHandleChangePayload,
   DocumentId,
 } from "@automerge/automerge-repo";
@@ -37,42 +38,52 @@ export const useAllMaps = () => {
 
     const updateMaps = () => {
       getAllDocs()
-        .then((newMaps) => {
+        .then(async (newMaps) => {
           // Remove listeners from documents that are no longer present
-          docChangeListeners.forEach((listener, docId) => {
+          for (const [docId, listener] of docChangeListeners.entries()) {
             if (!newMaps.find((map) => map.automergeDocumentId === docId)) {
-              const handle = getDocHandle(docId);
-              handle?.off("change", listener);
-              docChangeListeners.delete(docId);
+              try {
+                const handle = await getDocHandle(docId);
+                handle?.off("change", listener);
+                docChangeListeners.delete(docId);
+              } catch (error) {
+                appLogger.error(
+                  `Failed to remove listener for doc ID ${docId}`,
+                  error,
+                );
+              }
             }
-          });
+          }
 
           // Set up listeners for new documents
-          newMaps.forEach((map) => {
+          for (const map of newMaps) {
             const documentId = map.automergeDocumentId as DocumentId;
             if (docChangeListeners.has(documentId)) {
-              return;
-            }
-            const handle = getDocHandle(documentId);
-            if (!handle) {
-              appLogger.error(
-                `Unable to add listeners for document that had no handle. Document ID: ${documentId}`,
-              );
-              return;
+              continue;
             }
 
-            const listener = ({ doc }: DocHandleChangePayload<ArgumentMap>) => {
-              setMaps((prevMaps) =>
-                prevMaps.map((prevMap) =>
-                  prevMap.automergeDocumentId === doc.automergeDocumentId
-                    ? doc
-                    : prevMap,
-                ),
+            try {
+              const handle = await getDocHandle(documentId);
+              const listener = ({
+                doc,
+              }: DocHandleChangePayload<ArgumentMap>) => {
+                setMaps((prevMaps) =>
+                  prevMaps.map((prevMap) =>
+                    prevMap.automergeDocumentId === doc.automergeDocumentId
+                      ? doc
+                      : prevMap,
+                  ),
+                );
+              };
+              handle.on("change", listener);
+              docChangeListeners.set(documentId, listener);
+            } catch (error) {
+              appLogger.error(
+                `Failed to set up listener for doc ID ${documentId}`,
+                error,
               );
-            };
-            handle.on("change", listener);
-            docChangeListeners.set(documentId, listener);
-          });
+            }
+          }
 
           setMaps(newMaps);
         })
@@ -85,9 +96,17 @@ export const useAllMaps = () => {
     return () => {
       removeDocChangeListener(updateMaps);
       // Clean up all document change listeners
+      // We can't use async/await in the cleanup function directly,
+      // so we handle the promise separately
       docChangeListeners.forEach((listener, docId) => {
-        const handle = getDocHandle(docId);
-        handle?.off("change", listener);
+        getDocHandle(docId)
+          .then((handle) => handle?.off("change", listener))
+          .catch((error) =>
+            appLogger.error(
+              `Failed to clean up listener for doc ID ${docId}`,
+              error,
+            ),
+          );
       });
     };
   }, []);
@@ -97,12 +116,28 @@ export const useAllMaps = () => {
 
 export const useActiveMap = () => {
   const documentId = useActiveMapAutomergeDocumentId();
-  const handle = documentId ? getDocHandle(documentId) : undefined;
+  const [handle, setHandle] = useState(
+    undefined as DocHandle<ArgumentMap> | undefined,
+  );
+  useEffect(() => {
+    async function getHandle() {
+      if (!documentId) {
+        return;
+      }
+      setHandle(await getDocHandle(documentId));
+    }
+    getHandle().catch((reason) =>
+      appLogger.error(
+        `Failed to get doc handle for doc ID ${documentId}`,
+        reason,
+      ),
+    );
+  }, [documentId]);
 
-  const [map, setMap] = useState(handle?.docSync());
+  const [map, setMap] = useState(handle?.doc());
 
   useEffect(() => {
-    setMap(handle?.docSync());
+    setMap(handle?.doc());
 
     const onDocChange = ({ doc }: DocHandleChangePayload<ArgumentMap>) =>
       setMap(doc);
