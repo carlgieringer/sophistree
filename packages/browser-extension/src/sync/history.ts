@@ -14,13 +14,22 @@ export function formatHistory(doc: ArgumentMap): HistoryEntry[] {
   const history = Automerge.getHistory(doc);
 
   return history.map((change, index) => {
+    console.log(`History index ${index}`);
+
     const before = index > 0 ? history[index - 1].snapshot : undefined;
     const after = change.snapshot;
+
+    const changes = getEntityChanges(before, after);
+
+    Automerge.free(after);
+    if (before) {
+      Automerge.free(before);
+    }
 
     return {
       timestamp: change.change.time,
       actor: change.change.actor,
-      changes: getEntityChanges(before, after),
+      changes,
     };
   });
 }
