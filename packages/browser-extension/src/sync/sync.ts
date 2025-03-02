@@ -4,7 +4,6 @@ import {
   isValidDocumentId,
 } from "@automerge/automerge-repo";
 import { ArgumentMap } from "@sophistree/common";
-import { formatHistory } from "./history";
 import {
   getSyncServerAddresses,
   setSyncServerAddresses,
@@ -35,14 +34,6 @@ export function getDocHandle(id: DocumentId): DocHandle<ArgumentMap> {
 
 export function getDoc(id: DocumentId) {
   return getDocHandle(id).docSync();
-}
-
-export function getDocHistory(id: DocumentId) {
-  const doc = getDoc(id);
-  if (!doc) {
-    return [];
-  }
-  return formatHistory(doc);
 }
 
 export function openDoc(

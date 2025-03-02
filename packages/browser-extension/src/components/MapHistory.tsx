@@ -1,13 +1,11 @@
 import React from "react";
 import { View } from "react-native";
 import { DataTable, Text } from "react-native-paper";
-import { useActiveMap } from "../sync/hooks";
-import { formatHistory } from "../sync/history";
-import type { HistoryChange, HistoryEntry } from "../sync/history";
+import { useActiveMapHistory } from "../sync/hooks";
+import type { HistoryChange } from "../sync/history";
 
 const MapHistory: React.FC = () => {
-  const activeMap = useActiveMap();
-  const history: HistoryEntry[] = activeMap ? formatHistory(activeMap) : [];
+  const history = useActiveMapHistory();
 
   return (
     <View>
