@@ -84,7 +84,6 @@ function useFixBottomSheetInitialDisplay(
           const translationY =
             containerHeight * ((100 - snapPointPercentage) / 100);
           sheetSlider.parentElement.style.transform = `translateY(${translationY}px)`;
-          bottomSheetRef.current?.snapToIndex(initialSnapIndex);
         }
       }
     }, 500);

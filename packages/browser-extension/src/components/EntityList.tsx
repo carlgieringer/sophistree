@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from "react";
 import { useDispatch } from "react-redux";
-import { DataTable, Searchbar, Text } from "react-native-paper";
+import { DataTable, Searchbar } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import { View, ViewStyle } from "react-native";
+import { View } from "react-native";
 
 import { Entity, preferredUrl } from "@sophistree/common";
 
@@ -12,9 +12,7 @@ import { useActiveMapEntities } from "../sync/hooks";
 
 const tableEntityTypes = new Set(["Proposition", "MediaExcerpt"]);
 
-function EntityList({style}: {
-  style?: ViewStyle;
-}) {
+function EntityList() {
   const dispatch = useDispatch();
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchbar, setShowSearchbar] = useState(false);
@@ -42,8 +40,7 @@ function EntityList({style}: {
   };
 
   return (
-    <View style={style}>
-      <Text>EntityList</Text>
+    <View>
       {showSearchbar && (
         <Searchbar
           placeholder="Search descriptions"
