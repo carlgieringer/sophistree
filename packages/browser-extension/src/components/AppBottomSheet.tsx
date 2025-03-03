@@ -11,7 +11,7 @@ const AppBottomSheet: React.FC = () => {
 
   const bottomSheetRef = useRef<BottomSheet>(null);
 
-  useFixBottomSheetPosition(snapPoints, initialSnapIndex);
+  // useFixBottomSheetPosition(snapPoints, initialSnapIndex);
 
   return (
     <BottomSheet

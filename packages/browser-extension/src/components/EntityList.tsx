@@ -1,24 +1,150 @@
 import React, { useState, useMemo } from "react";
-import { useDispatch } from "react-redux";
 import { DataTable, Searchbar } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { View } from "react-native";
 
 import { Entity, preferredUrl } from "@sophistree/common";
 
-import { selectEntities, useSelectedEntityIds } from "../store/entitiesSlice";
 import VisibilityDropdown from "./VisibilityDropdown";
-import { useActiveMapEntities } from "../sync/hooks";
 
 const tableEntityTypes = new Set(["Proposition", "MediaExcerpt"]);
 
 function EntityList() {
-  const dispatch = useDispatch();
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchbar, setShowSearchbar] = useState(false);
 
-  const allEntities = useActiveMapEntities();
-  const selectedEntityIds = useSelectedEntityIds();
+  const allEntities = useMemo<Entity[]>(
+    () => [
+      {
+        id: "1234",
+        type: "Proposition",
+        text: "Hi there",
+        autoVisibility: "Visible",
+      },
+      {
+        id: "1234",
+        type: "Proposition",
+        text: "Hi there",
+        autoVisibility: "Visible",
+      },
+      {
+        id: "1234",
+        type: "Proposition",
+        text: "Hi there",
+        autoVisibility: "Visible",
+      },
+      {
+        id: "1234",
+        type: "Proposition",
+        text: "Hi there",
+        autoVisibility: "Visible",
+      },
+      {
+        id: "1234",
+        type: "Proposition",
+        text: "Hi there",
+        autoVisibility: "Visible",
+      },
+      {
+        id: "1234",
+        type: "Proposition",
+        text: "Hi there",
+        autoVisibility: "Visible",
+      },
+      {
+        id: "1234",
+        type: "Proposition",
+        text: "Hi there",
+        autoVisibility: "Visible",
+      },
+      {
+        id: "1234",
+        type: "Proposition",
+        text: "Hi there",
+        autoVisibility: "Visible",
+      },
+      {
+        id: "1234",
+        type: "Proposition",
+        text: "Hi there",
+        autoVisibility: "Visible",
+      },
+      {
+        id: "1234",
+        type: "Proposition",
+        text: "Hi there",
+        autoVisibility: "Visible",
+      },
+      {
+        id: "1234",
+        type: "Proposition",
+        text: "Hi there",
+        autoVisibility: "Visible",
+      },
+      {
+        id: "1234",
+        type: "Proposition",
+        text: "Hi there",
+        autoVisibility: "Visible",
+      },
+      {
+        id: "1234",
+        type: "Proposition",
+        text: "Hi there",
+        autoVisibility: "Visible",
+      },
+      {
+        id: "1234",
+        type: "Proposition",
+        text: "Hi there",
+        autoVisibility: "Visible",
+      },
+      {
+        id: "1234",
+        type: "Proposition",
+        text: "Hi there",
+        autoVisibility: "Visible",
+      },
+      {
+        id: "1234",
+        type: "Proposition",
+        text: "Hi there",
+        autoVisibility: "Visible",
+      },
+      {
+        id: "1234",
+        type: "Proposition",
+        text: "Hi there",
+        autoVisibility: "Visible",
+      },
+      {
+        id: "1234",
+        type: "Proposition",
+        text: "Hi there",
+        autoVisibility: "Visible",
+      },
+      {
+        id: "1234",
+        type: "Proposition",
+        text: "Hi there",
+        autoVisibility: "Visible",
+      },
+      {
+        id: "1234",
+        type: "Proposition",
+        text: "Hi there",
+        autoVisibility: "Visible",
+      },
+      {
+        id: "1234",
+        type: "Proposition",
+        text: "Hi there",
+        autoVisibility: "Visible",
+      },
+    ],
+    [],
+  );
+  const selectedEntityIds = [] as string[];
 
   const filteredEntities = useMemo(() => {
     const tableEntities = allEntities.filter((e) =>
@@ -29,8 +155,6 @@ function EntityList() {
       makeDescription(entity).toLowerCase().includes(searchQuery.toLowerCase()),
     );
   }, [allEntities, searchQuery]);
-
-  const selectEntity = (id: string) => dispatch(selectEntities([id]));
 
   const toggleSearchbar = () => {
     setShowSearchbar(!showSearchbar);
@@ -68,7 +192,6 @@ function EntityList() {
                 ? { backgroundColor: "lightblue" }
                 : undefined
             }
-            onPress={() => selectEntity(entity.id)}
           >
             <DataTable.Cell>{entity.type}</DataTable.Cell>
             <DataTable.Cell>{makeDescription(entity)}</DataTable.Cell>
