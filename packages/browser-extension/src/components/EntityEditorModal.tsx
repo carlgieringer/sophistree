@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Modal, Portal } from "react-native-paper";
+import { Modal } from "react-native-paper";
 import { StyleSheet, View } from "react-native";
 import { useAppDispatch, useAppSelector } from "../store";
 
@@ -26,17 +26,15 @@ const EntityEditorModal: React.FC<EntityEditorModalProps> = ({
   }, [dispatch, entityId]);
 
   return (
-    <Portal>
-      <Modal
-        visible={visible}
-        onDismiss={onDismiss}
-        contentContainerStyle={styles.modalContent}
-      >
-        <View style={styles.container}>
-          <EntityEditor />
-        </View>
-      </Modal>
-    </Portal>
+    <Modal
+      visible={visible}
+      onDismiss={onDismiss}
+      contentContainerStyle={styles.modalContent}
+    >
+      <View style={styles.container}>
+        <EntityEditor />
+      </View>
+    </Modal>
   );
 };
 

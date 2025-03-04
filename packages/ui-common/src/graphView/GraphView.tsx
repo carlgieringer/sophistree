@@ -2,7 +2,6 @@ import cytoscape, { ElementDataDefinition } from "cytoscape";
 import elk from "cytoscape-elk";
 import { CSSProperties, useCallback, useEffect, useRef, useState } from "react";
 import CytoscapeComponent from "react-cytoscapejs";
-import { Portal } from "react-native-paper";
 
 import reactNodes from "../cytoscape/reactNodes";
 import DebugElementDialog from "./DebugElementDialog";
@@ -30,9 +29,10 @@ import {
 } from "./useDblTapToCreateNode";
 import { OnCompleteDrag, useDragHandlers } from "./useDragHandlers";
 import { stylesheet } from "./graphStyles";
+import { OnToggleCollapse } from "./collapsing";
 
 import "./GraphView.scss";
-import { OnToggleCollapse } from "./collapsing";
+import { Portal } from "react-native-paper";
 
 cytoscape.use(elk);
 cytoscape.use(reactNodes);
