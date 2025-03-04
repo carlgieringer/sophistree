@@ -11,7 +11,7 @@ const AppBottomSheet: React.FC = () => {
 
   const bottomSheetRef = useRef<BottomSheet>(null);
 
-  // useFixBottomSheetPosition(snapPoints, initialSnapIndex);
+  useFixBottomSheetPosition(false, snapPoints, initialSnapIndex);
 
   return (
     <BottomSheet
@@ -65,10 +65,15 @@ export default AppBottomSheet;
  * updates their DOM.
  */
 function useFixBottomSheetPosition(
+  doFix: boolean,
   snapPoints: string[],
   initialSnapIndex: number,
 ) {
   useEffect(() => {
+    if (!doFix) {
+      return;
+    }
+
     // There are two elements matching this selector; they are siblings and so both have the parent
     // we want, so just take the first.
     const [sheetSlider] = window.document.querySelectorAll(

@@ -5,7 +5,6 @@ import {
   Appbar,
   Divider,
   Menu,
-  Portal,
   Snackbar,
   Text,
   Tooltip,
@@ -306,53 +305,51 @@ function HeaderBar({ id }: { id?: string }) {
           {menuItems}
         </Menu>
       </Appbar.Header>
-      <Portal>
-        <Snackbar
-          visible={isSnackbarVisible}
-          onDismiss={() => setSnackbarVisible(false)}
-          duration={snackbarDuration}
-          action={{
-            label: "Dismiss",
-            onPress: () => setSnackbarVisible(false),
-          }}
-        >
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            {snackbarIcon === "success" && (
-              <Icon name="check-circle-outline" color={colors.nephritis} />
-            )}
-            {snackbarIcon === "failure" && (
-              <Icon name="error" color={colors.pomegranate} />
-            )}
-            <Text style={{ color: theme.colors.inverseOnSurface }}>
-              {snackbarMessage}
-            </Text>
-          </View>
-        </Snackbar>
-        {activeMapName && (
-          <RenameMapDialog
-            mapName={activeMapName}
-            visible={isRenameMapDialogVisible}
-            onDismiss={() => setRenameMapDialogVisible(false)}
-          />
-        )}
-        <NewMapDialog
-          visible={isNewMapDialogVisible}
-          onDismiss={() => dispatch(hideNewMapDialog())}
+      <Snackbar
+        visible={isSnackbarVisible}
+        onDismiss={() => setSnackbarVisible(false)}
+        duration={snackbarDuration}
+        action={{
+          label: "Dismiss",
+          onPress: () => setSnackbarVisible(false),
+        }}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          {snackbarIcon === "success" && (
+            <Icon name="check-circle-outline" color={colors.nephritis} />
+          )}
+          {snackbarIcon === "failure" && (
+            <Icon name="error" color={colors.pomegranate} />
+          )}
+          <Text style={{ color: theme.colors.inverseOnSurface }}>
+            {snackbarMessage}
+          </Text>
+        </View>
+      </Snackbar>
+      {activeMapName && (
+        <RenameMapDialog
+          mapName={activeMapName}
+          visible={isRenameMapDialogVisible}
+          onDismiss={() => setRenameMapDialogVisible(false)}
         />
-        <ActivateMapDialog
-          visible={isActivateMapDialogVisible}
-          onDismiss={() => setActivateMapDialogVisible(false)}
-        />
-        <DownloadMapsDialog
-          visible={isDownloadMapsDialogVisible}
-          onDismiss={() => setDownloadMapsDialogVisible(false)}
-        />
-        <UploadMapsDialog
-          visible={isUploadMapsDialogVisible}
-          onDismiss={() => setUploadMapsDialogVisible(false)}
-        />
-        {deleteDialog}
-      </Portal>
+      )}
+      <NewMapDialog
+        visible={isNewMapDialogVisible}
+        onDismiss={() => dispatch(hideNewMapDialog())}
+      />
+      <ActivateMapDialog
+        visible={isActivateMapDialogVisible}
+        onDismiss={() => setActivateMapDialogVisible(false)}
+      />
+      <DownloadMapsDialog
+        visible={isDownloadMapsDialogVisible}
+        onDismiss={() => setDownloadMapsDialogVisible(false)}
+      />
+      <UploadMapsDialog
+        visible={isUploadMapsDialogVisible}
+        onDismiss={() => setUploadMapsDialogVisible(false)}
+      />
+      {deleteDialog}
     </>
   );
 }
