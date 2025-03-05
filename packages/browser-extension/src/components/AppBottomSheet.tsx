@@ -77,7 +77,6 @@ function useBottomSheetHeight() {
 
         const sheetHeight = containerHeight - translateY;
         setHeight(sheetHeight);
-        console.log({ containerHeight, translateY, sheetHeight });
       }
 
       // Continue monitoring
