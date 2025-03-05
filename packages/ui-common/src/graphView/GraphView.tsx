@@ -30,9 +30,9 @@ import {
 } from "./useDblTapToCreateNode";
 import { OnCompleteDrag, useDragHandlers } from "./useDragHandlers";
 import { stylesheet } from "./graphStyles";
+import { OnToggleCollapse } from "./collapsing";
 
 import "./GraphView.scss";
-import { OnToggleCollapse } from "./collapsing";
 
 cytoscape.use(elk);
 cytoscape.use(reactNodes);

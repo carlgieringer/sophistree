@@ -12,8 +12,8 @@ import {
   useTheme,
 } from "react-native-paper";
 import { useSelector } from "react-redux";
-import { useAppDispatch } from "../store";
 
+import { useAppDispatch } from "../store";
 import * as colors from "../colors";
 import {
   deleteMap,

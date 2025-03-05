@@ -1,43 +1,40 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { StyleSheet } from "react-native";
-import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import BottomSheet from "@gorhom/bottom-sheet";
 
-import * as appLogger from "../logging/appLogging";
 import EntityList from "./EntityList";
 
 const AppBottomSheet: React.FC = () => {
-  const initialSnapIndex = 1;
   const snapPoints = useMemo(() => ["5%", "25%", "50%", "90%"], []);
-
-  const bottomSheetRef = useRef<BottomSheet>(null);
-
-  useFixBottomSheetPosition(snapPoints, initialSnapIndex);
-
+  const maxHeight = useBottomSheetHeight();
   return (
     <BottomSheet
-      ref={bottomSheetRef}
-      index={initialSnapIndex}
+      index={1}
       snapPoints={snapPoints}
       handleIndicatorStyle={styles.handleIndicator}
-      backgroundStyle={styles.bottomSheetBackground}
+      backgroundStyle={styles.bottomSheet}
+      // The sheet disappears (translateY is off the screen) with dynamic sizing.
+      enableDynamicSizing={false}
     >
-      <BottomSheetScrollView contentContainerStyle={styles.contentContainer}>
-        <EntityList />
-      </BottomSheetScrollView>
+      <EntityList
+        style={{
+          // Give the list a max height and scroll or else we can't scroll the whole contents when
+          // the sheet is less than fully expanded.
+          maxHeight,
+          overflow: "scroll",
+          paddingBottom: 16,
+        }}
+      />
     </BottomSheet>
   );
 };
 
 const styles = StyleSheet.create({
-  contentContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
   handleIndicator: {
     backgroundColor: "#A0A0A0",
     width: 50,
   },
-  bottomSheetBackground: {
+  bottomSheet: {
     backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
@@ -52,22 +49,12 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AppBottomSheet;
-
 /**
- * For some reason when maxDynamicContentSize=true (the default), the sheet starts
- * with translateY set to the full height of the container, which pushes it completely
- * out of view. (And when maxDynamicContentSize=false, we can't scroll to view the entire
- * sheet contents, so we can't set that.)
- *
- * This method uses a hacky workaround to reset the element's translateY
- * to the initial snap point when it is off-screen. This method may require updating if @gorhom/bottom-sheet
- * updates their DOM.
+ * Poll in RAF for the bottom sheet's height.
  */
-function useFixBottomSheetPosition(
-  snapPoints: string[],
-  initialSnapIndex: number,
-) {
+function useBottomSheetHeight() {
+  const [height, setHeight] = useState(undefined as number | undefined);
+
   useEffect(() => {
     // There are two elements matching this selector; they are siblings and so both have the parent
     // we want, so just take the first.
@@ -75,60 +62,35 @@ function useFixBottomSheetPosition(
       `[aria-label="Bottom Sheet"][role="slider"]`,
     );
 
-    if (!sheetSlider?.parentElement) return;
-
-    const fixBottomSheetTranslation = (container: Element) => {
-      const containerHeight = container.clientHeight;
-      const snapPointPercentage = parseInt(
-        snapPoints[initialSnapIndex].replace("%", ""),
-      );
-      const correctedTranslationY =
-        containerHeight * ((100 - snapPointPercentage) / 100);
-
-      sheetSlider.parentElement!.style.transform = `translateY(${correctedTranslationY}px)`;
-    };
-
-    // Fix initial position
-    const container = sheetSlider.parentElement.parentElement;
-    if (container) {
-      setTimeout(() => fixBottomSheetTranslation(container), 500);
-    }
-
-    // Keep track of the previous transform value to avoid unnecessary updates
-    let prevTransform = "";
-
     // Function to check for style changes using requestAnimationFrame
-    const checkStyleChanges = () => {
+    const checkSheetHeight = () => {
+      const container = sheetSlider.parentElement?.parentElement;
       if (!container) return;
 
-      const transform = sheetSlider.parentElement?.style.transform || "";
+      const transform = sheetSlider.parentElement.style.transform || "";
 
-      // Only process if the transform has changed
-      if (transform !== prevTransform) {
-        prevTransform = transform;
-        const match = /translateY\((\d+)px\)/.exec(transform);
+      const match = /translateY\((.+)px\)/.exec(transform);
 
-        if (match) {
-          const translateY = parseInt(match[1]);
-          const containerHeight = container.clientHeight;
+      if (match) {
+        const translateY = parseInt(match[1]);
+        const containerHeight = container.clientHeight;
 
-          if (translateY >= containerHeight) {
-            fixBottomSheetTranslation(container);
-          }
-
-          // Log position changes
-          appLogger.debug("Fixed BottomSheet translateY:", translateY);
-        }
+        const sheetHeight = containerHeight - translateY;
+        setHeight(sheetHeight);
       }
 
       // Continue monitoring
-      requestAnimationFrame(checkStyleChanges);
+      requestAnimationFrame(checkSheetHeight);
     };
 
-    const rafId = requestAnimationFrame(checkStyleChanges);
+    const rafId = requestAnimationFrame(checkSheetHeight);
 
     return () => {
       cancelAnimationFrame(rafId);
     };
-  }, [snapPoints, initialSnapIndex]);
+  }, []);
+
+  return height;
 }
+
+export default AppBottomSheet;
