@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import {
   Card,
   TextInput,
@@ -123,7 +123,7 @@ export function DefaultSyncServerSettings() {
           </View>
         ))}
 
-        <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
+        <View style={styles.actions}>
           <Button mode="contained-tonal" onPress={handleAddAddress} icon="plus">
             Add Server
           </Button>
@@ -139,3 +139,7 @@ export function DefaultSyncServerSettings() {
     </Card>
   );
 }
+
+const styles = StyleSheet.create({
+  actions: { flexDirection: "row", gap: 8, marginTop: 8 },
+});

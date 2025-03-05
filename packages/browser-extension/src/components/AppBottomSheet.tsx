@@ -1,12 +1,21 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { StyleSheet } from "react-native";
+import { StyleProp, StyleSheet, ViewStyle } from "react-native";
 import BottomSheet from "@gorhom/bottom-sheet";
+import { TabScreen, Tabs, TabsProvider } from "react-native-paper-tabs";
 
 import EntityList from "./EntityList";
+import MapHistory from "./MapHistory";
 
 const AppBottomSheet: React.FC = () => {
   const snapPoints = useMemo(() => ["5%", "25%", "50%", "90%"], []);
   const maxHeight = useBottomSheetHeight();
+  const sheetContentStyle: StyleProp<ViewStyle> = {
+    // Give the list a max height and scroll or else we can't scroll the whole contents when
+    // the sheet is less than fully expanded.
+    maxHeight,
+    overflow: "scroll",
+    paddingBottom: 16,
+  };
   return (
     <BottomSheet
       index={1}
@@ -16,15 +25,16 @@ const AppBottomSheet: React.FC = () => {
       // The sheet disappears (translateY is off the screen) with dynamic sizing.
       enableDynamicSizing={false}
     >
-      <EntityList
-        style={{
-          // Give the list a max height and scroll or else we can't scroll the whole contents when
-          // the sheet is less than fully expanded.
-          maxHeight,
-          overflow: "scroll",
-          paddingBottom: 16,
-        }}
-      />
+      <TabsProvider>
+        <Tabs mode="scrollable" showLeadingSpace={false}>
+          <TabScreen label="Entities">
+            <EntityList style={sheetContentStyle} />
+          </TabScreen>
+          <TabScreen label="History">
+            <MapHistory style={sheetContentStyle} />
+          </TabScreen>
+        </Tabs>
+      </TabsProvider>
     </BottomSheet>
   );
 };

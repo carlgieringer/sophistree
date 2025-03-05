@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import Icon from "react-native-vector-icons/MaterialIcons";
-import { View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import {
   Appbar,
   Divider,
@@ -39,7 +39,7 @@ import { useIsAuthenticated } from "../store/authSlice";
 import { isRemote } from "../sync";
 import { useDefaultSyncServerAddresses } from "../sync/defaultSyncServerAddresses";
 
-function HeaderBar({ id }: { id?: string }) {
+function HeaderBar() {
   const dispatch = useAppDispatch();
 
   const [isMenuVisible, setMenuVisible] = useState(false);
@@ -296,7 +296,7 @@ function HeaderBar({ id }: { id?: string }) {
 
   return (
     <>
-      <Appbar.Header id={id}>
+      <Appbar.Header>
         <Appbar.Content title={activeMapName} />
         <Menu
           onDismiss={hideMenu}
@@ -316,7 +316,7 @@ function HeaderBar({ id }: { id?: string }) {
             onPress: () => setSnackbarVisible(false),
           }}
         >
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <View style={styles.snackbarContent}>
             {snackbarIcon === "success" && (
               <Icon name="check-circle-outline" color={colors.nephritis} />
             )}
@@ -358,3 +358,7 @@ function HeaderBar({ id }: { id?: string }) {
 }
 
 export default HeaderBar;
+
+const styles = StyleSheet.create({
+  snackbarContent: { flexDirection: "row", alignItems: "center", gap: 8 },
+});

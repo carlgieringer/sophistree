@@ -1,5 +1,5 @@
 import { ReactNode, useMemo } from "react";
-import { View } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { Card, Divider, Text, Chip, Tooltip, Title } from "react-native-paper";
 
 import { UserAvatar } from "./UserAvatar";
@@ -79,14 +79,7 @@ export function ArgumentMapCard({
           {map.name} {titleButton} {isActive && <Chip>Active</Chip>}
         </Title>
 
-        <View
-          style={{
-            flexDirection: "row",
-            flexWrap: "wrap",
-            gap: 8,
-            alignItems: "center",
-          }}
-        >
+        <View style={styles.mapInfo}>
           {userInfo && (
             <Tooltip title={`Published by ${userInfo.displayName}`}>
               <UserAvatar {...userInfo} size={12} />
@@ -188,3 +181,12 @@ export function ArgumentMapCard({
     </Card>
   );
 }
+
+const styles = StyleSheet.create({
+  mapInfo: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    alignItems: "center",
+  },
+});

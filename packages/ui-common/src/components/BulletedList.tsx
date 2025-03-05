@@ -1,4 +1,4 @@
-import { View } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { Text } from "react-native-paper";
 import React from "react";
 
@@ -19,7 +19,7 @@ export function BulletedList({ items, style = {} }: BulletedListProps) {
             flexWrap: "wrap",
           }}
         >
-          <Text style={{ marginRight: 8, userSelect: "none" }}>•</Text>
+          <Text style={styles.bullet}>•</Text>
           <View style={{ flex: 1 }}>
             {typeof item === "string" ? <Text>{item}</Text> : item}
           </View>
@@ -28,3 +28,7 @@ export function BulletedList({ items, style = {} }: BulletedListProps) {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  bullet: { marginRight: 8, userSelect: "none" },
+});
