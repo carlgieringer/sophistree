@@ -1,14 +1,14 @@
 import React from "react";
-import { View } from "react-native";
+import { StyleProp, View, ViewStyle } from "react-native";
 import { DataTable, Text } from "react-native-paper";
 import { useActiveMapHistory } from "../sync/hooks";
 import type { HistoryChange } from "../sync/history";
 
-const MapHistory: React.FC = () => {
+const MapHistory: React.FC<{ style?: StyleProp<ViewStyle> }> = ({ style }) => {
   const history = useActiveMapHistory();
 
   return (
-    <View>
+    <View style={style}>
       <DataTable>
         <DataTable.Header>
           <DataTable.Title>Time</DataTable.Title>
