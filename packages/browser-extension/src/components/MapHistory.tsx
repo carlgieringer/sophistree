@@ -1,8 +1,11 @@
 import React from "react";
 import { StyleProp, View, ViewStyle } from "react-native";
-import { DataTable, Text } from "react-native-paper";
+import { DataTable, Text, Tooltip } from "react-native-paper";
+
+import { ArgumentMapHistoryChange } from "@sophistree/common";
+
 import { useActiveMapHistory } from "../sync/hooks";
-import type { HistoryChange } from "../sync/history";
+import { BulletedList } from "@sophistree/ui-common";
 
 const MapHistory: React.FC<{ style?: StyleProp<ViewStyle> }> = ({ style }) => {
   const history = useActiveMapHistory();
@@ -20,12 +23,7 @@ const MapHistory: React.FC<{ style?: StyleProp<ViewStyle> }> = ({ style }) => {
               {new Date(entry.timestamp).toLocaleString()}
             </DataTable.Cell>
             <DataTable.Cell>
-              {entry.changes.map((change, changeIndex) => (
-                <Text key={changeIndex}>
-                  {formatHistoryChange(change)}
-                  {changeIndex < entry.changes.length - 1 ? "\n" : ""}
-                </Text>
-              ))}
+              <BulletedList items={entry.changes.map(formatHistoryChange)} />
             </DataTable.Cell>
           </DataTable.Row>
         ))}
@@ -34,28 +32,53 @@ const MapHistory: React.FC<{ style?: StyleProp<ViewStyle> }> = ({ style }) => {
   );
 };
 
-function formatHistoryChange(change: HistoryChange): string {
+function formatHistoryChange(
+  change: ArgumentMapHistoryChange,
+): React.ReactNode {
   switch (change.type) {
     case "CreateMap":
-      return `Created map "${change.name}"`;
+      return `Created map “${change.name}”`;
     case "RenameMap":
-      return `Renamed map from "${change.before}" to "${change.after}"`;
+      return `Renamed map to “${change.newName}” (was “${change.oldName}”)`;
+    case "StartRemoteSync":
+      return (
+        <View>
+          <Text>Started syncing remotely with sync servers:</Text>
+          <BulletedList items={change.syncServerAddresses} />
+        </View>
+      );
+    case "EndRemoteSync":
+      return "Stopped syncing remotely";
     case "AddProposition":
-      return `Added proposition: "${change.text}"`;
+      return `Added proposition: “${change.text}”`;
     case "ModifyProposition":
-      return `Modified proposition from "${change.before}" to "${change.after}"`;
+      return `Modified proposition to “${change.after.text}” (was “${change.before.text}”)`;
     case "RemoveProposition":
-      return `Removed proposition: "${change.text}"`;
+      return `Removed proposition: “${change.text}”`;
     case "AddMediaExcerpt":
-      return `Added excerpt: "${change.quotation}" from ${change.sourceName}`;
+      return (
+        <Text>
+          Added excerpt: “{change.quotation}” from{" "}
+          <Tooltip title={change.url}>
+            <Text>{change.sourceName}</Text>
+          </Tooltip>
+        </Text>
+      );
     case "ModifyMediaExcerpt":
-      return `Modified excerpt from "${change.before.quotation}" to "${change.after.quotation}"`;
+      return `Modified excerpt “${change.before.sourceName}” (was “${change.after.sourceName}”)`;
     case "RemoveMediaExcerpt":
-      return `Removed excerpt: "${change.quotation}"`;
+      return (
+        <Text>
+          Removed excerpt: “{change.quotation}” from{" "}
+          <Tooltip title={change.url}>
+            <Text>{change.sourceName}</Text>
+          </Tooltip>
+        </Text>
+      );
     case "AddJustification":
       return `Added ${change.polarity} justification`;
     case "ModifyJustification":
-      return `Modified justification polarity from ${change.before.polarity} to ${change.after.polarity}`;
+      return `Modified justification polarity to ${change.after.polarity} from ${change.before.polarity}`;
     case "RemoveJustification":
       return `Removed justification`;
     case "AddAppearance":

@@ -3,7 +3,10 @@ import {
   DocumentId,
   isValidDocumentId,
 } from "@automerge/automerge-repo";
+import { getActorId } from "@automerge/automerge/next";
+
 import { ArgumentMap } from "@sophistree/common";
+
 import {
   getSyncServerAddresses,
   setSyncServerAddresses,
@@ -16,6 +19,16 @@ export function createDoc(map: NewArgumentMap) {
   const handle = repo.create(map);
   handle.change((map) => {
     map.automergeDocumentId = handle.documentId;
+    map.history.push({
+      actorId: getActorId(map),
+      timestamp: new Date().toISOString(),
+      changes: [
+        {
+          type: "CreateMap",
+          name: map.name,
+        },
+      ],
+    });
   });
   return handle;
 }
@@ -59,6 +72,21 @@ export function setDocSyncServerAddresses(
   const newId = handle.documentId;
   handle.change((map) => {
     map.automergeDocumentId = newId;
+
+    map.history.push({
+      actorId: getActorId(map),
+      timestamp: new Date().toISOString(),
+      changes: [
+        syncServerAddresses.length
+          ? {
+              type: "StartRemoteSync",
+              syncServerAddresses,
+            }
+          : {
+              type: "EndRemoteSync",
+            },
+      ],
+    });
   });
   oldRepo.delete(oldId);
   setSyncServerAddresses(newId, syncServerAddresses, oldId);

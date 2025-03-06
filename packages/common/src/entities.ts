@@ -114,4 +114,126 @@ export interface ArgumentMap {
    * URL.)
    */
   sourceNameOverrides: Record<string, string>;
+  history: ArgumentMapHistoryEntry[];
 }
+
+interface ArgumentMapHistoryEntry {
+  actorId: string;
+  timestamp: string;
+  changes: ArgumentMapHistoryChange[];
+}
+
+export type ArgumentMapHistoryChange =
+  | {
+      type: "CreateMap";
+      name: string;
+    }
+  | {
+      type: "RenameMap";
+      oldName: string;
+      newName: string;
+    }
+  | {
+      type: "StartRemoteSync";
+      syncServerAddresses: string[];
+    }
+  | {
+      type: "EndRemoteSync";
+    }
+  | {
+      type: "AddProposition";
+      id: string;
+      text: string;
+    }
+  | {
+      type: "ModifyProposition";
+      id: string;
+      before: {
+        text: string;
+      };
+      after: {
+        text: string;
+      };
+    }
+  | {
+      type: "RemoveProposition";
+      id: string;
+      text: string;
+    }
+  | {
+      type: "AddMediaExcerpt";
+      id: string;
+      quotation: string;
+      sourceName: string;
+      url: string;
+    }
+  | {
+      type: "ModifyMediaExcerpt";
+      id: string;
+      before: {
+        sourceName: string;
+      };
+      after: {
+        sourceName: string;
+      };
+    }
+  | {
+      type: "RemoveMediaExcerpt";
+      id: string;
+      quotation: string;
+      sourceName: string;
+      url: string;
+    }
+  | {
+      type: "AddJustification";
+      id: string;
+      basisId: string;
+      targetId: string;
+      polarity: Polarity;
+    }
+  | {
+      type: "ModifyJustification";
+      id: string;
+      before: {
+        polarity: Polarity;
+      };
+      after: {
+        polarity: Polarity;
+      };
+    }
+  | {
+      type: "RemoveJustification";
+      id: string;
+      basisId: string;
+      targetId: string;
+      polarity: Polarity;
+    }
+  | {
+      type: "AddAppearance";
+      id: string;
+      mediaExcerptId: string;
+      apparitionId: string;
+    }
+  | {
+      type: "ModifyAppearance";
+      id: string;
+      before: {
+        mediaExcerptId: string;
+        apparitionId: string;
+      };
+      after: {
+        mediaExcerptId: string;
+        apparitionId: string;
+      };
+    }
+  | {
+      type: "RemoveAppearance";
+      id: string;
+      apparitionId: string;
+      mediaExcerptId: string;
+    }
+  | {
+      type: "AddPropositionCompoundAtom";
+      compoundId: string;
+      atomId: string;
+    };

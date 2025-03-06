@@ -25,7 +25,6 @@ import {
   getAllDocs,
   removeDocChangeListener,
 } from "./repos";
-import { formatHistory } from "./history";
 
 export const useAllMaps = () => {
   const [maps, setMaps] = useState<Doc<ArgumentMap>[]>([]);
@@ -130,10 +129,7 @@ export const useActiveMapEntities = () => {
 };
 
 export function useActiveMapHistory() {
-  const activeMap = useActiveMap();
-  return useMemo(() => {
-    return activeMap ? formatHistory(activeMap) : [];
-  }, [activeMap]);
+  return useActiveMap()?.history ?? [];
 }
 
 export const useSelectedEntities = () => {
