@@ -14,6 +14,9 @@ import {
   PropositionCompound,
   UrlInfo,
   ArgumentMapHistoryChange,
+  JustificationBasisHistoryInfo,
+  JustificationTarget,
+  JustificationTargetHistoryInfo,
 } from "@sophistree/common";
 
 import * as appLogger from "../logging/appLogging";
@@ -165,15 +168,12 @@ export const entitiesSlice = createAppSlice({
       }
       const handle = getDocHandle(documentId);
       handle.change((doc) => {
-        const oldName = doc.name;
         doc.name = action.payload;
-        addHistoryEntry(doc, [
-          {
-            type: "RenameMap",
-            oldName,
-            newName: action.payload,
-          },
-        ]);
+        addHistoryEntry(doc, "RenameMap", (lastChange) => ({
+          type: "RenameMap",
+          oldName: lastChange?.oldName ?? doc.name,
+          newName: action.payload,
+        }));
       });
     }),
     addNewProposition: create.reducer((state) => {
@@ -202,13 +202,11 @@ export const entitiesSlice = createAppSlice({
 
       handle.change((doc) => {
         doc.entities.push(proposition);
-        addHistoryEntry(doc, [
-          {
-            type: "AddProposition",
-            id: proposition.id,
-            text: proposition.text,
-          },
-        ]);
+        addHistoryEntry(doc, {
+          type: "AddProposition",
+          id: proposition.id,
+          text: proposition.text,
+        });
       });
     }),
     addMediaExcerpt: create.reducer<AddMediaExcerptData>((state, action) => {
@@ -275,15 +273,13 @@ export const entitiesSlice = createAppSlice({
       };
       handle.change((map) => {
         map.entities.push(mediaExcerpt);
-        addHistoryEntry(map, [
-          {
-            type: "AddMediaExcerpt",
-            id: mediaExcerpt.id,
-            quotation: mediaExcerpt.quotation,
-            url: mediaExcerpt.urlInfo.url,
-            sourceName: mediaExcerpt.sourceInfo.name,
-          },
-        ]);
+        addHistoryEntry(map, {
+          type: "AddMediaExcerpt",
+          id: mediaExcerpt.id,
+          quotation: mediaExcerpt.quotation,
+          url: mediaExcerpt.urlInfo.url,
+          sourceName: mediaExcerpt.sourceInfo.name,
+        });
       });
     }),
     updateProposition: create.reducer<{
@@ -297,19 +293,20 @@ export const entitiesSlice = createAppSlice({
         updates,
         (map, proposition) => {
           const text = updates.text;
-          if (text) {
-            addHistoryEntry(map, [
-              {
+          if (text !== undefined) {
+            addHistoryEntry(map, "ModifyProposition", (lastChange) => {
+              const lastText = lastChange?.before.text ?? proposition.text;
+              return {
                 type: "ModifyProposition",
                 id: proposition.id,
                 before: {
-                  text: proposition.text,
+                  text: lastText,
                 },
                 after: {
                   text,
                 },
-              },
-            ]);
+              };
+            });
           }
         },
       );
@@ -337,18 +334,16 @@ export const entitiesSlice = createAppSlice({
             const oldSourceName = mediaExcerpt.sourceInfo.name;
 
             if (sourceName !== oldSourceName) {
-              addHistoryEntry(map, [
-                {
-                  type: "ModifyMediaExcerpt",
-                  id: mediaExcerpt.id,
-                  before: {
-                    sourceName: oldSourceName,
-                  },
-                  after: {
-                    sourceName,
-                  },
+              addHistoryEntry(map, "ModifyMediaExcerpt", (lastChange) => ({
+                type: "ModifyMediaExcerpt",
+                id: mediaExcerpt.id,
+                before: {
+                  sourceName: lastChange?.before.sourceName ?? oldSourceName,
                 },
-              ]);
+                after: {
+                  sourceName,
+                },
+              }));
             }
           }
         },
@@ -368,18 +363,23 @@ export const entitiesSlice = createAppSlice({
           const oldPolarity = justification.polarity;
 
           if (polarity && polarity !== oldPolarity) {
-            addHistoryEntry(map, [
-              {
-                type: "ModifyJustification",
-                id: justification.id,
-                before: {
-                  polarity: oldPolarity,
-                },
-                after: {
-                  polarity,
-                },
-              },
-            ]);
+            const basisId = justification.basisId;
+            const basisInfo = map.entities.find(
+              (entity) => entity.id === basisId,
+            ) as JustificationBasisHistoryInfo;
+            addHistoryEntry(map, {
+              type: "ModifyJustification",
+              id: justification.id,
+              oldPolarity,
+              polarity,
+              basisId,
+              basisInfo,
+              targetId: justification.targetId,
+              targetInfo: getJustificationTargetHistoryInfo(
+                map,
+                justification.targetId,
+              ),
+            });
           }
         },
       );
@@ -467,48 +467,63 @@ export const entitiesSlice = createAppSlice({
         if (entity) {
           switch (entity.type) {
             case "Proposition":
-              addHistoryEntry(map, [
-                {
-                  type: "RemoveProposition",
-                  id: entity.id,
-                  text: entity.text,
-                },
-              ]);
+              addHistoryEntry(map, {
+                type: "RemoveProposition",
+                id: entity.id,
+                text: entity.text,
+              });
               break;
             case "MediaExcerpt":
-              addHistoryEntry(map, [
-                {
-                  type: "RemoveMediaExcerpt",
-                  id: entity.id,
-                  quotation: entity.quotation,
-                  sourceName: entity.sourceInfo.name,
-                  url: entity.urlInfo.url,
-                },
-              ]);
+              addHistoryEntry(map, {
+                type: "RemoveMediaExcerpt",
+                id: entity.id,
+                quotation: entity.quotation,
+                sourceName: entity.sourceInfo.name,
+                url: entity.urlInfo.url,
+              });
               break;
             case "Justification":
-              addHistoryEntry(map, [
-                {
+              {
+                const basisId = entity.basisId;
+                const basisInfo = map.entities.find(
+                  (entity) => entity.id === basisId,
+                ) as JustificationBasisHistoryInfo;
+                addHistoryEntry(map, {
                   type: "RemoveJustification",
                   id: entity.id,
-                  basisId: entity.basisId,
-                  targetId: entity.targetId,
+                  basisId,
+                  basisInfo,
                   polarity: entity.polarity,
-                },
-              ]);
+                  targetId: entity.targetId,
+                  targetInfo: getJustificationTargetHistoryInfo(
+                    map,
+                    entity.targetId,
+                  ),
+                });
+              }
               break;
             case "PropositionCompound":
               // No history entry since PropositionCompounds are synthetic
               break;
             case "Appearance":
-              addHistoryEntry(map, [
-                {
+              {
+                const apparitionId = entity.apparitionId;
+                const mediaExcerptId = entity.mediaExcerptId;
+                const apparitionInfo = map.entities.find(
+                  (entity) => entity.id === apparitionId,
+                ) as Proposition;
+                const mediaExcerpt = map.entities.find(
+                  (entity) => entity.id === apparitionId,
+                ) as MediaExcerpt;
+                addHistoryEntry(map, {
                   type: "RemoveAppearance",
                   id: entity.id,
-                  apparitionId: entity.apparitionId,
-                  mediaExcerptId: entity.mediaExcerptId,
-                },
-              ]);
+                  apparitionId,
+                  apparitionInfo,
+                  mediaExcerptId,
+                  mediaExcerpt,
+                });
+              }
               break;
           }
         }
@@ -553,6 +568,21 @@ export const entitiesSlice = createAppSlice({
         entity.isCollapsed = !entity.isCollapsed;
       });
     }),
+    resetActiveMapsHistory: create.reducer((state) => {
+      const documentId = state.activeMapAutomergeDocumentId;
+      if (!documentId) {
+        appLogger.error(
+          "Cannot reset the history of active map because there is no active map.",
+        );
+        return;
+      }
+
+      const handle = getDocHandle(documentId);
+
+      handle.change((map) => {
+        map.history = [];
+      });
+    }),
   }),
 });
 
@@ -588,7 +618,7 @@ function updateEntity<E extends Entity>(
   }
   handle.change((map) => {
     const entity = activeMap.entities[index];
-    callback(activeMap, entity as E);
+    callback(map, entity as E);
     Object.assign(entity, updates);
     updateConclusions(map);
   });
@@ -738,13 +768,21 @@ function applyDragOperation(
         case "PropositionCompound": {
           if (!target.atomIds.includes(source.id)) {
             target.atomIds.push(source.id);
-            addHistoryEntry(activeMap, [
-              {
-                type: "AddPropositionCompoundAtom",
-                compoundId: target.id,
-                atomId: source.id,
-              },
-            ]);
+            addHistoryEntry(activeMap, {
+              type: "ModifyPropositionCompoundAtoms",
+              compoundId: target.id,
+              atomInfos: target.atomIds.map((propositionId) => {
+                const proposition = activeMap.entities.find(
+                  (entity) => entity.id === propositionId,
+                ) as Proposition;
+                return {
+                  propositionId,
+                  propositionText: proposition.text,
+                  modificationType:
+                    propositionId === source.id ? "Added" : "Unchanged",
+                };
+              }),
+            });
           } else {
             appLogger.log(
               `Proposition ID ${source.id} is already an atom of proposition compound ID ${target.id}. Skipping add it.`,
@@ -790,14 +828,20 @@ function applyDragOperation(
               mediaExcerptId,
               ...defaultVisibilityProps,
             });
-            addHistoryEntry(activeMap, [
-              {
-                type: "AddAppearance",
-                id,
-                apparitionId,
-                mediaExcerptId,
-              },
-            ]);
+            const apparitionInfo = activeMap.entities.find(
+              (entity) => entity.id === apparitionId,
+            ) as Proposition;
+            const mediaExcerpt = activeMap.entities.find(
+              (entity) => entity.id === apparitionId,
+            ) as MediaExcerpt;
+            addHistoryEntry(activeMap, {
+              type: "AddAppearance",
+              id,
+              apparitionId,
+              apparitionInfo,
+              mediaExcerptId,
+              mediaExcerpt,
+            });
             updateMediaExcerptAutoVisibility(activeMap, mediaExcerptId);
           } else {
             appLogger.log(
@@ -861,15 +905,46 @@ function applyDragOperation(
     ...defaultVisibilityProps,
   };
   activeMap.entities.push(newJustification);
-  addHistoryEntry(activeMap, [
-    {
-      type: "AddJustification",
-      id: newJustificationId,
-      basisId,
-      polarity,
-      targetId,
-    },
-  ]);
+
+  const basisInfo = activeMap.entities.find(
+    (entity) => entity.id === basisId,
+  ) as JustificationBasisHistoryInfo;
+  addHistoryEntry(activeMap, {
+    type: "AddJustification",
+    id: newJustificationId,
+    basisId,
+    basisInfo,
+    polarity,
+    targetId,
+    targetInfo: getJustificationTargetHistoryInfo(activeMap, targetId),
+  });
+}
+
+function getJustificationTargetHistoryInfo(
+  map: ArgumentMap,
+  targetId: string,
+): JustificationTargetHistoryInfo {
+  const target = map.entities.find(
+    (e) => e.id === targetId,
+  ) as JustificationTarget;
+  switch (target.type) {
+    case "Proposition":
+      return target;
+    case "Justification": {
+      const basisInfo = map.entities.find(
+        (entity) => entity.id === target.basisId,
+      ) as JustificationBasisHistoryInfo;
+      return {
+        type: "Justification",
+        id: target.id,
+        basisId: target.basisId,
+        basisInfo,
+        targetId: target.targetId,
+        targetInfo: getJustificationTargetHistoryInfo(map, target.targetId),
+        polarity: target.polarity,
+      };
+    }
+  }
 }
 
 function updateMediaExcerptAutoVisibilityForDeletedJustifications(
@@ -984,14 +1059,67 @@ function updateMediaExcerptAutoVisibility(
   mediaExcerpt.autoVisibility = autoVisibility;
 }
 
+/** Add a history entry to the map for the change. */
 function addHistoryEntry(
   map: ArgumentMap,
-  changes: ArgumentMapHistoryChange[],
-) {
+  change: ArgumentMapHistoryChange,
+): void;
+/**
+ * If the last history entry had a single change with the provided type, replace it with
+ * a new entry produced by calling changeFn with the last change.
+ */
+function addHistoryEntry<
+  CT extends ArgumentMapHistoryChange["type"],
+  C extends Extract<ArgumentMapHistoryChange, { type: CT }>,
+>(
+  map: ArgumentMap,
+  changeType: CT,
+  changeFn: (lastChange: C | undefined) => C,
+): void;
+function addHistoryEntry<C extends ArgumentMapHistoryChange>(
+  map: ArgumentMap,
+  changeOrType: ArgumentMapHistoryChange | C["type"],
+  changeFn?: (lastChange: C | undefined) => C,
+): void {
+  // Direct change case
+  if (typeof changeOrType !== "string") {
+    map.history.push({
+      actorId: getActorId(map),
+      timestamp: new Date().toISOString(),
+      changes: [changeOrType],
+    });
+    return;
+  }
+
+  // String type case - must have changeFn
+  if (!changeFn) {
+    throw new Error("changeFn is required when using a string type");
+  }
+
+  // Check if we can update the last entry
+  if (map.history.length > 0) {
+    const lastEntry = map.history[map.history.length - 1];
+    if (lastEntry.changes.length === 1) {
+      const lastChange = lastEntry.changes[0];
+      if (lastChange.type === changeOrType) {
+        // Type assertion is safe here because we've verified the types match
+        const newChange = changeFn(lastChange as C);
+        map.history.splice(map.history.length - 1, 1, {
+          actorId: getActorId(map),
+          timestamp: new Date().toISOString(),
+          changes: [newChange],
+        });
+        return;
+      }
+    }
+  }
+
+  // Create new entry
+  const change = changeFn(undefined);
   map.history.push({
     actorId: getActorId(map),
     timestamp: new Date().toISOString(),
-    changes,
+    changes: [change],
   });
 }
 
@@ -1051,6 +1179,7 @@ export const {
   hideEntity,
   openSyncedMap,
   renameActiveMap,
+  resetActiveMapsHistory,
   resetSelection,
   selectEntities,
   setActiveMap,

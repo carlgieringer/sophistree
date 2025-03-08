@@ -17,6 +17,7 @@ import { useAppDispatch } from "../store";
 import * as colors from "../colors";
 import {
   deleteMap,
+  resetActiveMapsHistory,
   syncActiveMapLocally,
   syncActiveMapRemotely,
   useActiveMapAutomergeDocumentId,
@@ -77,6 +78,10 @@ function HeaderBar() {
 
   const handleReload = () => {
     chrome.runtime.reload();
+  };
+
+  const onResetHistory = () => {
+    dispatch(resetActiveMapsHistory());
   };
 
   const handleOpenOptions = () => {
@@ -286,6 +291,11 @@ function HeaderBar() {
         key="reload-extension"
         onPress={handleReload}
         title="Reload extension"
+      />,
+      <Menu.Item
+        key="reset-history"
+        onPress={onResetHistory}
+        title="Reset history"
       />,
     ]);
   }

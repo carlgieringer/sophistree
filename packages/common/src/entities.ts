@@ -40,6 +40,9 @@ export interface Justification extends BaseEntity {
   polarity: Polarity;
 }
 
+export type JustificationTarget = Proposition | Justification;
+export type JustificationTargetType = JustificationTarget["type"];
+
 export type MediaExcerpt = BaseEntity & {
   type: "MediaExcerpt";
   quotation: string;
@@ -125,6 +128,9 @@ interface ArgumentMapHistoryEntry {
 
 export type ArgumentMapHistoryChange =
   | {
+      type: "BeginHistory";
+    }
+  | {
       type: "CreateMap";
       name: string;
     }
@@ -184,56 +190,70 @@ export type ArgumentMapHistoryChange =
       sourceName: string;
       url: string;
     }
-  | {
+  | ({
       type: "AddJustification";
-      id: string;
-      basisId: string;
-      targetId: string;
-      polarity: Polarity;
-    }
-  | {
+    } & JustificationHistoryInfo)
+  | ({
       type: "ModifyJustification";
-      id: string;
-      before: {
-        polarity: Polarity;
-      };
-      after: {
-        polarity: Polarity;
-      };
-    }
-  | {
+      oldPolarity: Polarity;
+    } & JustificationHistoryInfo)
+  | ({
       type: "RemoveJustification";
-      id: string;
-      basisId: string;
-      targetId: string;
-      polarity: Polarity;
-    }
+    } & JustificationHistoryInfo)
   | {
       type: "AddAppearance";
       id: string;
       mediaExcerptId: string;
+      mediaExcerpt: MediaExcerpt;
       apparitionId: string;
-    }
-  | {
-      type: "ModifyAppearance";
-      id: string;
-      before: {
-        mediaExcerptId: string;
-        apparitionId: string;
-      };
-      after: {
-        mediaExcerptId: string;
-        apparitionId: string;
-      };
+      apparitionInfo: ApparitionHistoryInfo;
     }
   | {
       type: "RemoveAppearance";
       id: string;
-      apparitionId: string;
       mediaExcerptId: string;
+      mediaExcerpt: MediaExcerpt;
+      apparitionId: string;
+      apparitionInfo: ApparitionHistoryInfo;
     }
   | {
-      type: "AddPropositionCompoundAtom";
+      type: "ModifyPropositionCompoundAtoms";
       compoundId: string;
-      atomId: string;
+      atomInfos: PropositionCompoundAtomModificationInfo[];
     };
+
+interface JustificationHistoryInfo {
+  id: string;
+  basisId: string;
+  basisInfo: JustificationBasisHistoryInfo;
+  targetId: string;
+  targetInfo: JustificationTargetHistoryInfo;
+  polarity: Polarity;
+}
+
+export type JustificationBasisHistoryInfo =
+  | {
+      type: "PropositionCompound";
+      atoms: Proposition[];
+    }
+  | MediaExcerpt;
+
+export type JustificationTargetHistoryInfo =
+  | Proposition
+  | ({ type: "Justification" } & JustificationHistoryInfo);
+
+type ApparitionHistoryInfo = {
+  type: "Proposition";
+  text: string;
+};
+
+interface PropositionCompoundAtomModificationInfo {
+  propositionId: string;
+  propositionText: string;
+  modificationType: PropositionCompoundAtomModificationType;
+}
+
+type PropositionCompoundAtomModificationType =
+  | "Added"
+  | "Removed"
+  | "Unchanged";

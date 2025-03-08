@@ -1,8 +1,13 @@
-import React from "react";
+import React, { ReactElement } from "react";
 import { StyleProp, View, ViewStyle } from "react-native";
 import { DataTable, Text, Tooltip } from "react-native-paper";
 
-import { ArgumentMapHistoryChange } from "@sophistree/common";
+import {
+  ArgumentMapHistoryChange,
+  JustificationBasisHistoryInfo,
+  JustificationTargetHistoryInfo,
+  Polarity,
+} from "@sophistree/common";
 
 import { useActiveMapHistory } from "../sync/hooks";
 import { BulletedList } from "@sophistree/ui-common";
@@ -36,6 +41,8 @@ function formatHistoryChange(
   change: ArgumentMapHistoryChange,
 ): React.ReactNode {
   switch (change.type) {
+    case "BeginHistory":
+      return "Started tracking history";
     case "CreateMap":
       return `Created map “${change.name}”`;
     case "RenameMap":
@@ -75,23 +82,127 @@ function formatHistoryChange(
           </Tooltip>
         </Text>
       );
-    case "AddJustification":
-      return `Added ${change.polarity} justification`;
-    case "ModifyJustification":
-      return `Modified justification polarity to ${change.after.polarity} from ${change.before.polarity}`;
-    case "RemoveJustification":
-      return `Removed justification`;
+    case "AddJustification": {
+      const { description: targetDescription, summary: targetSummary } =
+        fromTargetHistoryInfo(change.targetInfo);
+      const { description: basisDescription, summary: basisSummary } =
+        fromBasisHistoryInfo(change.basisInfo);
+      return (
+        <Text>
+          Added justification ${polarityPreposition(change.polarity)}{" "}
+          <Tooltip title={targetDescription}>{targetSummary}</Tooltip> based on{" "}
+          <Tooltip title={basisDescription}>{basisSummary}</Tooltip>
+        </Text>
+      );
+    }
+    case "ModifyJustification": {
+      const { description: targetDescription, summary: targetSummary } =
+        fromTargetHistoryInfo(change.targetInfo);
+      const { description: basisDescription, summary: basisSummary } =
+        fromBasisHistoryInfo(change.basisInfo);
+      return (
+        <Text>
+          Modified polarity to {change.polarity} (was {change.oldPolarity}) for
+          justification of{" "}
+          <Tooltip title={targetDescription}>{targetSummary}</Tooltip> based on{" "}
+          <Tooltip title={basisDescription}>{basisSummary}</Tooltip>
+        </Text>
+      );
+    }
+    case "RemoveJustification": {
+      const { description: targetDescription, summary: targetSummary } =
+        fromTargetHistoryInfo(change.targetInfo);
+      const { description: basisDescription, summary: basisSummary } =
+        fromBasisHistoryInfo(change.basisInfo);
+      return (
+        <Text>
+          Removed justification ${polarityPreposition(change.polarity)}{" "}
+          <Tooltip title={targetDescription}>{targetSummary}</Tooltip> based on{" "}
+          <Tooltip title={basisDescription}>{basisSummary}</Tooltip>
+        </Text>
+      );
+    }
     case "AddAppearance":
-      return `Added appearance`;
-    case "ModifyAppearance":
-      return `Modified appearance`;
+      return `Added appearance of “${change.apparitionInfo.text}” at “${change.mediaExcerpt.quotation}” from ${change.mediaExcerpt.sourceInfo.name}`;
     case "RemoveAppearance":
-      return `Removed appearance`;
-    case "AddPropositionCompoundAtom":
-      return `Added proposition to compound`;
-    default:
-      return "Unknown change";
+      return `Removed appearance of “${change.apparitionInfo.text}” at “${change.mediaExcerpt.quotation}” from ${change.mediaExcerpt.sourceInfo.name}`;
+    case "ModifyPropositionCompoundAtoms":
+      return (
+        <View>
+          <Text>Modified proposition compound atoms:</Text>
+          <BulletedList
+            items={change.atomInfos.map(
+              ({ propositionId, propositionText, modificationType }) => (
+                <Text key={propositionId}>
+                  $
+                  {modificationType !== "Unchanged"
+                    ? `[${modificationType}]`
+                    : ""}{" "}
+                  ${propositionText}
+                </Text>
+              ),
+            )}
+          />
+        </View>
+      );
   }
+}
+
+function fromTargetHistoryInfo(info: JustificationTargetHistoryInfo): {
+  summary: ReactElement;
+  description: string;
+} {
+  switch (info.type) {
+    case "Proposition":
+      return {
+        summary: <Text>Proposition “{info.text}</Text>,
+        description: `Proposition ${info.text}`,
+      };
+    case "Justification": {
+      const { summary: targetSummary, description: targetDescription } =
+        fromTargetHistoryInfo(info.targetInfo);
+      const { summary: basisSummary, description: basisDescription } =
+        fromBasisHistoryInfo(info.basisInfo);
+      return {
+        summary: (
+          <Text>
+            Justification {polarityPreposition(info.polarity)} {targetSummary}{" "}
+            based on {basisSummary}
+          </Text>
+        ),
+        description: `Justification ${polarityPreposition(info.polarity)} ${targetDescription} based on ${basisDescription}`,
+      };
+    }
+  }
+}
+
+function fromBasisHistoryInfo(info: JustificationBasisHistoryInfo): {
+  summary: ReactElement;
+  description: string;
+} {
+  switch (info.type) {
+    case "MediaExcerpt":
+      return {
+        summary: (
+          <Text>
+            “{info.quotation}” from{" "}
+            <Tooltip title={info.urlInfo.url}>
+              <Text>{info.sourceInfo.name}</Text>
+            </Tooltip>
+          </Text>
+        ),
+        description: `“${info.quotation}” from ${info.sourceInfo.name}`,
+      };
+    case "PropositionCompound":
+      return {
+        summary: <BulletedList items={info.atoms.map((a) => a.text)} />,
+        description: info.atoms.map((a) => `“${a.text}”`).join(", "),
+      };
+  }
+}
+
+function polarityPreposition(polarity: Polarity) {
+  return polarity === "Positive" ? "for" : "against";
 }
 
 export default MapHistory;
