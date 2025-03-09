@@ -20,6 +20,7 @@ const MapHistory: React.FC<{ style?: StyleProp<ViewStyle> }> = ({ style }) => {
       <DataTable>
         <DataTable.Header>
           <DataTable.Title>Time</DataTable.Title>
+          <DataTable.Title>Actor</DataTable.Title>
           <DataTable.Title>Change</DataTable.Title>
         </DataTable.Header>
         {history.map((entry, index) => (
@@ -27,6 +28,7 @@ const MapHistory: React.FC<{ style?: StyleProp<ViewStyle> }> = ({ style }) => {
             <DataTable.Cell>
               {new Date(entry.timestamp).toLocaleString()}
             </DataTable.Cell>
+            <DataTable.Cell>{entry.actorId}</DataTable.Cell>
             <DataTable.Cell>
               <BulletedList items={entry.changes.map(formatHistoryChange)} />
             </DataTable.Cell>
@@ -43,6 +45,8 @@ function formatHistoryChange(
   switch (change.type) {
     case "BeginHistory":
       return "Started tracking history";
+    case "ResetHistory":
+      return "Reset history";
     case "CreateMap":
       return `Created map “${change.name}”`;
     case "RenameMap":
@@ -66,8 +70,8 @@ function formatHistoryChange(
       return (
         <Text>
           Added excerpt: “{change.quotation}” from{" "}
-          <Tooltip title={change.url}>
-            <Text>{change.sourceName}</Text>
+          <Tooltip title={change.urlInfo.url}>
+            <Text>{change.sourceInfo.name}</Text>
           </Tooltip>
         </Text>
       );
@@ -77,8 +81,8 @@ function formatHistoryChange(
       return (
         <Text>
           Removed excerpt: “{change.quotation}” from{" "}
-          <Tooltip title={change.url}>
-            <Text>{change.sourceName}</Text>
+          <Tooltip title={change.urlInfo.url}>
+            <Text>{change.sourceInfo.name}</Text>
           </Tooltip>
         </Text>
       );
@@ -89,7 +93,7 @@ function formatHistoryChange(
         fromBasisHistoryInfo(change.basisInfo);
       return (
         <Text>
-          Added justification ${polarityPreposition(change.polarity)}{" "}
+          Added justification {polarityPreposition(change.polarity)}{" "}
           <Tooltip title={targetDescription}>{targetSummary}</Tooltip> based on{" "}
           <Tooltip title={basisDescription}>{basisSummary}</Tooltip>
         </Text>
@@ -131,17 +135,14 @@ function formatHistoryChange(
         <View>
           <Text>Modified proposition compound atoms:</Text>
           <BulletedList
-            items={change.atomInfos.map(
-              ({ propositionId, propositionText, modificationType }) => (
-                <Text key={propositionId}>
-                  $
-                  {modificationType !== "Unchanged"
-                    ? `[${modificationType}]`
-                    : ""}{" "}
-                  ${propositionText}
-                </Text>
-              ),
-            )}
+            items={change.atoms.map(({ id, text, modificationType }) => (
+              <Text key={id}>
+                {modificationType !== "Unchanged"
+                  ? `[${modificationType}]`
+                  : ""}{" "}
+                {text}
+              </Text>
+            ))}
           />
         </View>
       );
@@ -155,7 +156,7 @@ function fromTargetHistoryInfo(info: JustificationTargetHistoryInfo): {
   switch (info.type) {
     case "Proposition":
       return {
-        summary: <Text>Proposition “{info.text}</Text>,
+        summary: <Text>Proposition “{info.text}”</Text>,
         description: `Proposition ${info.text}`,
       };
     case "Justification": {

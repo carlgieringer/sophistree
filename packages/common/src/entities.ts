@@ -40,6 +40,7 @@ export interface Justification extends BaseEntity {
   polarity: Polarity;
 }
 
+export type JustificationBasis = PropositionCompound | MediaExcerpt;
 export type JustificationTarget = Proposition | Justification;
 export type JustificationTargetType = JustificationTarget["type"];
 
@@ -131,6 +132,9 @@ export type ArgumentMapHistoryChange =
       type: "BeginHistory";
     }
   | {
+      type: "ResetHistory";
+    }
+  | {
       type: "CreateMap";
       name: string;
     }
@@ -166,13 +170,9 @@ export type ArgumentMapHistoryChange =
       id: string;
       text: string;
     }
-  | {
+  | ({
       type: "AddMediaExcerpt";
-      id: string;
-      quotation: string;
-      sourceName: string;
-      url: string;
-    }
+    } & MediaExcerptHistoryInfoFields)
   | {
       type: "ModifyMediaExcerpt";
       id: string;
@@ -183,46 +183,54 @@ export type ArgumentMapHistoryChange =
         sourceName: string;
       };
     }
-  | {
+  | ({
       type: "RemoveMediaExcerpt";
-      id: string;
-      quotation: string;
-      sourceName: string;
-      url: string;
-    }
+    } & MediaExcerptHistoryInfoFields)
   | ({
       type: "AddJustification";
-    } & JustificationHistoryInfo)
+    } & JustificationHistoryInfoFields)
   | ({
       type: "ModifyJustification";
       oldPolarity: Polarity;
-    } & JustificationHistoryInfo)
+    } & JustificationHistoryInfoFields)
   | ({
       type: "RemoveJustification";
-    } & JustificationHistoryInfo)
-  | {
+    } & JustificationHistoryInfoFields)
+  | ({
       type: "AddAppearance";
-      id: string;
-      mediaExcerptId: string;
-      mediaExcerpt: MediaExcerpt;
-      apparitionId: string;
-      apparitionInfo: ApparitionHistoryInfo;
-    }
-  | {
+    } & AppearanceHistoryInfoFields)
+  | ({
       type: "RemoveAppearance";
-      id: string;
-      mediaExcerptId: string;
-      mediaExcerpt: MediaExcerpt;
-      apparitionId: string;
-      apparitionInfo: ApparitionHistoryInfo;
-    }
-  | {
+    } & AppearanceHistoryInfoFields)
+  | ({
       type: "ModifyPropositionCompoundAtoms";
-      compoundId: string;
-      atomInfos: PropositionCompoundAtomModificationInfo[];
-    };
+    } & PropositionCompoundHistoryInfoFields);
 
-interface JustificationHistoryInfo {
+export type PropositionHistoryInfoFields = Pick<Proposition, "id" | "text">;
+export type PropositionHistoryInfo = Pick<Proposition, "type"> &
+  PropositionHistoryInfoFields;
+export type MediaExcerptHistoryInfo = Pick<MediaExcerpt, "type"> &
+  MediaExcerptHistoryInfoFields;
+export type MediaExcerptHistoryInfoFields = Pick<
+  MediaExcerpt,
+  "id" | "quotation" | "sourceInfo" | "urlInfo" | "domAnchor"
+>;
+export interface PropositionCompoundHistoryInfoFields {
+  id: string;
+  atoms: PropositionCompoundAtomModificationInfo[];
+}
+export type PropositionCompoundHistoryInfo = Pick<PropositionCompound, "type"> &
+  PropositionCompoundHistoryInfoFields;
+
+export interface AppearanceHistoryInfoFields {
+  id: string;
+  mediaExcerptId: string;
+  mediaExcerpt: MediaExcerptHistoryInfo;
+  apparitionId: string;
+  apparitionInfo: PropositionHistoryInfo;
+}
+
+interface JustificationHistoryInfoFields {
   id: string;
   basisId: string;
   basisInfo: JustificationBasisHistoryInfo;
@@ -230,28 +238,27 @@ interface JustificationHistoryInfo {
   targetInfo: JustificationTargetHistoryInfo;
   polarity: Polarity;
 }
+type JustificationHistoryInfo = Pick<Justification, "type"> &
+  JustificationHistoryInfoFields;
 
 export type JustificationBasisHistoryInfo =
-  | {
-      type: "PropositionCompound";
-      atoms: Proposition[];
-    }
-  | MediaExcerpt;
+  | PropositionCompoundHistoryInfo
+  | MediaExcerptHistoryInfo;
 
 export type JustificationTargetHistoryInfo =
-  | Proposition
-  | ({ type: "Justification" } & JustificationHistoryInfo);
+  | PropositionHistoryInfo
+  | JustificationHistoryInfo;
 
-type ApparitionHistoryInfo = {
-  type: "Proposition";
-  text: string;
-};
+export type HistoryInfo =
+  | PropositionHistoryInfo
+  | MediaExcerptHistoryInfo
+  | JustificationHistoryInfo
+  | PropositionCompoundHistoryInfo
+  | AppearanceHistoryInfoFields;
 
-interface PropositionCompoundAtomModificationInfo {
-  propositionId: string;
-  propositionText: string;
+type PropositionCompoundAtomModificationInfo = PropositionHistoryInfo & {
   modificationType: PropositionCompoundAtomModificationType;
-}
+};
 
 type PropositionCompoundAtomModificationType =
   | "Added"
