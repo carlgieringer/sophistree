@@ -11,7 +11,7 @@ import {
 
 import { updateConclusions } from "./conclusions";
 import { createDoc } from "../sync";
-import { getActorId } from "@automerge/automerge";
+import { getActorId, Heads } from "@automerge/automerge/next";
 
 export const persistedStateVersion = 11;
 
@@ -93,7 +93,7 @@ export type MapMigrationIndex = keyof typeof mapMigrations;
 
 export const migrateMap = (map: ArgumentMap, version: MapMigrationIndex) => {
   return produce(map, (draft: ArgumentMap) => {
-    mapMigrations[version]?.(draft);
+    mapMigrations[version]?.(draft, undefined);
   });
 };
 
@@ -160,11 +160,12 @@ export const mapMigrations = {
     }
     updateConclusions(map);
   },
-  11: (map: ArgumentMap) => {
+  11: (map: ArgumentMap, heads: Heads | undefined) => {
     if (!("history" in map) || !map.history.length) {
       map.history = [
         {
           actorId: getActorId(map),
+          heads,
           timestamp: new Date().toISOString(),
           changes: [{ type: "BeginHistory" }],
         },

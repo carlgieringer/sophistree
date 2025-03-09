@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import deepEqual from "deep-equal";
-import { deleteAt, getActorId } from "@automerge/automerge/next";
+import { deleteAt, getActorId, Heads } from "@automerge/automerge/next";
 
 import { DomAnchor } from "tapestry-highlights";
 import {
@@ -172,7 +172,7 @@ export const entitiesSlice = createAppSlice({
       handle.change((doc) => {
         const oldName = doc.name;
         doc.name = action.payload;
-        addHistoryEntry(doc, "RenameMap", (lastChange) => ({
+        addHistoryEntry(handle.heads(), doc, "RenameMap", (lastChange) => ({
           type: "RenameMap",
           oldName: lastChange?.oldName ?? oldName,
           newName: action.payload,
@@ -205,7 +205,7 @@ export const entitiesSlice = createAppSlice({
 
       handle.change((doc) => {
         doc.entities.push(proposition);
-        addHistoryEntry(doc, {
+        addHistoryEntry(handle.heads(), doc, {
           type: "AddProposition",
           id: proposition.id,
           text: proposition.text,
@@ -276,7 +276,7 @@ export const entitiesSlice = createAppSlice({
       };
       handle.change((map) => {
         map.entities.push(mediaExcerpt);
-        addHistoryEntry(map, {
+        addHistoryEntry(handle.heads(), map, {
           type: "AddMediaExcerpt",
           id: mediaExcerpt.id,
           quotation: mediaExcerpt.quotation,
@@ -295,10 +295,10 @@ export const entitiesSlice = createAppSlice({
         state,
         action.payload.id,
         updates,
-        (map, proposition) => {
+        (heads, map, proposition) => {
           const text = updates.text;
           if (text !== undefined) {
-            addHistoryEntry(map, "ModifyProposition", (lastChange) => {
+            addHistoryEntry(heads, map, "ModifyProposition", (lastChange) => {
               const lastText = lastChange?.before.text ?? proposition.text;
               return {
                 type: "ModifyProposition",
@@ -324,7 +324,7 @@ export const entitiesSlice = createAppSlice({
         state,
         action.payload.id,
         updates,
-        (map, mediaExcerpt) => {
+        (heads, map, mediaExcerpt) => {
           const sourceName = updates.sourceInfo?.name;
 
           if (sourceName) {
@@ -338,16 +338,21 @@ export const entitiesSlice = createAppSlice({
             const oldSourceName = mediaExcerpt.sourceInfo.name;
 
             if (sourceName !== oldSourceName) {
-              addHistoryEntry(map, "ModifyMediaExcerpt", (lastChange) => ({
-                type: "ModifyMediaExcerpt",
-                id: mediaExcerpt.id,
-                before: {
-                  sourceName: lastChange?.before.sourceName ?? oldSourceName,
-                },
-                after: {
-                  sourceName,
-                },
-              }));
+              addHistoryEntry(
+                heads,
+                map,
+                "ModifyMediaExcerpt",
+                (lastChange) => ({
+                  type: "ModifyMediaExcerpt",
+                  id: mediaExcerpt.id,
+                  before: {
+                    sourceName: lastChange?.before.sourceName ?? oldSourceName,
+                  },
+                  after: {
+                    sourceName,
+                  },
+                }),
+              );
             }
           }
         },
@@ -362,14 +367,14 @@ export const entitiesSlice = createAppSlice({
         state,
         action.payload.id,
         updates,
-        (map, justification) => {
+        (heads, map, justification) => {
           const polarity = updates.polarity;
           const oldPolarity = justification.polarity;
 
           if (polarity && polarity !== oldPolarity) {
             const basisId = justification.basisId;
             const targetId = justification.targetId;
-            addHistoryEntry(map, {
+            addHistoryEntry(heads, map, {
               type: "ModifyJustification",
               id: justification.id,
               oldPolarity,
@@ -412,7 +417,7 @@ export const entitiesSlice = createAppSlice({
           appLogger.error(`Drag target node with id ${targetId} not found`);
           return;
         }
-        applyDragOperation(map, source, target, actionPolarity);
+        applyDragOperation(handle.heads(), map, source, target, actionPolarity);
         updateConclusions(map);
       });
     }),
@@ -466,14 +471,14 @@ export const entitiesSlice = createAppSlice({
         if (entity) {
           switch (entity.type) {
             case "Proposition":
-              addHistoryEntry(map, {
+              addHistoryEntry(handle.heads(), map, {
                 type: "RemoveProposition",
                 id: entity.id,
                 text: entity.text,
               });
               break;
             case "MediaExcerpt":
-              addHistoryEntry(map, {
+              addHistoryEntry(handle.heads(), map, {
                 type: "RemoveMediaExcerpt",
                 id: entity.id,
                 quotation: entity.quotation,
@@ -485,7 +490,7 @@ export const entitiesSlice = createAppSlice({
             case "Justification":
               {
                 const { basisId, polarity, targetId } = entity;
-                addHistoryEntry(map, {
+                addHistoryEntry(handle.heads(), map, {
                   type: "RemoveJustification",
                   id: entity.id,
                   basisId,
@@ -512,7 +517,7 @@ export const entitiesSlice = createAppSlice({
                 const mediaExcerpt = map.entities.find(
                   (entity) => entity.id === apparitionId,
                 ) as MediaExcerpt;
-                addHistoryEntry(map, {
+                addHistoryEntry(handle.heads(), map, {
                   type: "RemoveAppearance",
                   id: entity.id,
                   apparitionId,
@@ -580,6 +585,7 @@ export const entitiesSlice = createAppSlice({
         map.history = [
           {
             actorId: getActorId(map),
+            heads: handle.heads(),
             timestamp: new Date().toISOString(),
             changes: [
               {
@@ -597,7 +603,7 @@ function updateEntity<E extends Entity>(
   state: State,
   entityId: string,
   updates: Partial<Omit<E, "type">>,
-  callback: (map: ArgumentMap, entity: E) => void,
+  callback: (heads: Heads | undefined, map: ArgumentMap, entity: E) => void,
 ) {
   const documentId = state.activeMapAutomergeDocumentId;
   if (!documentId) {
@@ -625,7 +631,7 @@ function updateEntity<E extends Entity>(
   }
   handle.change((map) => {
     const entity = activeMap.entities[index];
-    callback(map, entity as E);
+    callback(handle.heads(), map, entity as E);
     Object.assign(entity, updates);
     updateConclusions(map);
   });
@@ -763,6 +769,7 @@ function applyDeleteOperation(
 }
 
 function applyDragOperation(
+  heads: Heads | undefined,
   activeMap: ArgumentMap,
   source: Entity,
   target: Entity,
@@ -775,7 +782,7 @@ function applyDragOperation(
         case "PropositionCompound": {
           if (!target.atomIds.includes(source.id)) {
             target.atomIds.push(source.id);
-            addHistoryEntry(activeMap, {
+            addHistoryEntry(heads, activeMap, {
               type: "ModifyPropositionCompoundAtoms",
               id: target.id,
               atoms: target.atomIds.map((id) => {
@@ -835,7 +842,7 @@ function applyDragOperation(
               mediaExcerptId,
               ...defaultVisibilityProps,
             });
-            addHistoryEntry(activeMap, {
+            addHistoryEntry(heads, activeMap, {
               type: "AddAppearance",
               id,
               apparitionId,
@@ -913,7 +920,7 @@ function applyDragOperation(
   };
   activeMap.entities.push(newJustification);
 
-  addHistoryEntry(activeMap, {
+  addHistoryEntry(heads, activeMap, {
     type: "AddJustification",
     id: newJustificationId,
     basisId,
@@ -1106,6 +1113,7 @@ function updateMediaExcerptAutoVisibility(
 
 /** Add a history entry to the map for the change. */
 function addHistoryEntry(
+  heads: Heads | undefined,
   map: ArgumentMap,
   change: ArgumentMapHistoryChange,
 ): void;
@@ -1128,6 +1136,7 @@ function addHistoryEntry<
   CT extends ArgumentMapHistoryChange["type"],
   C extends Extract<ArgumentMapHistoryChange, { type: CT }>,
 >(
+  heads: Heads | undefined,
   map: ArgumentMap,
   changeType: CT,
   changeFn: (lastChange: C | undefined) => C,
@@ -1136,6 +1145,7 @@ function addHistoryEntry<
  * Add a new history entry with a single change. We clone the change in case it references existing
  * Automerge objects. */
 function addHistoryEntry<C extends ArgumentMapHistoryChange>(
+  heads: Heads | undefined,
   map: ArgumentMap,
   changeOrType: ArgumentMapHistoryChange | C["type"],
   changeFn?: (lastChange: C | undefined) => C,
@@ -1147,6 +1157,7 @@ function addHistoryEntry<C extends ArgumentMapHistoryChange>(
   if (typeof changeOrType !== "string") {
     map.history.push({
       actorId,
+      heads,
       timestamp,
       changes: [cloneChange(changeOrType)],
     });
@@ -1169,6 +1180,7 @@ function addHistoryEntry<C extends ArgumentMapHistoryChange>(
         if (canCombineHistoryChanges(lastChange, newChange)) {
           map.history.splice(map.history.length - 1, 1, {
             actorId: getActorId(map),
+            heads,
             timestamp,
             changes: [cloneChange(newChange)],
           });
@@ -1182,6 +1194,7 @@ function addHistoryEntry<C extends ArgumentMapHistoryChange>(
   const change = changeFn(undefined);
   map.history.push({
     actorId,
+    heads,
     timestamp,
     changes: [cloneChange(change)],
   });

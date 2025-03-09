@@ -27,7 +27,10 @@ async function ensureMapMigrations(handle: DocHandle<ArgumentMap>) {
   if (currentVersion < persistedStateVersion) {
     handle.change((map) => {
       while (currentVersion <= persistedStateVersion) {
-        mapMigrations[currentVersion as MapMigrationIndex]?.(map);
+        mapMigrations[currentVersion as MapMigrationIndex]?.(
+          map,
+          handle.heads(),
+        );
         map.version = currentVersion;
         currentVersion++;
       }

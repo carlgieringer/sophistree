@@ -21,6 +21,7 @@ export function createDoc(map: NewArgumentMap) {
     map.automergeDocumentId = handle.documentId;
     map.history.push({
       actorId: getActorId(map),
+      heads: handle.heads(),
       timestamp: new Date().toISOString(),
       changes: [
         {
@@ -75,6 +76,7 @@ export function setDocSyncServerAddresses(
 
     map.history.push({
       actorId: getActorId(map),
+      heads: handle.heads(),
       timestamp: new Date().toISOString(),
       changes: [
         syncServerAddresses.length

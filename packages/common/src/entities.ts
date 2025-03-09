@@ -123,6 +123,8 @@ export interface ArgumentMap {
 
 interface ArgumentMapHistoryEntry {
   actorId: string;
+  /** Automerge Heads/Hash[] */
+  heads: string[] | undefined;
   timestamp: string;
   changes: ArgumentMapHistoryChange[];
 }
