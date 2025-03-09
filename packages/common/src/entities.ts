@@ -1,6 +1,7 @@
 import { DomAnchor } from "tapestry-highlights";
 
 import { BasisOutcome } from "./outcomes";
+import type { ArgumentMapHistoryEntry } from "entityHistory";
 
 interface BaseEntity {
   id: string;
@@ -39,6 +40,10 @@ export interface Justification extends BaseEntity {
   targetId: string;
   polarity: Polarity;
 }
+
+export type JustificationBasis = PropositionCompound | MediaExcerpt;
+export type JustificationTarget = Proposition | Justification;
+export type JustificationTargetType = JustificationTarget["type"];
 
 export type MediaExcerpt = BaseEntity & {
   type: "MediaExcerpt";
@@ -114,4 +119,5 @@ export interface ArgumentMap {
    * URL.)
    */
   sourceNameOverrides: Record<string, string>;
+  history: ArgumentMapHistoryEntry[];
 }

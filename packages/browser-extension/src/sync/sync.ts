@@ -3,25 +3,33 @@ import {
   DocumentId,
   isValidDocumentId,
 } from "@automerge/automerge-repo";
+import { getActorId } from "@automerge/automerge/next";
 
 import { ArgumentMap } from "@sophistree/common";
+
 import {
   getSyncServerAddresses,
   setSyncServerAddresses,
 } from "./syncServerStorage";
 import { getRepo } from "./repos";
-import {
-  MapMigrationIndex,
-  mapMigrations,
-  persistedStateVersion,
-} from "../store/migrations";
-import * as appLogger from "../logging/appLogging";
+import { triggerMigrationIfNecessary } from "./migrations";
 
 export function createDoc(map: NewArgumentMap) {
   const repo = getRepo([]);
   const handle = repo.create(map);
   handle.change((map) => {
     map.automergeDocumentId = handle.documentId;
+    map.history.push({
+      actorId: getActorId(map),
+      heads: handle.heads(),
+      timestamp: new Date().toISOString(),
+      changes: [
+        {
+          type: "CreateMap",
+          name: map.name,
+        },
+      ],
+    });
   });
   return handle;
 }
@@ -65,6 +73,22 @@ export function setDocSyncServerAddresses(
   const newId = handle.documentId;
   handle.change((map) => {
     map.automergeDocumentId = newId;
+
+    map.history.push({
+      actorId: getActorId(map),
+      heads: handle.heads(),
+      timestamp: new Date().toISOString(),
+      changes: [
+        syncServerAddresses.length
+          ? {
+              type: "StartRemoteSync",
+              syncServerAddresses,
+            }
+          : {
+              type: "EndRemoteSync",
+            },
+      ],
+    });
   });
   oldRepo.delete(oldId);
   setSyncServerAddresses(newId, syncServerAddresses, oldId);
@@ -90,31 +114,4 @@ function getRepoForDoc(id: DocumentId) {
 export interface NewArgumentMap
   extends Omit<ArgumentMap, "automergeDocumentId"> {
   automergeDocumentId?: string;
-}
-
-// The last version before we switched to Automerge. Automerge maps missing a version
-// are implied to have this version.
-const minAutomergeMapVersion = 8;
-
-export function triggerMigrationIfNecessary(handle: DocHandle<ArgumentMap>) {
-  ensureMapMigrations(handle).catch((reason) =>
-    appLogger.error("Failed to migrate doc", reason),
-  );
-}
-
-async function ensureMapMigrations(handle: DocHandle<ArgumentMap>) {
-  const doc = await handle.doc();
-  if (!doc) {
-    throw new Error("Unable to get doc for migration");
-  }
-  let currentVersion = doc.version || minAutomergeMapVersion;
-  if (currentVersion < persistedStateVersion) {
-    handle.change((map) => {
-      while (currentVersion <= persistedStateVersion) {
-        mapMigrations[currentVersion as MapMigrationIndex]?.(map);
-        map.version = currentVersion;
-        currentVersion++;
-      }
-    });
-  }
 }

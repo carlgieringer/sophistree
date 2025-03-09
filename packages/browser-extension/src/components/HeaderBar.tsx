@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import Icon from "react-native-vector-icons/MaterialIcons";
-import { View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import {
   Appbar,
   Divider,
@@ -17,6 +17,7 @@ import { useAppDispatch } from "../store";
 import * as colors from "../colors";
 import {
   deleteMap,
+  resetActiveMapsHistory,
   syncActiveMapLocally,
   syncActiveMapRemotely,
   useActiveMapAutomergeDocumentId,
@@ -39,7 +40,7 @@ import { useIsAuthenticated } from "../store/authSlice";
 import { isRemote } from "../sync";
 import { useDefaultSyncServerAddresses } from "../sync/defaultSyncServerAddresses";
 
-function HeaderBar({ id }: { id?: string }) {
+function HeaderBar() {
   const dispatch = useAppDispatch();
 
   const [isMenuVisible, setMenuVisible] = useState(false);
@@ -77,6 +78,10 @@ function HeaderBar({ id }: { id?: string }) {
 
   const handleReload = () => {
     chrome.runtime.reload();
+  };
+
+  const onResetHistory = () => {
+    dispatch(resetActiveMapsHistory());
   };
 
   const handleOpenOptions = () => {
@@ -287,6 +292,11 @@ function HeaderBar({ id }: { id?: string }) {
         onPress={handleReload}
         title="Reload extension"
       />,
+      <Menu.Item
+        key="reset-history"
+        onPress={onResetHistory}
+        title="Reset history"
+      />,
     ]);
   }
   const menuItems = menuItemGroups.flatMap((group, index) => [
@@ -296,7 +306,7 @@ function HeaderBar({ id }: { id?: string }) {
 
   return (
     <>
-      <Appbar.Header id={id}>
+      <Appbar.Header>
         <Appbar.Content title={activeMapName} />
         <Menu
           onDismiss={hideMenu}
@@ -316,7 +326,7 @@ function HeaderBar({ id }: { id?: string }) {
             onPress: () => setSnackbarVisible(false),
           }}
         >
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <View style={styles.snackbarContent}>
             {snackbarIcon === "success" && (
               <Icon name="check-circle-outline" color={colors.nephritis} />
             )}
@@ -358,3 +368,7 @@ function HeaderBar({ id }: { id?: string }) {
 }
 
 export default HeaderBar;
+
+const styles = StyleSheet.create({
+  snackbarContent: { flexDirection: "row", alignItems: "center", gap: 8 },
+});

@@ -1,7 +1,10 @@
 import {
+  DeleteDocumentPayload,
   Doc,
+  DocHandle,
   DocHandleChangePayload,
   DocumentId,
+  DocumentPayload,
 } from "@automerge/automerge-repo";
 import { useEffect, useState, useMemo } from "react";
 
@@ -22,7 +25,8 @@ import {
 } from "../store/entitiesSlice";
 import {
   addDocChangeListener,
-  getAllDocs,
+  getAllDocHandles,
+  toDocs,
   removeDocChangeListener,
 } from "./repos";
 
@@ -35,51 +39,45 @@ export const useAllMaps = () => {
       (payload: DocHandleChangePayload<ArgumentMap>) => void
     >();
 
-    const updateMaps = () => {
-      getAllDocs()
-        .then((newMaps) => {
-          // Remove listeners from documents that are no longer present
-          docChangeListeners.forEach((listener, docId) => {
-            if (!newMaps.find((map) => map.automergeDocumentId === docId)) {
-              const handle = getDocHandle(docId);
-              handle?.off("change", listener);
-              docChangeListeners.delete(docId);
-            }
-          });
+    function addListener(handle: DocHandle<ArgumentMap>) {
+      const listener = ({ doc }: DocHandleChangePayload<ArgumentMap>) => {
+        setMaps((prevMaps) =>
+          prevMaps.map((prevMap) =>
+            prevMap.automergeDocumentId === doc.automergeDocumentId
+              ? doc
+              : prevMap,
+          ),
+        );
+      };
+      handle.on("change", listener);
+      docChangeListeners.set(handle.documentId, listener);
+    }
 
-          // Set up listeners for new documents
-          newMaps.forEach((map) => {
-            const documentId = map.automergeDocumentId as DocumentId;
-            if (docChangeListeners.has(documentId)) {
-              return;
-            }
-            const handle = getDocHandle(documentId);
-            if (!handle) {
-              appLogger.error(
-                `Unable to add listeners for document that had no handle. Document ID: ${documentId}`,
-              );
-              return;
-            }
+    async function initializeMaps() {
+      const handles = await getAllDocHandles();
+      // Set up listeners for new documents
+      handles.forEach((handle) => {
+        if (docChangeListeners.has(handle.documentId)) {
+          return;
+        }
+        addListener(handle);
+      });
 
-            const listener = ({ doc }: DocHandleChangePayload<ArgumentMap>) => {
-              setMaps((prevMaps) =>
-                prevMaps.map((prevMap) =>
-                  prevMap.automergeDocumentId === doc.automergeDocumentId
-                    ? doc
-                    : prevMap,
-                ),
-              );
-            };
-            handle.on("change", listener);
-            docChangeListeners.set(documentId, listener);
-          });
+      const maps = await toDocs(handles);
+      setMaps(maps);
+    }
+    initializeMaps().catch((reason) =>
+      appLogger.error("Failed to initializeMaps", reason),
+    );
 
-          setMaps(newMaps);
-        })
-        .catch((reason) => appLogger.error("Failed to updateMaps", reason));
+    const updateMaps = (payload: DocumentPayload | DeleteDocumentPayload) => {
+      if ("documentId" in payload) {
+        docChangeListeners.delete(payload.documentId);
+      } else {
+        addListener(payload.handle as DocHandle<ArgumentMap>);
+      }
     };
 
-    updateMaps();
     addDocChangeListener(updateMaps);
 
     return () => {
@@ -127,6 +125,10 @@ export const useActiveMapEntities = () => {
   const map = useActiveMap();
   return useMemo(() => map?.entities || emptyEntities, [map?.entities]);
 };
+
+export function useActiveMapHistory() {
+  return useActiveMap()?.history ?? [];
+}
 
 export const useSelectedEntities = () => {
   const entities = useActiveMapEntities();
