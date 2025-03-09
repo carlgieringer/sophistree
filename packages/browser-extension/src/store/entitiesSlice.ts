@@ -1,28 +1,26 @@
-import { v4 as uuidv4 } from "uuid";
-import deepEqual from "deep-equal";
 import { deleteAt, getActorId, Heads } from "@automerge/automerge/next";
+import deepEqual from "deep-equal";
+import { v4 as uuidv4 } from "uuid";
 
-import { DomAnchor } from "tapestry-highlights";
 import {
-  Polarity,
   ArgumentMap,
-  Proposition,
-  MediaExcerpt,
   Entity,
   Justification,
-  Visibility,
-  PropositionCompound,
-  UrlInfo,
-  ArgumentMapHistoryChange,
-  JustificationBasisHistoryInfo,
-  JustificationTargetHistoryInfo,
-  HistoryInfo,
-  PropositionHistoryInfo,
+  MediaExcerpt,
   MediaExcerptHistoryInfo,
+  Polarity,
+  Proposition,
+  PropositionCompound,
+  PropositionHistoryInfo,
+  UrlInfo,
+  Visibility,
 } from "@sophistree/common";
+import { DomAnchor } from "tapestry-highlights";
 
-import * as appLogger from "../logging/appLogging";
+import { DocumentId } from "@automerge/automerge-repo";
+import { useSelector } from "react-redux";
 import { notifyTabsOfDeletedMediaExcerpt } from "../extension/messages";
+import * as appLogger from "../logging/appLogging";
 import {
   createDoc,
   deleteDoc,
@@ -31,10 +29,14 @@ import {
   openDoc,
   setDocSyncServerAddresses,
 } from "../sync";
-import { DocumentId } from "@automerge/automerge-repo";
-import { useSelector } from "react-redux";
-import { createAppSlice } from "./createAppSlice";
+import { addHistoryEntry } from "./addHistoryEntry";
 import { updateConclusions } from "./conclusions";
+import { createAppSlice } from "./createAppSlice";
+import {
+  getJustificationBasisHistoryInfo,
+  getJustificationTargetHistoryInfo,
+  toHistoryInfo,
+} from "./historyInfo";
 
 export const defaultVisibilityProps = { autoVisibility: "Visible" as const };
 
@@ -631,6 +633,7 @@ function updateEntity<E extends Entity>(
   }
   handle.change((map) => {
     const entity = activeMap.entities[index];
+    // Apply callback before updates so that entity contains previous values.
     callback(handle.heads(), map, entity as E);
     Object.assign(entity, updates);
     updateConclusions(map);
@@ -931,74 +934,6 @@ function applyDragOperation(
   });
 }
 
-function getJustificationBasisHistoryInfo(
-  map: ArgumentMap,
-  basisId: string,
-): JustificationBasisHistoryInfo {
-  return toHistoryInfo(map, basisId) as JustificationBasisHistoryInfo;
-}
-
-function getJustificationTargetHistoryInfo(
-  map: ArgumentMap,
-  targetId: string,
-): JustificationTargetHistoryInfo {
-  return toHistoryInfo(map, targetId) as JustificationTargetHistoryInfo;
-}
-
-function toHistoryInfo(map: ArgumentMap, entityId: string): HistoryInfo {
-  const entity = map.entities.find((e) => e.id === entityId);
-  if (!entity) {
-    throw new Error(`Entity not found for ID: ${entityId}`);
-  }
-  switch (entity.type) {
-    case "Proposition":
-      return { type: entity.type, id: entity.id, text: entity.text };
-    case "MediaExcerpt": {
-      const { type, id, quotation, sourceInfo, urlInfo, domAnchor } = entity;
-      return { type, id, quotation, sourceInfo, urlInfo, domAnchor };
-    }
-    case "Justification": {
-      const { type, id, basisId, targetId, polarity } = entity;
-      return {
-        type,
-        id,
-        basisId,
-        basisInfo: getJustificationBasisHistoryInfo(map, basisId),
-        targetId,
-        targetInfo: getJustificationTargetHistoryInfo(map, targetId),
-        polarity,
-      };
-    }
-    case "PropositionCompound": {
-      const { type, id, atomIds } = entity;
-      return {
-        id,
-        type,
-        atoms: atomIds.map((id) => {
-          const propInfo = toHistoryInfo(map, id) as PropositionHistoryInfo;
-          return { ...propInfo, modificationType: "Unchanged" };
-        }),
-      };
-    }
-    case "Appearance": {
-      const { id, apparitionId, mediaExcerptId } = entity;
-      return {
-        id,
-        apparitionId,
-        apparitionInfo: toHistoryInfo(
-          map,
-          apparitionId,
-        ) as PropositionHistoryInfo,
-        mediaExcerptId,
-        mediaExcerpt: toHistoryInfo(
-          map,
-          mediaExcerptId,
-        ) as MediaExcerptHistoryInfo,
-      };
-    }
-  }
-}
-
 function updateMediaExcerptAutoVisibilityForDeletedJustifications(
   map: ArgumentMap,
   entitiesById: Map<string, Entity>,
@@ -1109,115 +1044,6 @@ function updateMediaExcerptAutoVisibility(
     return;
   }
   mediaExcerpt.autoVisibility = autoVisibility;
-}
-
-/** Add a history entry to the map for the change. */
-function addHistoryEntry(
-  heads: Heads | undefined,
-  map: ArgumentMap,
-  change: ArgumentMapHistoryChange,
-): void;
-/**
- * Add a history entry to the map for a change based on a callback. If the map's last history
- * entry had a single change that is compatible with the current change, the last change is
- * provided to the callback to combine the changes. In that case, the return value will replace
- * the last change.
- *
- * Changes are compatible if:
- *
- *  - Same change type
- *  - Same actor ID
- *  - Same action object
- *
- * changeFn should not have side effects because addHistoryEntry may call it twice: once with a
- * previous change, to see if they are compatible, and once without.
- */
-function addHistoryEntry<
-  CT extends ArgumentMapHistoryChange["type"],
-  C extends Extract<ArgumentMapHistoryChange, { type: CT }>,
->(
-  heads: Heads | undefined,
-  map: ArgumentMap,
-  changeType: CT,
-  changeFn: (lastChange: C | undefined) => C,
-): void;
-/**
- * Add a new history entry with a single change. We clone the change in case it references existing
- * Automerge objects. */
-function addHistoryEntry<C extends ArgumentMapHistoryChange>(
-  heads: Heads | undefined,
-  map: ArgumentMap,
-  changeOrType: ArgumentMapHistoryChange | C["type"],
-  changeFn?: (lastChange: C | undefined) => C,
-): void {
-  const actorId = getActorId(map);
-  const timestamp = new Date().toISOString();
-
-  // Direct change case
-  if (typeof changeOrType !== "string") {
-    map.history.push({
-      actorId,
-      heads,
-      timestamp,
-      changes: [cloneChange(changeOrType)],
-    });
-    return;
-  }
-
-  // String type case - must have changeFn
-  if (!changeFn) {
-    throw new Error("changeFn is required when using a string type");
-  }
-
-  // Check if we can update the last entry
-  if (map.history.length > 0) {
-    const lastEntry = map.history[map.history.length - 1];
-    if (lastEntry.changes.length === 1) {
-      const lastChange = lastEntry.changes[0];
-      if (lastChange.type === changeOrType && lastEntry.actorId === actorId) {
-        // Type assertion is safe here because we've verified the types match
-        const newChange = changeFn(lastChange as C);
-        if (canCombineHistoryChanges(lastChange, newChange)) {
-          map.history.splice(map.history.length - 1, 1, {
-            actorId: getActorId(map),
-            heads,
-            timestamp,
-            changes: [cloneChange(newChange)],
-          });
-          return;
-        }
-      }
-    }
-  }
-
-  // Create new entry
-  const change = changeFn(undefined);
-  map.history.push({
-    actorId,
-    heads,
-    timestamp,
-    changes: [cloneChange(change)],
-  });
-}
-
-function canCombineHistoryChanges(
-  change1: ArgumentMapHistoryChange,
-  change2: ArgumentMapHistoryChange,
-) {
-  switch (change1.type) {
-    case "RenameMap":
-      return change2.type === "RenameMap";
-    case "ModifyProposition":
-      return change2.type === "ModifyProposition" && change1.id === change2.id;
-    case "ModifyMediaExcerpt":
-      return change2.type === "ModifyMediaExcerpt" && change1.id === change2.id;
-    default:
-      return false;
-  }
-}
-
-function cloneChange(change: ArgumentMapHistoryChange) {
-  return JSON.parse(JSON.stringify(change)) as ArgumentMapHistoryChange;
 }
 
 function getNextNewPropositionNumber(map: ArgumentMap) {

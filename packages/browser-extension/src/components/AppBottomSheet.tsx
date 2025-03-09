@@ -10,7 +10,7 @@ const AppBottomSheet: React.FC = () => {
   const snapPoints = useMemo(() => ["5%", "25%", "50%", "90%"], []);
   const maxHeight = useBottomSheetHeight();
   const sheetContentStyle: StyleProp<ViewStyle> = {
-    // Give the list a max height and scroll or else we can't scroll the whole contents when
+    // Give tab contents a max height and scroll or else we can't scroll the whole contents when
     // the sheet is less than fully expanded.
     maxHeight,
     overflow: "scroll",
