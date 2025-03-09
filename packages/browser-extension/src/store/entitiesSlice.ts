@@ -511,19 +511,19 @@ export const entitiesSlice = createAppSlice({
               {
                 const apparitionId = entity.apparitionId;
                 const mediaExcerptId = entity.mediaExcerptId;
-                const apparitionInfo = map.entities.find(
-                  (entity) => entity.id === apparitionId,
-                ) as Proposition;
-                const mediaExcerpt = map.entities.find(
-                  (entity) => entity.id === apparitionId,
-                ) as MediaExcerpt;
                 addHistoryEntry(handle.heads(), map, {
                   type: "RemoveAppearance",
                   id: entity.id,
                   apparitionId,
-                  apparitionInfo,
+                  apparitionInfo: toHistoryInfo(
+                    map,
+                    apparitionId,
+                  ) as PropositionHistoryInfo,
                   mediaExcerptId,
-                  mediaExcerpt,
+                  mediaExcerpt: toHistoryInfo(
+                    map,
+                    mediaExcerptId,
+                  ) as MediaExcerptHistoryInfo,
                 });
               }
               break;
