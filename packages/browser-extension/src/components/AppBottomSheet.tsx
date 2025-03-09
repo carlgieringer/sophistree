@@ -68,14 +68,23 @@ function useBottomSheetHeight() {
   useEffect(() => {
     // There are two elements matching this selector; they are siblings and so both have the parent
     // we want, so just take the first.
-    const [sheetSlider] = window.document.querySelectorAll(
-      `[aria-label="Bottom Sheet"][role="slider"]`,
-    );
+    const [sheetSlider, sheetSliderContainer] =
+      window.document.querySelectorAll(
+        `[aria-label="Bottom Sheet"][role="slider"]`,
+      );
 
     // Function to check for style changes using requestAnimationFrame
     const checkSheetHeight = () => {
       const container = sheetSlider.parentElement?.parentElement;
-      if (!container) return;
+      if (!container) {
+        return;
+      }
+      // The tab controls also take up space the sheet contents can't use.
+      const tabControls =
+        sheetSliderContainer.children[0].children[0].children[0].children[0];
+      if (!tabControls) {
+        return;
+      }
 
       const transform = sheetSlider.parentElement.style.transform || "";
 
@@ -84,8 +93,9 @@ function useBottomSheetHeight() {
       if (match) {
         const translateY = parseInt(match[1]);
         const containerHeight = container.clientHeight;
+        const tabControlsHeight = tabControls.clientHeight;
 
-        const sheetHeight = containerHeight - translateY;
+        const sheetHeight = containerHeight - tabControlsHeight - translateY;
         setHeight(sheetHeight);
       }
 
