@@ -21,7 +21,7 @@ export function triggerMigrationIfNecessary(handle: DocHandle<ArgumentMap>) {
 async function ensureMapMigrations(handle: DocHandle<ArgumentMap>) {
   const doc = await handle.doc();
   if (!doc) {
-    throw new Error("Unable to get doc for migration");
+    throw new Error(`Unable to get doc for migration: ${handle.documentId}`);
   }
   let currentVersion = doc.version || minAutomergeMapVersion;
   if (currentVersion < persistedStateVersion) {

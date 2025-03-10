@@ -7,12 +7,13 @@ import { getActorId } from "@automerge/automerge/next";
 
 import { ArgumentMap } from "@sophistree/common";
 
+import { triggerMigrationIfNecessary } from "./migrations";
+import { getRepo } from "./repos";
 import {
   getSyncServerAddresses,
   setSyncServerAddresses,
 } from "./syncServerStorage";
-import { getRepo } from "./repos";
-import { triggerMigrationIfNecessary } from "./migrations";
+import { broadcastDocDeletion } from "./broadcast";
 
 export function createDoc(map: NewArgumentMap) {
   const repo = getRepo([]);
@@ -67,7 +68,12 @@ export function setDocSyncServerAddresses(
   syncServerAddresses: string[],
 ) {
   const oldRepo = getRepoForDoc(oldId);
-  const doc = oldRepo.find<ArgumentMap>(oldId).docSync();
+  const oldHandle = oldRepo.find<ArgumentMap>(oldId);
+  triggerMigrationIfNecessary(oldHandle);
+  const doc = oldHandle.docSync();
+  oldRepo.delete(oldId);
+  broadcastDocDeletion(oldId);
+
   const newRepo = getRepo(syncServerAddresses);
   const handle = newRepo.create<ArgumentMap>(doc);
   const newId = handle.documentId;
@@ -90,10 +96,7 @@ export function setDocSyncServerAddresses(
       ],
     });
   });
-  oldRepo.delete(oldId);
   setSyncServerAddresses(newId, syncServerAddresses, oldId);
-
-  triggerMigrationIfNecessary(handle);
 
   return newId;
 }

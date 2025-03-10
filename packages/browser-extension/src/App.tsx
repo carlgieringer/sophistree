@@ -49,6 +49,7 @@ import { GestureHandlerRootView } from "./bottomsheet-setup";
 import AppContainer from "./components/AppContainer";
 
 import "./App.scss";
+import { useBroadcastListener } from "./sync/broadcast";
 
 const App: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -59,6 +60,7 @@ const App: React.FC = () => {
   useContentScriptKeepAliveConnection();
   useRefreshAuth();
   useSyncApiConfig();
+  useBroadcastListener();
 
   // Load initial configs
   useEffect(() => {

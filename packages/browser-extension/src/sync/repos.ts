@@ -20,6 +20,18 @@ const reposBySyncServers = new Map<string, Repo>();
 
 const storage = new IndexedDBStorageAdapter("sophistree");
 
+/** A repo for local docs and to read all docs. */
+const localRepo = new Repo({
+  network: [
+    new BroadcastChannelNetworkAdapter({
+      channelName: "sophistree-sync",
+    }),
+  ],
+  storage,
+});
+
+reposBySyncServers.set(makeKey([]), localRepo);
+
 async function getAllDocIds() {
   const chunks = await storage.loadRange([]);
   const docIds = new Set<DocumentId>();
@@ -35,7 +47,7 @@ export async function getAllDocHandles(): Promise<DocHandle<ArgumentMap>[]> {
   const docIds = await getAllDocIds();
   return await Promise.all(
     docIds.map((id) => {
-      const handle = storageOnlyRepo.find<ArgumentMap>(id);
+      const handle = localRepo.find<ArgumentMap>(id);
       triggerMigrationIfNecessary(handle);
       return handle;
     }),
@@ -56,14 +68,14 @@ export async function getAllDocs(): Promise<Doc<ArgumentMap>[]> {
   return await toDocs(handles);
 }
 
-/** A repo to read all docs */
-export const storageOnlyRepo = new Repo({ storage });
-
 export function getRepo(syncServerAddresses: string[]) {
   const key = makeKey(syncServerAddresses);
   let repo = reposBySyncServers.get(key);
   if (!repo) {
-    repo = makeRepo(syncServerAddresses);
+    if (!syncServerAddresses.length) {
+      throw new Error("Could not find local-only repo.");
+    }
+    repo = makeRemoteRepo(syncServerAddresses);
     void persistStorage();
     reposBySyncServers.set(key, repo);
     applyCallbacksToRepo(repo);
@@ -71,13 +83,7 @@ export function getRepo(syncServerAddresses: string[]) {
   return repo;
 }
 
-function makeRepo(syncServerAddresses: string[]) {
-  if (syncServerAddresses.length === 0) {
-    return new Repo({
-      network: [new BroadcastChannelNetworkAdapter()],
-      storage,
-    });
-  }
+function makeRemoteRepo(syncServerAddresses: string[]) {
   const network = syncServerAddresses.map(
     (a) => new BrowserWebSocketClientAdapter(a),
   );
