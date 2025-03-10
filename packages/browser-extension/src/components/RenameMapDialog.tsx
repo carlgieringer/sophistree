@@ -24,6 +24,12 @@ const RenameMapDialog: React.FC<RenameMapDialogProps> = ({
     inputRef.current?.focus();
   }, [visible]);
 
+  useEffect(() => {
+    if (visible) {
+      setNewName(mapName);
+    }
+  }, [visible, mapName]);
+
   const handleRename = () => {
     dispatch(renameActiveMap(newName));
     onDismiss();
