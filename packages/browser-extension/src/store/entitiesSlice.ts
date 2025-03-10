@@ -652,7 +652,7 @@ function updateEntity<E extends Entity>(
     return;
   }
   handle.change((map) => {
-    const entity = activeMap.entities[index];
+    const entity = map.entities[index];
     // Apply callback before updates so that entity contains previous values.
     callback(handle.heads(), map, entity as E);
     Object.assign(entity, updates);
