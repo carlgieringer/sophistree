@@ -35,8 +35,11 @@ reposBySyncServers.set(makeKey([]), localRepo);
 async function getAllDocIds() {
   const chunks = await storage.loadRange([]);
   const docIds = new Set<DocumentId>();
-  chunks.forEach(({ key: [docId] }) => {
-    if (isValidDocumentId(docId)) {
+  chunks.forEach(({ key: [docId, type] }) => {
+    // Ignore storage-adapter-id.
+    // Deleted maps still have sync-state hanging around for some reason. Ignore
+    // docs unless they have a snapshot or incremental data.
+    if (isValidDocumentId(docId) && type !== "sync-state") {
       docIds.add(docId);
     }
   });

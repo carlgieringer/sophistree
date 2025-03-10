@@ -39,6 +39,42 @@ export const useAllMaps = () => {
       (payload: DocHandleChangePayload<ArgumentMap>) => void
     >();
 
+    initializeMaps()
+      .then(() => {
+        addDocChangeListener(updateMaps);
+      })
+      .catch((reason) => appLogger.error("Failed to initializeMaps", reason));
+
+    async function initializeMaps() {
+      const handles = await getAllDocHandles();
+      handles.forEach((handle) => {
+        addListener(handle);
+      });
+      const maps = await toDocs(handles);
+      setMaps(maps);
+    }
+
+    function updateMaps(payload: DocumentPayload | DeleteDocumentPayload) {
+      if ("documentId" in payload) {
+        docChangeListeners.delete(payload.documentId);
+        setMaps((prevMaps) =>
+          prevMaps.filter(
+            ({ automergeDocumentId }) =>
+              automergeDocumentId != payload.documentId,
+          ),
+        );
+      } else {
+        addListener(payload.handle as DocHandle<ArgumentMap>);
+        // Avoid: Cannot update a component (`ActiveMapDialog`) while rendering a different component (`App`).
+        const newDoc = payload.handle.docSync();
+        setTimeout(() =>
+          setMaps((prevMaps) => {
+            return newDoc ? [...prevMaps, newDoc] : prevMaps;
+          }),
+        );
+      }
+    }
+
     function addListener(handle: DocHandle<ArgumentMap>) {
       const listener = ({ doc }: DocHandleChangePayload<ArgumentMap>) => {
         setMaps((prevMaps) =>
@@ -49,46 +85,6 @@ export const useAllMaps = () => {
       handle.on("change", listener);
       docChangeListeners.set(handle.documentId, listener);
     }
-
-    async function initializeMaps() {
-      const handles = await getAllDocHandles();
-      // Set up listeners for new documents
-      handles.forEach((handle) => {
-        if (docChangeListeners.has(handle.documentId)) {
-          return;
-        }
-        addListener(handle);
-      });
-
-      const maps = await toDocs(handles);
-      setMaps(maps);
-    }
-    initializeMaps().catch((reason) =>
-      appLogger.error("Failed to initializeMaps", reason),
-    );
-
-    const updateMaps = (payload: DocumentPayload | DeleteDocumentPayload) => {
-      if ("documentId" in payload) {
-        docChangeListeners.delete(payload.documentId);
-        setMaps((maps) =>
-          maps.filter(
-            ({ automergeDocumentId }) =>
-              automergeDocumentId != payload.documentId,
-          ),
-        );
-      } else {
-        addListener(payload.handle as DocHandle<ArgumentMap>);
-        // Avoid: Cannot update a component (`ActiveMapDialog`) while rendering a different component (`App`).
-        setTimeout(() =>
-          setMaps((prevMaps) => {
-            const newDoc = payload.handle.docSync();
-            return newDoc ? [...prevMaps, newDoc] : prevMaps;
-          }),
-        );
-      }
-    };
-
-    addDocChangeListener(updateMaps);
 
     return () => {
       removeDocChangeListener(updateMaps);
