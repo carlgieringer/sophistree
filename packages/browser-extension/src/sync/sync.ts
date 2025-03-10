@@ -13,7 +13,7 @@ import {
   getSyncServerAddresses,
   setSyncServerAddresses,
 } from "./syncServerStorage";
-import { broadcastDocDelete } from "./broadcast";
+import { broadcastDocDeletion } from "./broadcast";
 
 export function createDoc(map: NewArgumentMap) {
   const repo = getRepo([]);
@@ -72,7 +72,7 @@ export function setDocSyncServerAddresses(
   triggerMigrationIfNecessary(oldHandle);
   const doc = oldHandle.docSync();
   oldRepo.delete(oldId);
-  broadcastDocDelete(oldId);
+  broadcastDocDeletion(oldId);
 
   const newRepo = getRepo(syncServerAddresses);
   const handle = newRepo.create<ArgumentMap>(doc);

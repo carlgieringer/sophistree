@@ -29,6 +29,10 @@ import {
   openDoc,
   setDocSyncServerAddresses,
 } from "../sync";
+import {
+  broadcastDocDeletion,
+  broadcastMapActivation,
+} from "../sync/broadcast";
 import { addHistoryEntry } from "./addHistoryEntry";
 import { updateConclusions } from "./conclusions";
 import { createAppSlice } from "./createAppSlice";
@@ -37,7 +41,6 @@ import {
   getJustificationTargetHistoryInfo,
   toHistoryInfo,
 } from "./historyInfo";
-import { broadcastDocDelete, broadcastMapActivation } from "../sync/broadcast";
 
 export const defaultVisibilityProps = { autoVisibility: "Visible" as const };
 
@@ -93,7 +96,7 @@ export const entitiesSlice = createAppSlice({
     }),
     deleteMap: create.reducer<DocumentId>((state, action) => {
       deleteDoc(action.payload);
-      broadcastDocDelete(action.payload);
+      broadcastDocDeletion(action.payload);
       if (state.activeMapAutomergeDocumentId === action.payload) {
         state.activeMapAutomergeDocumentId = undefined;
       }

@@ -16,7 +16,7 @@ import {
 // This channel can also notify other instances of UI changes, like activating the map.
 const broadcastChannel = new BroadcastChannel("sophistree-broadcast");
 
-export function broadcastDocDelete(id: DocumentId) {
+export function broadcastDocDeletion(id: DocumentId) {
   broadcastChannel.postMessage({
     type: "delete-document",
     id,

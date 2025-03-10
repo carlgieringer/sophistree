@@ -42,6 +42,7 @@ export const useAllMaps = () => {
     function addListener(handle: DocHandle<ArgumentMap>) {
       const listener = ({ doc }: DocHandleChangePayload<ArgumentMap>) => {
         setMaps((prevMaps) =>
+          // Compare id because when we first create a map it has no automergeDocumentId.
           prevMaps.map((prevMap) => (prevMap.id === doc.id ? doc : prevMap)),
         );
       };
