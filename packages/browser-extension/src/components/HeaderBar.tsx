@@ -171,8 +171,10 @@ function HeaderBar() {
     />
   );
 
-  const menuItemGroups = [
-    [
+  const menuItemGroups = [] as React.ReactNode[][];
+
+  if (activeMapDocumentId) {
+    menuItemGroups.push([
       <Menu.Item
         title="Rename map…"
         leadingIcon="pencil"
@@ -232,7 +234,12 @@ function HeaderBar() {
         title={`Delete ${activeMapName}`}
         disabled={!activeMapDocumentId}
       />,
-    ],
+    ]);
+  }
+
+  menuItemGroups.splice(
+    menuItemGroups.length,
+    0,
     [
       <Menu.Item
         title="Open map…"
@@ -284,7 +291,7 @@ function HeaderBar() {
         }}
       />,
     ],
-  ];
+  );
   if (process.env.NODE_ENV === "development") {
     menuItemGroups.push([
       <Menu.Item
