@@ -37,6 +37,7 @@ import {
   getJustificationTargetHistoryInfo,
   toHistoryInfo,
 } from "./historyInfo";
+import { broadcastDocDelete, broadcastMapActivation } from "../sync/broadcast";
 
 export const defaultVisibilityProps = { autoVisibility: "Visible" as const };
 
@@ -88,9 +89,16 @@ export const entitiesSlice = createAppSlice({
       };
       const handle = createDoc(newMap);
       state.activeMapAutomergeDocumentId = handle.documentId;
+      broadcastMapActivation(state.activeMapAutomergeDocumentId);
     }),
     deleteMap: create.reducer<DocumentId>((state, action) => {
       deleteDoc(action.payload);
+      broadcastDocDelete(action.payload);
+      if (state.activeMapAutomergeDocumentId === action.payload) {
+        state.activeMapAutomergeDocumentId = undefined;
+      }
+    }),
+    observeMapDeletion: create.reducer<DocumentId>((state, action) => {
       if (state.activeMapAutomergeDocumentId === action.payload) {
         state.activeMapAutomergeDocumentId = undefined;
       }
@@ -114,6 +122,7 @@ export const entitiesSlice = createAppSlice({
         documentId,
         addresses,
       );
+      broadcastMapActivation(state.activeMapAutomergeDocumentId);
     }),
     syncActiveMapLocally: create.reducer((state) => {
       const documentId = state.activeMapAutomergeDocumentId;
@@ -127,6 +136,7 @@ export const entitiesSlice = createAppSlice({
         documentId,
         [],
       );
+      broadcastMapActivation(state.activeMapAutomergeDocumentId);
     }),
     openSyncedMap: create.asyncThunk(
       async (
@@ -153,6 +163,7 @@ export const entitiesSlice = createAppSlice({
           const map = action.payload;
           state.activeMapAutomergeDocumentId =
             map.automergeDocumentId as DocumentId;
+          broadcastMapActivation(state.activeMapAutomergeDocumentId);
         },
         settled: (state) => {
           state.isOpeningSyncedMap = false;
@@ -161,7 +172,13 @@ export const entitiesSlice = createAppSlice({
     ),
     setActiveMap: create.reducer<DocumentId | undefined>((state, action) => {
       state.activeMapAutomergeDocumentId = action.payload;
+      broadcastMapActivation(state.activeMapAutomergeDocumentId);
     }),
+    observeMapActivation: create.reducer<DocumentId | undefined>(
+      (state, action) => {
+        state.activeMapAutomergeDocumentId = action.payload;
+      },
+    ),
     renameActiveMap: create.reducer<string>((state, action) => {
       const documentId = state.activeMapAutomergeDocumentId;
       if (!documentId) {
@@ -1100,6 +1117,8 @@ export const {
   deleteEntity,
   deleteMap,
   hideEntity,
+  observeMapActivation,
+  observeMapDeletion,
   openSyncedMap,
   renameActiveMap,
   resetActiveMapsHistory,

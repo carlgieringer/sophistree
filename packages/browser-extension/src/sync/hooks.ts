@@ -42,11 +42,7 @@ export const useAllMaps = () => {
     function addListener(handle: DocHandle<ArgumentMap>) {
       const listener = ({ doc }: DocHandleChangePayload<ArgumentMap>) => {
         setMaps((prevMaps) =>
-          prevMaps.map((prevMap) =>
-            prevMap.automergeDocumentId === doc.automergeDocumentId
-              ? doc
-              : prevMap,
-          ),
+          prevMaps.map((prevMap) => (prevMap.id === doc.id ? doc : prevMap)),
         );
       };
       handle.on("change", listener);
@@ -73,8 +69,21 @@ export const useAllMaps = () => {
     const updateMaps = (payload: DocumentPayload | DeleteDocumentPayload) => {
       if ("documentId" in payload) {
         docChangeListeners.delete(payload.documentId);
+        setMaps((maps) =>
+          maps.filter(
+            ({ automergeDocumentId }) =>
+              automergeDocumentId != payload.documentId,
+          ),
+        );
       } else {
         addListener(payload.handle as DocHandle<ArgumentMap>);
+        // Avoid: Cannot update a component (`ActiveMapDialog`) while rendering a different component (`App`).
+        setTimeout(() =>
+          setMaps((prevMaps) => {
+            const newDoc = payload.handle.docSync();
+            return newDoc ? [...prevMaps, newDoc] : prevMaps;
+          }),
+        );
       }
     };
 
@@ -95,24 +104,27 @@ export const useAllMaps = () => {
 
 export const useActiveMap = () => {
   const documentId = useActiveMapAutomergeDocumentId();
-  const handle = documentId ? getDocHandle(documentId) : undefined;
-
-  const [map, setMap] = useState(handle?.docSync());
+  const [map, setMap] = useState(undefined as ArgumentMap | undefined);
 
   useEffect(() => {
-    setMap(handle?.docSync());
+    if (!documentId) {
+      return;
+    }
+    const handle = getDocHandle(documentId);
+
+    setMap(handle.docSync());
 
     const onDocChange = ({ doc }: DocHandleChangePayload<ArgumentMap>) =>
       setMap(doc);
     const onDocDelete = () => setMap(undefined);
 
-    handle?.on("change", onDocChange);
-    handle?.on("delete", onDocDelete);
+    handle.on("change", onDocChange);
+    handle.on("delete", onDocDelete);
     return () => {
-      handle?.off("change", onDocChange);
-      handle?.off("delete", onDocDelete);
+      handle.off("change", onDocChange);
+      handle.off("delete", onDocDelete);
     };
-  }, [handle]);
+  }, [documentId]);
 
   return map;
 };
