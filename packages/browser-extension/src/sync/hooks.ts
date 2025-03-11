@@ -6,7 +6,7 @@ import {
   DocumentId,
   DocumentPayload,
 } from "@automerge/automerge-repo";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 
 import {
   Appearance,
@@ -33,6 +33,27 @@ import {
 export const useAllMaps = () => {
   const [maps, setMaps] = useState<Doc<ArgumentMap>[]>([]);
 
+  const addMap = useCallback(
+    (map: ArgumentMap) => {
+      setMaps((prevMaps) => {
+        let found = false;
+        const newMaps = prevMaps.map((prevMap) => {
+          if (prevMap.id === map.id) {
+            found = true;
+            return map;
+          } else {
+            return prevMap;
+          }
+        });
+        if (!found) {
+          newMaps.push(map);
+        }
+        return newMaps;
+      });
+    },
+    [setMaps],
+  );
+
   useEffect(() => {
     const docChangeListeners = new Map<
       DocumentId,
@@ -56,7 +77,8 @@ export const useAllMaps = () => {
 
     function updateMaps(payload: DocumentPayload | DeleteDocumentPayload) {
       if ("documentId" in payload) {
-        docChangeListeners.delete(payload.documentId);
+        const documentId = payload.documentId;
+        docChangeListeners.delete(documentId);
         setMaps((prevMaps) =>
           prevMaps.filter(
             ({ automergeDocumentId }) =>
@@ -64,23 +86,24 @@ export const useAllMaps = () => {
           ),
         );
       } else {
-        addListener(payload.handle as DocHandle<ArgumentMap>);
+        const handle = payload.handle as DocHandle<ArgumentMap>;
+        if (!docChangeListeners.has(handle.documentId)) {
+          addListener(handle);
+        }
+        const doc = handle.docSync();
+        if (!doc) {
+          return;
+        }
         // Avoid: Cannot update a component (`ActiveMapDialog`) while rendering a different component (`App`).
-        const newDoc = payload.handle.docSync();
-        setTimeout(() =>
-          setMaps((prevMaps) => {
-            return newDoc ? [...prevMaps, newDoc] : prevMaps;
-          }),
-        );
+        setTimeout(() => {
+          addMap(doc);
+        });
       }
     }
 
     function addListener(handle: DocHandle<ArgumentMap>) {
       const listener = ({ doc }: DocHandleChangePayload<ArgumentMap>) => {
-        setMaps((prevMaps) =>
-          // Compare id because when we first create a map it has no automergeDocumentId.
-          prevMaps.map((prevMap) => (prevMap.id === doc.id ? doc : prevMap)),
-        );
+        addMap(doc);
       };
       handle.on("change", listener);
       docChangeListeners.set(handle.documentId, listener);
@@ -94,7 +117,7 @@ export const useAllMaps = () => {
         handle?.off("change", listener);
       });
     };
-  }, []);
+  }, [addMap]);
 
   return maps;
 };
