@@ -20,17 +20,19 @@ export function createDoc(map: NewArgumentMap) {
   const handle = repo.create(map);
   handle.change((map) => {
     map.automergeDocumentId = handle.documentId;
-    map.history.push({
-      actorId: getActorId(map),
-      heads: handle.heads(),
-      timestamp: new Date().toISOString(),
-      changes: [
-        {
-          type: "CreateMap",
-          name: map.name,
-        },
-      ],
-    });
+    map.history = [
+      {
+        actorId: getActorId(map),
+        heads: handle.heads(),
+        timestamp: new Date().toISOString(),
+        changes: [
+          {
+            type: "CreateMap",
+            name: map.name,
+          },
+        ],
+      },
+    ];
   });
   return handle;
 }

@@ -81,7 +81,7 @@ export function getRepo(syncServerAddresses: string[]) {
     repo = makeRemoteRepo(syncServerAddresses);
     void persistStorage();
     reposBySyncServers.set(key, repo);
-    applyCallbacksToRepo(repo);
+    addCallbacksToRepo(repo);
   }
   return repo;
 }
@@ -118,7 +118,7 @@ export type DocChangeListener = (
   payload: DocumentPayload | DeleteDocumentPayload,
 ) => void;
 
-export function addDocChangeListener(callback: DocChangeListener) {
+export function addRepoDocChangeListener(callback: DocChangeListener) {
   docChangeListeners.add(callback);
   reposBySyncServers.values().forEach((r) => {
     r.on("document", callback);
@@ -126,7 +126,7 @@ export function addDocChangeListener(callback: DocChangeListener) {
   });
 }
 
-export function removeDocChangeListener(callback: DocChangeListener) {
+export function removeRepoDocChangeListener(callback: DocChangeListener) {
   docChangeListeners.delete(callback);
   reposBySyncServers.values().forEach((r) => {
     r.off("document", callback);
@@ -134,7 +134,7 @@ export function removeDocChangeListener(callback: DocChangeListener) {
   });
 }
 
-function applyCallbacksToRepo(repo: Repo) {
+function addCallbacksToRepo(repo: Repo) {
   docChangeListeners.forEach((callback) => {
     repo.on("document", callback);
     repo.on("delete-document", callback);
