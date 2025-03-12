@@ -80,11 +80,13 @@ export const entitiesSlice = createAppSlice({
   },
   reducers: (create) => ({
     createMap: create.reducer<Partial<ArgumentMap>>((state, action) => {
+      // Don't allow callers to set the automerge document ID (e.g. uploaded files.)
+      const { automergeDocumentId: _, ...createData } = action.payload;
       const newMap: NewArgumentMap = {
         name: "New map",
         entities: [],
         conclusions: [],
-        ...action.payload,
+        ...createData,
         // Overwrite any ID from the payload to ensure that uploaded maps do not replace existing ones.
         id: uuidv4(),
         sourceNameOverrides: {},

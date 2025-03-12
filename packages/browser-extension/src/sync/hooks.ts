@@ -24,16 +24,16 @@ import {
   useSelectedEntityIds,
 } from "../store/entitiesSlice";
 import {
-  addDocChangeListener,
+  addRepoDocChangeListener,
   getAllDocHandles,
   toDocs,
-  removeDocChangeListener,
+  removeRepoDocChangeListener,
 } from "./repos";
 
 export const useAllMaps = () => {
   const [maps, setMaps] = useState<Doc<ArgumentMap>[]>([]);
 
-  const addMap = useCallback(
+  const updateMapInList = useCallback(
     (map: ArgumentMap) => {
       setMaps((prevMaps) => {
         let found = false;
@@ -62,62 +62,64 @@ export const useAllMaps = () => {
 
     initializeMaps()
       .then(() => {
-        addDocChangeListener(updateMaps);
+        addRepoDocChangeListener(onRepoDocChanged);
       })
       .catch((reason) => appLogger.error("Failed to initializeMaps", reason));
 
     async function initializeMaps() {
       const handles = await getAllDocHandles();
       handles.forEach((handle) => {
-        addListener(handle);
+        if (!docChangeListeners.has(handle.documentId)) {
+          addDocChangeListener(handle);
+        }
       });
       const maps = await toDocs(handles);
       setMaps(maps);
     }
 
-    function updateMaps(payload: DocumentPayload | DeleteDocumentPayload) {
+    function onRepoDocChanged(
+      payload: DocumentPayload | DeleteDocumentPayload,
+    ) {
       if ("documentId" in payload) {
         const documentId = payload.documentId;
         docChangeListeners.delete(documentId);
         setMaps((prevMaps) =>
           prevMaps.filter(
-            ({ automergeDocumentId }) =>
-              automergeDocumentId != payload.documentId,
+            ({ automergeDocumentId }) => automergeDocumentId != documentId,
           ),
         );
       } else {
         const handle = payload.handle as DocHandle<ArgumentMap>;
-        if (!docChangeListeners.has(handle.documentId)) {
-          addListener(handle);
-        }
         const doc = handle.docSync();
         if (!doc) {
           return;
         }
-        // Avoid: Cannot update a component (`ActiveMapDialog`) while rendering a different component (`App`).
-        setTimeout(() => {
-          addMap(doc);
-        });
+        if (!docChangeListeners.has(handle.documentId)) {
+          addDocChangeListener(handle);
+        }
+        updateMapInList(doc);
       }
     }
 
-    function addListener(handle: DocHandle<ArgumentMap>) {
-      const listener = ({ doc }: DocHandleChangePayload<ArgumentMap>) => {
-        addMap(doc);
+    function addDocChangeListener(handle: DocHandle<ArgumentMap>) {
+      const docChangeListener = ({
+        doc,
+      }: DocHandleChangePayload<ArgumentMap>) => {
+        updateMapInList(doc);
       };
-      handle.on("change", listener);
-      docChangeListeners.set(handle.documentId, listener);
+      handle.on("change", docChangeListener);
+      docChangeListeners.set(handle.documentId, docChangeListener);
     }
 
     return () => {
-      removeDocChangeListener(updateMaps);
+      removeRepoDocChangeListener(onRepoDocChanged);
       // Clean up all document change listeners
       docChangeListeners.forEach((listener, docId) => {
         const handle = getDocHandle(docId);
         handle?.off("change", listener);
       });
     };
-  }, [addMap]);
+  }, [updateMapInList]);
 
   return maps;
 };
