@@ -36,8 +36,6 @@ import { useRefreshAuth } from "./store/hooks";
 import { refreshAuth } from "./store/authSlice";
 import { useAppDispatch, useAppSelector } from "./store";
 import { loadApiEndpointOverride } from "./store/apiConfigSlice";
-import { loadUserDisplayName } from "./store/userDisplayNameSlice";
-import { setupUserDisplayNameSync } from "./store/userDisplayNameSync";
 import ExtensionGraphView from "./graphView/ExtensionGraphView";
 import {
   useActiveMap,
@@ -52,6 +50,7 @@ import AppContainer from "./components/AppContainer";
 
 import "./App.scss";
 import { useBroadcastListener } from "./sync/broadcast";
+import { useUserDisplayNameSyncAndInitialization } from "./userDisplayName";
 
 const App: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -63,7 +62,7 @@ const App: React.FC = () => {
   useRefreshAuth();
   useSyncApiConfig();
   useBroadcastListener();
-  useUserDisplayName();
+  useUserDisplayNameSyncAndInitialization();
   useApiEndpointOverride();
 
   const documentId = useActiveMapAutomergeDocumentId();
@@ -216,14 +215,6 @@ function useApiEndpointOverride() {
   const dispatch = useAppDispatch();
   useEffect(() => {
     void dispatch(loadApiEndpointOverride());
-  }, [dispatch]);
-}
-
-function useUserDisplayName() {
-  const dispatch = useAppDispatch();
-  useEffect(() => {
-    void dispatch(loadUserDisplayName());
-    setupUserDisplayNameSync();
   }, [dispatch]);
 }
 

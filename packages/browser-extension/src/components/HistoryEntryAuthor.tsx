@@ -21,5 +21,6 @@ export function HistoryEntryAuthor({
 const styles = StyleSheet.create({
   author: {
     fontWeight: "500",
+    overflow: "hidden",
   },
 });

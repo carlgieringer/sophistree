@@ -1,7 +1,6 @@
 import { getActorId, Heads } from "@automerge/automerge/next";
 
 import { ArgumentMap, ArgumentMapHistoryChange } from "@sophistree/common";
-import { store } from "./store";
 
 /** Add a history entry to the map for the change. */
 export function addHistoryEntry(
@@ -44,8 +43,7 @@ export function addHistoryEntry<C extends ArgumentMapHistoryChange>(
 ): void {
   const actorId = getActorId(map);
   const timestamp = new Date().toISOString();
-  const userDisplayName =
-    store.getState().userDisplayName.displayName || undefined;
+  const userDisplayName = map.userInfoByActorId[actorId]?.userDisplayName;
 
   // Direct change case
   if (typeof changeOrType !== "string") {

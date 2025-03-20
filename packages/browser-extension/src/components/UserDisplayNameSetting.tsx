@@ -1,24 +1,25 @@
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet } from "react-native";
 import { Button, Text, TextInput, HelperText, Card } from "react-native-paper";
-import { useAppDispatch, useAppSelector } from "../store";
-import { updateUserDisplayName } from "../store/userDisplayNameSlice";
+import { getUserDisplayName, updateUserDisplayName } from "../userDisplayName";
 
 export function UserDisplayNameSetting() {
-  const dispatch = useAppDispatch();
-  const displayName = useAppSelector(
-    (state) => state.userDisplayName.displayName,
-  );
-  const isLoading = useAppSelector((state) => state.userDisplayName.isLoading);
-  const error = useAppSelector((state) => state.userDisplayName.error);
+  const [displayName, setDisplayName] = useState<string | undefined>();
   const [editedName, setEditedName] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | undefined>();
 
   useEffect(() => {
-    if (displayName) {
-      setEditedName(displayName);
-    }
-  }, [displayName]);
+    // Load the current display name
+    void (async () => {
+      const name = await getUserDisplayName();
+      setDisplayName(name);
+      if (name) {
+        setEditedName(name);
+      }
+    })();
+  }, []);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -29,9 +30,22 @@ export function UserDisplayNameSetting() {
     setEditedName(displayName || "");
   };
 
-  const handleSave = () => {
-    void dispatch(updateUserDisplayName(editedName));
-    setIsEditing(false);
+  const handleSave = async () => {
+    setIsLoading(true);
+    setError(undefined);
+    try {
+      const success = await updateUserDisplayName(editedName);
+      if (success) {
+        setDisplayName(editedName);
+        setIsEditing(false);
+      } else {
+        setError("Failed to update display name");
+      }
+    } catch (_error) {
+      setError("Failed to update display name");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const isNameTooLong = editedName.length > 64;
@@ -68,7 +82,7 @@ export function UserDisplayNameSetting() {
               </Button>
               <Button
                 mode="contained"
-                onPress={handleSave}
+                onPress={() => void handleSave()}
                 disabled={isLoading || isNameTooLong}
                 style={styles.button}
               >

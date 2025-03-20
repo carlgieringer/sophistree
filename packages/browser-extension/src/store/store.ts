@@ -8,8 +8,6 @@ import ui from "./uiSlice";
 import api from "./apiSlice";
 import auth from "./authSlice";
 import apiConfig from "./apiConfigSlice";
-import userDisplayName from "./userDisplayNameSlice";
-
 const persistConfig = {
   key: "root",
   storage,
@@ -17,7 +15,7 @@ const persistConfig = {
   migrate: createMigrate(reduxPersistMigrations, {
     debug: process.env.NODE_ENV !== "production",
   }),
-  whitelist: ["entities", "apiConfig", "userDisplayName"],
+  whitelist: ["entities", "apiConfig"],
 };
 
 const rootReducer = combineReducers({
@@ -26,7 +24,6 @@ const rootReducer = combineReducers({
   auth,
   entities,
   ui,
-  userDisplayName,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
