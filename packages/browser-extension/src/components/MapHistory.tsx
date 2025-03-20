@@ -1,6 +1,7 @@
 import React, { ReactElement } from "react";
 import { StyleProp, View, ViewStyle } from "react-native";
 import { DataTable, Text, Tooltip } from "react-native-paper";
+import { HistoryEntryAuthor } from "./HistoryEntryAuthor";
 
 import {
   ArgumentMapHistoryChange,
@@ -28,7 +29,12 @@ const MapHistory: React.FC<{ style?: StyleProp<ViewStyle> }> = ({ style }) => {
             <DataTable.Cell>
               {new Date(entry.timestamp).toLocaleString()}
             </DataTable.Cell>
-            <DataTable.Cell>{entry.actorId}</DataTable.Cell>
+            <DataTable.Cell>
+              <HistoryEntryAuthor
+                actorId={entry.actorId}
+                userDisplayName={entry.userDisplayName}
+              />
+            </DataTable.Cell>
             <DataTable.Cell>
               <BulletedList items={entry.changes.map(formatHistoryChange)} />
             </DataTable.Cell>

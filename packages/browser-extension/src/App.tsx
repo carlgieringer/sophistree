@@ -36,6 +36,8 @@ import { useRefreshAuth } from "./store/hooks";
 import { refreshAuth } from "./store/authSlice";
 import { useAppDispatch, useAppSelector } from "./store";
 import { loadApiEndpointOverride } from "./store/apiConfigSlice";
+import { loadUserDisplayName } from "./store/userDisplayNameSlice";
+import { setupUserDisplayNameSync } from "./store/userDisplayNameSync";
 import ExtensionGraphView from "./graphView/ExtensionGraphView";
 import {
   useActiveMap,
@@ -61,11 +63,8 @@ const App: React.FC = () => {
   useRefreshAuth();
   useSyncApiConfig();
   useBroadcastListener();
-
-  // Load initial configs
-  useEffect(() => {
-    void dispatch(loadApiEndpointOverride());
-  }, [dispatch]);
+  useUserDisplayName();
+  useApiEndpointOverride();
 
   const documentId = useActiveMapAutomergeDocumentId();
   const activeMap = useActiveMap();
@@ -211,6 +210,21 @@ function useSyncUpdatedMediaExcerptOutcomesWithContent() {
     }
     setPrevMediaExcerptOutcomes(mediaExcerptOutcomes);
   }, [mediaExcerptOutcomes, prevMediaExcerptOutcomes]);
+}
+
+function useApiEndpointOverride() {
+  const dispatch = useAppDispatch();
+  useEffect(() => {
+    void dispatch(loadApiEndpointOverride());
+  }, [dispatch]);
+}
+
+function useUserDisplayName() {
+  const dispatch = useAppDispatch();
+  useEffect(() => {
+    void dispatch(loadUserDisplayName());
+    setupUserDisplayNameSync();
+  }, [dispatch]);
 }
 
 function useHandleChromeRuntimeMessage() {
