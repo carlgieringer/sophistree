@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet } from "react-native";
 import { Button, Text, TextInput, HelperText, Card } from "react-native-paper";
-import { getUserDisplayName, updateUserDisplayName } from "../userDisplayName";
+import {
+  getUserDisplayName,
+  updateUserDisplayName,
+  USER_DISPLAY_LENGTH_MAX_LENGTH,
+} from "../userDisplayName";
 
 export function UserDisplayNameSetting() {
   const [displayName, setDisplayName] = useState<string | undefined>();
@@ -34,15 +38,11 @@ export function UserDisplayNameSetting() {
     setIsLoading(true);
     setError(undefined);
     try {
-      const success = await updateUserDisplayName(editedName);
-      if (success) {
-        setDisplayName(editedName);
-        setIsEditing(false);
-      } else {
-        setError("Failed to update display name");
-      }
+      await updateUserDisplayName(editedName);
+      setDisplayName(editedName);
+      setIsEditing(false);
     } catch (_error) {
-      setError("Failed to update display name");
+      setError(`Failed to update display name.`);
     } finally {
       setIsLoading(false);
     }
@@ -66,6 +66,7 @@ export function UserDisplayNameSetting() {
               style={styles.input}
               error={isNameTooLong}
               disabled={isLoading}
+              maxLength={USER_DISPLAY_LENGTH_MAX_LENGTH}
             />
             {isNameTooLong && (
               <HelperText type="error">

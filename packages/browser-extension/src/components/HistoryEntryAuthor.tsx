@@ -12,7 +12,7 @@ export function HistoryEntryAuthor({
   userDisplayName,
 }: HistoryEntryAuthorProps) {
   return (
-    <Tooltip title={`Actor ID: ${actorId}`}>
+    <Tooltip title={`Actor ID: ${actorId}`} leaveTouchDelay={100000}>
       <Text style={styles.author}>{userDisplayName || actorId}</Text>
     </Tooltip>
   );
@@ -21,6 +21,5 @@ export function HistoryEntryAuthor({
 const styles = StyleSheet.create({
   author: {
     fontWeight: "500",
-    overflow: "hidden",
   },
 });

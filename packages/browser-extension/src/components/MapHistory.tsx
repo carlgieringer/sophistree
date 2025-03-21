@@ -46,7 +46,9 @@ const MapHistory: React.FC<{ style?: StyleProp<ViewStyle> }> = ({ style }) => {
 };
 
 const styles = StyleSheet.create({
-  authorCell: { overflow: "hidden" },
+  authorCell: {
+    overflow: "hidden",
+  },
 });
 
 function formatHistoryChange(

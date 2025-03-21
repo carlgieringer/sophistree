@@ -19,8 +19,39 @@ import { getActorId } from "@automerge/automerge/next";
 export function useUserDisplayNameSyncAndInitialization() {
   // Must setup sync before ensuring the name so that a new name is updated in the active map.
   useUserDisplayNameSync();
-  useEnsureUserDisplayName();
+  useMaybeInitializeUserDisplayName();
   useSetActiveMapUserDisplayName();
+}
+
+// Hook to sync user display name with active map when it changes in storage
+function useUserDisplayNameSync() {
+  const dispatch = useAppDispatch();
+  const documentId = useActiveMapAutomergeDocumentId();
+  const currentDisplayName = useUserDisplayName();
+  useEffect(() => {
+    const handleStorageChange = (
+      changes: Record<string, chrome.storage.StorageChange>,
+      areaName: string,
+    ) => {
+      if (areaName === "local" && "userDisplayName" in changes) {
+        const newDisplayName = changes["userDisplayName"].newValue as
+          | string
+          | undefined;
+        if (!newDisplayName) return;
+
+        dispatch(
+          updateUserInfoInMaps({
+            userDisplayName: newDisplayName,
+          }),
+        );
+      }
+    };
+
+    chrome.storage.onChanged.addListener(handleStorageChange);
+    return () => {
+      chrome.storage.onChanged.removeListener(handleStorageChange);
+    };
+  }, [dispatch, documentId, currentDisplayName]);
 }
 
 function useSetActiveMapUserDisplayName() {
@@ -47,43 +78,6 @@ function useSetActiveMapUserDisplayName() {
   }, [dispatch, map, displayName]);
 }
 
-// Hook to sync user display name with active map when it changes in storage
-function useUserDisplayNameSync() {
-  const dispatch = useAppDispatch();
-  const documentId = useActiveMapAutomergeDocumentId();
-  const currentDisplayName = useUserDisplayName();
-  useEffect(() => {
-    const handleStorageChange = (
-      changes: Record<string, chrome.storage.StorageChange>,
-      areaName: string,
-    ) => {
-      if (areaName === "local" && "userDisplayName" in changes) {
-        const newDisplayName = changes["userDisplayName"].newValue as
-          | string
-          | undefined;
-        if (!newDisplayName) return;
-
-        // Update the active map if there is one
-        if (!documentId) return;
-
-        // Only update if there's no existing display name
-        if (!currentDisplayName) {
-          dispatch(
-            updateUserInfoInMaps({
-              userDisplayName: newDisplayName,
-            }),
-          );
-        }
-      }
-    };
-
-    chrome.storage.onChanged.addListener(handleStorageChange);
-    return () => {
-      chrome.storage.onChanged.removeListener(handleStorageChange);
-    };
-  }, [dispatch, documentId, currentDisplayName]);
-}
-
 function useUserDisplayName() {
   const map = useActiveMap();
   if (!map) {
@@ -94,14 +88,14 @@ function useUserDisplayName() {
 }
 
 // Hook to ensure a user display name exists
-function useEnsureUserDisplayName() {
+function useMaybeInitializeUserDisplayName() {
   useEffect(() => {
     void ensureUserDisplayName();
   }, []);
 }
 
 const STORAGE_KEY = "userDisplayName";
-const MAX_LENGTH = 64;
+export const USER_DISPLAY_LENGTH_MAX_LENGTH = 64;
 
 const nameConfig: Config = {
   dictionaries: [adjectives, animals],
@@ -151,19 +145,12 @@ async function ensureUserDisplayName(): Promise<string> {
 // Update the user display name in storage
 export async function updateUserDisplayName(
   displayName: string,
-): Promise<boolean> {
-  try {
-    if (displayName.length > MAX_LENGTH) {
-      appLogger.error(
-        `Display name must be less than ${MAX_LENGTH} characters`,
-      );
-      return false;
-    }
-
-    await chrome.storage.local.set({ [STORAGE_KEY]: displayName });
-    return true;
-  } catch (error) {
-    appLogger.error("Failed to update user display name", error);
-    return false;
+): Promise<void> {
+  if (displayName.length > USER_DISPLAY_LENGTH_MAX_LENGTH) {
+    throw new Error(
+      `Display name must be less than ${USER_DISPLAY_LENGTH_MAX_LENGTH} characters`,
+    );
   }
+
+  await chrome.storage.local.set({ [STORAGE_KEY]: displayName });
 }
