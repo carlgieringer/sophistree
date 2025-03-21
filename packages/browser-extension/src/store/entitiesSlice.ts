@@ -609,20 +609,17 @@ export const entitiesSlice = createAppSlice({
 
         const handle = getDocHandle(state.activeMapAutomergeDocumentId);
         handle.change((map) => {
-          // Initialize the object if it doesn't exist
           if (!map.userInfoByActorId) {
             map.userInfoByActorId = {};
           }
 
           const actorId = getActorId(map);
 
-          // Initialize the actor's info if it doesn't exist
           if (!map.userInfoByActorId[actorId]) {
             map.userInfoByActorId[actorId] = {};
           }
 
-          // Update fields individually for better Automerge merging
-          if (userInfo.userDisplayName !== undefined) {
+          if (userInfo.userDisplayName) {
             map.userInfoByActorId[actorId].userDisplayName =
               userInfo.userDisplayName;
           }

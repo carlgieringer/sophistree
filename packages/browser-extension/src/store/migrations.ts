@@ -177,9 +177,6 @@ export const mapMigrations = {
       map.userInfoByActorId = {};
     }
   },
-  13: (_map: ArgumentMap) => {
-    // No need to migrate userDisplayName since it's now stored in Chrome storage
-  },
 };
 
 const removeDuplicateJustifications = (map: ArgumentMap) => {

@@ -1,3 +1,4 @@
+import { getActorId } from "@automerge/automerge/next";
 import { useEffect } from "react";
 import {
   Config,
@@ -14,7 +15,6 @@ import {
   useActiveMapAutomergeDocumentId,
 } from "./store/entitiesSlice";
 import { useActiveMap } from "./sync/hooks";
-import { getActorId } from "@automerge/automerge/next";
 
 export function useUserDisplayNameSyncAndInitialization() {
   // Must setup sync before ensuring the name so that a new name is updated in the active map.

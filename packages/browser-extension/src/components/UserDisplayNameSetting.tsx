@@ -84,7 +84,7 @@ export function UserDisplayNameSetting() {
               <Button
                 mode="contained"
                 onPress={() => void handleSave()}
-                disabled={isLoading || isNameTooLong}
+                disabled={!editedName || isLoading || isNameTooLong}
                 style={styles.button}
               >
                 Save
