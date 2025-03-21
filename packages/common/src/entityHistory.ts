@@ -8,6 +8,7 @@ import type {
 
 export interface ArgumentMapHistoryEntry {
   actorId: string;
+  userDisplayName?: string;
   /** Automerge Heads/Hash[] */
   heads: string[] | undefined;
   timestamp: string;

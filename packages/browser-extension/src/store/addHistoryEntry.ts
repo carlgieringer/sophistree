@@ -43,11 +43,13 @@ export function addHistoryEntry<C extends ArgumentMapHistoryChange>(
 ): void {
   const actorId = getActorId(map);
   const timestamp = new Date().toISOString();
+  const userDisplayName = map.userInfoByActorId[actorId]?.userDisplayName;
 
   // Direct change case
   if (typeof changeOrType !== "string") {
     map.history.push({
       actorId,
+      userDisplayName,
       heads,
       timestamp,
       changes: [cloneChange(changeOrType)],
@@ -71,6 +73,7 @@ export function addHistoryEntry<C extends ArgumentMapHistoryChange>(
         if (canCombineHistoryChanges(lastChange, newChange)) {
           map.history.splice(map.history.length - 1, 1, {
             actorId: getActorId(map),
+            userDisplayName,
             heads,
             timestamp,
             changes: [cloneChange(newChange)],
@@ -85,6 +88,7 @@ export function addHistoryEntry<C extends ArgumentMapHistoryChange>(
   const change = changeFn(undefined);
   map.history.push({
     actorId,
+    userDisplayName,
     heads,
     timestamp,
     changes: [cloneChange(change)],

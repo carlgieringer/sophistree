@@ -284,5 +284,6 @@ function createMockArgumentMap(entities: Entity[]): ArgumentMap {
     conclusions: [] as ConclusionInfo[], // Use regular array instead of Automerge proxy
     sourceNameOverrides: {},
     history: [],
+    userInfoByActorId: {},
   };
 }

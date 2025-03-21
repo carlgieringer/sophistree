@@ -13,7 +13,7 @@ import { updateConclusions } from "./conclusions";
 import { createDoc } from "../sync";
 import { getActorId, Heads } from "@automerge/automerge/next";
 
-export const persistedStateVersion = 11;
+export const persistedStateVersion = 13;
 
 type MapsState =
   | {
@@ -170,6 +170,11 @@ export const mapMigrations = {
           changes: [{ type: "BeginHistory" }],
         },
       ];
+    }
+  },
+  12: (map: ArgumentMap) => {
+    if (!map.userInfoByActorId) {
+      map.userInfoByActorId = {};
     }
   },
 };

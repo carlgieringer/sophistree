@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import {
   ArgumentMap,
+  ArgumentMapUserInfo,
   Entity,
   Justification,
   MediaExcerpt,
@@ -91,6 +92,7 @@ export const entitiesSlice = createAppSlice({
         id: uuidv4(),
         sourceNameOverrides: {},
         history: [],
+        userInfoByActorId: {},
       };
       const handle = createDoc(newMap);
       state.activeMapAutomergeDocumentId = handle.documentId;
@@ -594,6 +596,36 @@ export const entitiesSlice = createAppSlice({
         entity.isCollapsed = !entity.isCollapsed;
       });
     }),
+    updateUserInfoInMaps: create.reducer<ArgumentMapUserInfo>(
+      (state, action) => {
+        const userInfo = action.payload;
+
+        if (!state.activeMapAutomergeDocumentId) {
+          appLogger.warn(
+            "Cannot update user info because there is no active map.",
+          );
+          return;
+        }
+
+        const handle = getDocHandle(state.activeMapAutomergeDocumentId);
+        handle.change((map) => {
+          if (!map.userInfoByActorId) {
+            map.userInfoByActorId = {};
+          }
+
+          const actorId = getActorId(map);
+
+          if (!map.userInfoByActorId[actorId]) {
+            map.userInfoByActorId[actorId] = {};
+          }
+
+          if (userInfo.userDisplayName) {
+            map.userInfoByActorId[actorId].userDisplayName =
+              userInfo.userDisplayName;
+          }
+        });
+      },
+    ),
     resetActiveMapsHistory: create.reducer((state) => {
       const documentId = state.activeMapAutomergeDocumentId;
       if (!documentId) {
@@ -1137,6 +1169,7 @@ export const {
   updateJustification,
   updateMediaExerpt,
   updateProposition,
+  updateUserInfoInMaps,
 } = entitiesSlice.actions;
 
 export function useActiveMapAutomergeDocumentId() {

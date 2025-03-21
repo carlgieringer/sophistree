@@ -1,6 +1,7 @@
 import React, { ReactElement } from "react";
-import { StyleProp, View, ViewStyle } from "react-native";
+import { StyleProp, View, ViewStyle, StyleSheet } from "react-native";
 import { DataTable, Text, Tooltip } from "react-native-paper";
+import { HistoryEntryAuthor } from "./HistoryEntryAuthor";
 
 import {
   ArgumentMapHistoryChange,
@@ -8,9 +9,9 @@ import {
   JustificationTargetHistoryInfo,
   Polarity,
 } from "@sophistree/common";
+import { BulletedList } from "@sophistree/ui-common";
 
 import { useActiveMapHistory } from "../sync/hooks";
-import { BulletedList } from "@sophistree/ui-common";
 
 const MapHistory: React.FC<{ style?: StyleProp<ViewStyle> }> = ({ style }) => {
   const history = useActiveMapHistory();
@@ -20,7 +21,7 @@ const MapHistory: React.FC<{ style?: StyleProp<ViewStyle> }> = ({ style }) => {
       <DataTable>
         <DataTable.Header>
           <DataTable.Title>Time</DataTable.Title>
-          <DataTable.Title>Actor</DataTable.Title>
+          <DataTable.Title>Author</DataTable.Title>
           <DataTable.Title>Change</DataTable.Title>
         </DataTable.Header>
         {history.map((entry, index) => (
@@ -28,7 +29,12 @@ const MapHistory: React.FC<{ style?: StyleProp<ViewStyle> }> = ({ style }) => {
             <DataTable.Cell>
               {new Date(entry.timestamp).toLocaleString()}
             </DataTable.Cell>
-            <DataTable.Cell>{entry.actorId}</DataTable.Cell>
+            <DataTable.Cell style={styles.authorCell}>
+              <HistoryEntryAuthor
+                actorId={entry.actorId}
+                userDisplayName={entry.userDisplayName}
+              />
+            </DataTable.Cell>
             <DataTable.Cell>
               <BulletedList items={entry.changes.map(formatHistoryChange)} />
             </DataTable.Cell>
@@ -38,6 +44,12 @@ const MapHistory: React.FC<{ style?: StyleProp<ViewStyle> }> = ({ style }) => {
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  authorCell: {
+    overflow: "hidden",
+  },
+});
 
 function formatHistoryChange(
   change: ArgumentMapHistoryChange,

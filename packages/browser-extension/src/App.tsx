@@ -50,6 +50,7 @@ import AppContainer from "./components/AppContainer";
 
 import "./App.scss";
 import { useBroadcastListener } from "./sync/broadcast";
+import { useUserDisplayNameSyncAndInitialization } from "./userDisplayName";
 
 const App: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -61,11 +62,8 @@ const App: React.FC = () => {
   useRefreshAuth();
   useSyncApiConfig();
   useBroadcastListener();
-
-  // Load initial configs
-  useEffect(() => {
-    void dispatch(loadApiEndpointOverride());
-  }, [dispatch]);
+  useUserDisplayNameSyncAndInitialization();
+  useApiEndpointOverride();
 
   const documentId = useActiveMapAutomergeDocumentId();
   const activeMap = useActiveMap();
@@ -211,6 +209,13 @@ function useSyncUpdatedMediaExcerptOutcomesWithContent() {
     }
     setPrevMediaExcerptOutcomes(mediaExcerptOutcomes);
   }, [mediaExcerptOutcomes, prevMediaExcerptOutcomes]);
+}
+
+function useApiEndpointOverride() {
+  const dispatch = useAppDispatch();
+  useEffect(() => {
+    void dispatch(loadApiEndpointOverride());
+  }, [dispatch]);
 }
 
 function useHandleChromeRuntimeMessage() {

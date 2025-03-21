@@ -5,6 +5,7 @@ import { useRefreshAuth } from "../store/hooks";
 import { AuthenticationCard } from "./AuthenticationCard";
 import { ApiEndpointOverrideSetting } from "./ApiEndpointOverrideSetting";
 import { DefaultSyncServerSettings } from "./DefaultSyncServerSettings";
+import { UserDisplayNameSetting } from "./UserDisplayNameSetting";
 import { useBroadcastListener } from "../sync/broadcast";
 
 export function OptionsPage() {
@@ -20,6 +21,7 @@ export function OptionsPage() {
         Sophistree Options
       </Text>
       <AuthenticationCard />
+      <UserDisplayNameSetting />
       <ApiEndpointOverrideSetting />
       <DefaultSyncServerSettings />
     </View>

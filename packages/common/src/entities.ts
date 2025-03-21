@@ -120,4 +120,9 @@ export interface ArgumentMap {
    */
   sourceNameOverrides: Record<string, string>;
   history: ArgumentMapHistoryEntry[];
+  userInfoByActorId: Record<string, ArgumentMapUserInfo>;
+}
+
+export interface ArgumentMapUserInfo {
+  userDisplayName?: string;
 }
