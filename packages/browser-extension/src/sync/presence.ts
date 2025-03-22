@@ -5,13 +5,15 @@ import {
 } from "@automerge/automerge-repo";
 import { getActorId } from "@automerge/automerge/next";
 import { ArgumentMap } from "@sophistree/common";
-import * as appLogger from "../logging/appLogging";
 import { useCallback, useEffect, useState } from "react";
+
 import {
   PRESENCE_BROADCAST_INTERVAL_MS,
   CollaborativePresenceState,
   UserPresence,
-} from "@sophistree/ui-common/src/presence";
+} from "@sophistree/ui-common";
+
+import * as appLogger from "../logging/appLogging";
 
 interface PresenceUpdateMessage extends UserPresence {
   type: "presence-update";
@@ -129,10 +131,8 @@ export function useCollaborativePresence(
       }
     };
 
-    // Start presence broadcasting
     const cleanup = startPresenceBroadcasting(handle);
 
-    // Listen for ephemeral messages
     handle.on("ephemeral-message", onEphemeralMessage);
 
     return () => {

@@ -56,7 +56,6 @@ export default function RemoteCursor({ presence, cyRef }: RemoteCursorProps) {
     renderedX = presence.cursorPosition.x * zoom + pan.x;
     renderedY = presence.cursorPosition.y * zoom + pan.y;
 
-    // Get the container's offset
     const container = cyRef.current.container();
     if (container) {
       const rect = container.getBoundingClientRect();

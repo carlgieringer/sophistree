@@ -30,11 +30,7 @@ import { usePanToFocusedNodes } from "./usePanToFocusedNodes";
 import { useReactNodes } from "./useReactNodes";
 import { getLayout } from "./layout";
 import { useZoomEventHandlers } from "./useZoomEventHandlers";
-import {
-  OnResetSelection,
-  OnSelectEntities,
-  useSelectionHandlers,
-} from "./useSelectionHandlers";
+import { OnSelectEntities, useSelectionHandlers } from "./useSelectionHandlers";
 import {
   OnAddNewProposition,
   useDblTapToCreateNode,
@@ -61,7 +57,6 @@ interface GraphViewProps {
   outcomes: Outcomes;
   logger: GraphViewLogger;
   onSelectEntities: OnSelectEntities;
-  onResetSelection: OnResetSelection;
   onAddNewProposition?: OnAddNewProposition;
   onDeleteEntity?: OnDeleteEntity;
   onCompleteDrag?: OnCompleteDrag;
@@ -81,7 +76,6 @@ export default function GraphView({
   outcomes,
   logger,
   onSelectEntities,
-  onResetSelection,
   onAddNewProposition,
   onDeleteEntity,
   onCompleteDrag,
@@ -156,7 +150,7 @@ export default function GraphView({
     layoutGraph,
     onEditEntity,
   });
-  useSelectionHandlers(cyRef, onSelectEntities, onResetSelection);
+  useSelectionHandlers(cyRef, onSelectEntities);
   useDblTapToCreateNode(cyRef, onAddNewProposition);
   useDragHandlers(cyRef, onCompleteDrag);
 

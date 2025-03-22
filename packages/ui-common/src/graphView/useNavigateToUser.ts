@@ -17,7 +17,6 @@ export function useNavigateToUser(
       const renderedX = position.x * zoom + pan.x;
       const renderedY = position.y * zoom + pan.y;
 
-      // Calculate pan to center the position
       const container = cy.container();
       if (!container) return;
 
@@ -35,7 +34,6 @@ export function useNavigateToUser(
     [cyRef],
   );
 
-  // Handle navigation to off-screen users
   return useCallback(
     (actorId: string) => {
       if (!presenceState) return;

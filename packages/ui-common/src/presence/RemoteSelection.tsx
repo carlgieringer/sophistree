@@ -80,7 +80,6 @@ export default function RemoteSelection({
   // If there's no selection, don't render anything
   if (!selection?.length) return null;
 
-  // Get the position for the display name (center of selected nodes)
   const getDisplayNamePosition = () => {
     if (!cyRef.current) return { x: 0, y: 0 };
 
@@ -89,9 +88,15 @@ export default function RemoteSelection({
       .nodes()
       .filter((node) => selection?.includes(getEntityId(node)) ?? false);
     const bb = selectedNodes.renderedBoundingBox();
+
+    const container = cyRef.current.container();
+    const rect = container?.getBoundingClientRect();
+    const containerLeft = rect?.left ?? 0;
+    const containerTop = rect?.top ?? 0;
+
     return {
-      x: (bb.x1 + bb.x2) / 2,
-      y: bb.y1 - 20, // Position above the selection
+      x: containerLeft + (bb.x1 + bb.x2) / 2,
+      y: containerTop + bb.y1 - 20, // Position above the selection
     };
   };
 

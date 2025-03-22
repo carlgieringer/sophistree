@@ -13,7 +13,6 @@ import {
   completeDrag,
   deleteEntity,
   DragPayload,
-  resetSelection,
   selectEntities,
   toggleCollapsed,
   useActiveMapAutomergeDocumentId,
@@ -22,7 +21,6 @@ import {
 import { showEntityEditor } from "../store/uiSlice";
 import * as appLogger from "../logging/appLogging";
 import {
-  useActiveMap,
   useActiveMapEntities,
   useActiveMapEntitiesOutcomes,
 } from "../sync/hooks";
@@ -34,12 +32,10 @@ export default function ExtensionGraphView({
 }) {
   const dispatch = useAppDispatch();
   const activeMapId = useActiveMapAutomergeDocumentId();
-  const map = useActiveMap();
   const entities = useActiveMapEntities();
   const selectedEntityIds = useSelectedEntityIds();
   const outcomes = useActiveMapEntitiesOutcomes();
 
-  // Get collaborative presence state and handlers
   const { presenceState, broadcastCursorPosition, broadcastSelection } =
     useCollaborativePresence(
       activeMapId ? getDocHandle(activeMapId) : undefined,
@@ -68,12 +64,6 @@ export default function ExtensionGraphView({
     (me: MediaExcerpt) => void focusMediaExcerpt(me),
     [],
   );
-  const onResetSelection = useCallback(() => {
-    dispatch(resetSelection());
-    if (activeMapId) {
-      broadcastSelection([]);
-    }
-  }, [dispatch, activeMapId, broadcastSelection]);
   const onAddNewProposition = useCallback(
     () => dispatch(addNewProposition()),
     [dispatch],
@@ -96,7 +86,7 @@ export default function ExtensionGraphView({
     [dispatch],
   );
 
-  if (!activeMapId || !map) {
+  if (!activeMapId) {
     return "loading";
   }
 
@@ -109,7 +99,6 @@ export default function ExtensionGraphView({
       logger={appLogger}
       onFocusMediaExcerpt={onFocusMediaExcerpt}
       onSelectEntities={onSelectEntities}
-      onResetSelection={onResetSelection}
       onAddNewProposition={onAddNewProposition}
       onDeleteEntity={onDeleteEntity}
       onCompleteDrag={onCompleteDrag}
