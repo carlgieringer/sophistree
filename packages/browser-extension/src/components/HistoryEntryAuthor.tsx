@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import React, { useState, useCallback, useEffect } from "react";
+import { StyleSheet, Pressable } from "react-native";
 import { Text, Dialog, Button, IconButton, Portal } from "react-native-paper";
 
 interface HistoryEntryAuthorProps {
@@ -12,21 +12,52 @@ export function HistoryEntryAuthor({
   userDisplayName,
 }: HistoryEntryAuthorProps) {
   const [dialogVisible, setDialogVisible] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [fadeTimeout, setFadeTimeout] = useState<NodeJS.Timeout | undefined>(
+    undefined,
+  );
 
   const showDialog = () => setDialogVisible(true);
   const hideDialog = () => setDialogVisible(false);
 
+  const handleMouseEnter = useCallback(() => {
+    setIsHovered(true);
+    if (fadeTimeout) {
+      clearTimeout(fadeTimeout);
+      setFadeTimeout(undefined);
+    }
+  }, [fadeTimeout]);
+
+  const handleMouseLeave = useCallback(() => {
+    const timeout = setTimeout(() => {
+      setIsHovered(false);
+    }, 2000);
+    setFadeTimeout(timeout);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (fadeTimeout) {
+        clearTimeout(fadeTimeout);
+      }
+    };
+  }, [fadeTimeout]);
+
   return (
     <>
-      <View style={styles.container}>
+      <Pressable
+        style={styles.container}
+        onHoverIn={handleMouseEnter}
+        onHoverOut={handleMouseLeave}
+      >
         <IconButton
           icon="information"
           size={16}
           onPress={showDialog}
-          style={styles.infoButton}
+          style={[styles.infoButton, { opacity: isHovered ? 1 : 0 }]}
         />
         <Text>{userDisplayName || actorId}</Text>
-      </View>
+      </Pressable>
 
       <Portal>
         <Dialog visible={dialogVisible} onDismiss={hideDialog}>
@@ -50,5 +81,6 @@ const styles = StyleSheet.create({
   },
   infoButton: {
     margin: 0,
+    transition: "opacity 0.3s ease",
   },
 });
