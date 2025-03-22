@@ -162,9 +162,12 @@ export const mapMigrations = {
   },
   11: (map: ArgumentMap, heads: Heads | undefined) => {
     if (!("history" in map) || !map.history.length) {
+      const actorId = getActorId(map);
+      const userDisplayName = map.userInfoByActorId?.[actorId].userDisplayName;
       map.history = [
         {
-          actorId: getActorId(map),
+          actorId,
+          userDisplayName,
           heads,
           timestamp: new Date().toISOString(),
           changes: [{ type: "BeginHistory" }],

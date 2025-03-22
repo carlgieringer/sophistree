@@ -82,8 +82,12 @@ export function setDocSyncServerAddresses(
   handle.change((map) => {
     map.automergeDocumentId = newId;
 
+    const actorId = getActorId(map);
+    const userDisplayName = map.userInfoByActorId?.[actorId].userDisplayName;
+
     map.history.push({
-      actorId: getActorId(map),
+      actorId,
+      userDisplayName,
       heads: handle.heads(),
       timestamp: new Date().toISOString(),
       changes: [
