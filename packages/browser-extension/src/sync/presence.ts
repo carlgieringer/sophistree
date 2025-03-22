@@ -103,9 +103,6 @@ export function useCollaborativePresence(
 
       switch (message.type) {
         case "presence-update": {
-          if (message.selection) {
-            console.log({ payload });
-          }
           setPresenceState((prev) => {
             const actorId = message.actorId;
             const userDisplayName =

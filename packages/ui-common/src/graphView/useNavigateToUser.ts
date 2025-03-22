@@ -1,6 +1,7 @@
 import { MutableRefObject, useCallback } from "react";
 import cytoscape, { Position } from "cytoscape";
 import { CollaborativePresenceState } from "../presence";
+import { modelToRenderedPosition } from "../presence/coordinateUtils";
 
 export function useNavigateToUser(
   cyRef: MutableRefObject<cytoscape.Core | undefined>,
@@ -11,23 +12,19 @@ export function useNavigateToUser(
       if (!cyRef.current) return;
 
       const cy = cyRef.current;
-      // Convert position to rendered position
-      const zoom = cy.zoom();
-      const pan = cy.pan();
-      const renderedX = position.x * zoom + pan.x;
-      const renderedY = position.y * zoom + pan.y;
-
       const container = cy.container();
       if (!container) return;
 
       const width = container.offsetWidth;
       const height = container.offsetHeight;
-      const centerX = width / 2;
-      const centerY = height / 2;
 
+      // Get rendered position using utility
+      const renderedPosition = modelToRenderedPosition(position, cyRef);
+
+      // Center the viewport on the rendered position
       cy.pan({
-        x: centerX - renderedX,
-        y: centerY - renderedY,
+        x: width / 2 - renderedPosition.x,
+        y: height / 2 - renderedPosition.y,
       });
       cy.zoom(1);
     },

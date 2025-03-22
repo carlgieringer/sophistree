@@ -1,14 +1,12 @@
-import { useState, useEffect } from "react";
 import { MutableRefObject } from "react";
 import cytoscape from "cytoscape";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import {
-  DISPLAY_NAME_SHOW_TIMEOUT_MS,
-  DISPLAY_NAME_FADE_DURATION_MS,
-} from "./types";
+import { DISPLAY_NAME_FADE_DURATION_MS } from "./types";
 import "./RemoteCursor.scss";
 
 import { UserPresence } from "./types";
+import { modelToRenderedPosition } from "./coordinateUtils";
+import { useDisplayNameVisibility } from "./displayNameUtils";
 
 interface RemoteCursorProps {
   presence: UserPresence;
@@ -22,57 +20,24 @@ const materialCommunityIconsCursorYOffset = 8;
 
 export default function RemoteCursor({ presence, cyRef }: RemoteCursorProps) {
   const isActive = Date.now() - presence.presenceTimestampEpochMs < 5000;
-  const [isDisplayNameVisible, setIsDisplayNameVisible] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
-
-  // Show display name when cursor moves or on hover
-  useEffect(() => {
-    if (presence.presenceTimestampEpochMs || isHovered) {
-      setIsDisplayNameVisible(true);
-
-      // Start timeout to hide display name
-      const timeout = setTimeout(() => {
-        if (!isHovered) {
-          setIsDisplayNameVisible(false);
-        }
-      }, DISPLAY_NAME_SHOW_TIMEOUT_MS);
-
-      return () => clearTimeout(timeout);
-    }
-  }, [presence.presenceTimestampEpochMs, isHovered]);
+  const { isDisplayNameVisible, setIsHovered } = useDisplayNameVisibility(
+    presence.presenceTimestampEpochMs
+  );
 
   if (!isActive || !presence.cursorPosition) return null;
 
-  // Calculate the rendered position
-  let renderedX = presence.cursorPosition.x;
-  let renderedY = presence.cursorPosition.y;
-
-  if (cyRef.current) {
-    // Transform model coordinates to rendered coordinates
-    const zoom = cyRef.current.zoom();
-    const pan = cyRef.current.pan();
-
-    // Apply zoom and pan transformation
-    renderedX = presence.cursorPosition.x * zoom + pan.x;
-    renderedY = presence.cursorPosition.y * zoom + pan.y;
-
-    const container = cyRef.current.container();
-    if (container) {
-      const rect = container.getBoundingClientRect();
-      // Add the container's offset and half the icon size (10px) for proper centering
-      renderedX +=
-        rect.left + iconSize / 2 - materialCommunityIconsCursorXOffset;
-      renderedY +=
-        rect.top + iconSize / 2 - materialCommunityIconsCursorYOffset;
-    }
-  }
+  // Calculate the rendered position using utility function
+  const renderedPosition = modelToRenderedPosition(presence.cursorPosition, cyRef, {
+    offsetX: iconSize / 2 - materialCommunityIconsCursorXOffset,
+    offsetY: iconSize / 2 - materialCommunityIconsCursorYOffset,
+  });
 
   return (
     <div
       className="remote-cursor"
       style={{
-        left: renderedX,
-        top: renderedY,
+        left: renderedPosition.x,
+        top: renderedPosition.y,
         transform: "translate(-50%, -50%)",
         position: "absolute",
         zIndex: 1000,

@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from "react";
-
-import {
-  DISPLAY_NAME_SHOW_TIMEOUT_MS,
-  DISPLAY_NAME_FADE_DURATION_MS,
-} from "./types";
+import React, { useEffect, useState } from "react";
+import { DISPLAY_NAME_FADE_DURATION_MS } from "./types";
 import { getEntityId } from "../graphView/entityIds";
+import { modelToRenderedPosition } from "./coordinateUtils";
+import { useDisplayNameVisibility } from "./displayNameUtils";
 
 import "./RemoteSelection.scss";
 
@@ -21,8 +19,15 @@ export default function RemoteSelection({
   displayName,
   cyRef,
 }: RemoteSelectionProps) {
-  const [isHovered, setIsHovered] = useState(false);
-  const [isDisplayNameVisible, setIsDisplayNameVisible] = useState(false);
+  // Use timestamp to trigger display name visibility when selection changes
+  const [selectionTimestamp, setSelectionTimestamp] = useState<number>();
+
+  useEffect(() => {
+    setSelectionTimestamp(Date.now());
+  }, [selection]); // Update timestamp when selection changes
+
+  const { isDisplayNameVisible, setIsHovered } =
+    useDisplayNameVisibility(selectionTimestamp);
 
   // Apply selection highlight class to selected nodes
   useEffect(() => {
@@ -38,77 +43,44 @@ export default function RemoteSelection({
     selectedNodes.addClass("remotely-selected");
 
     // Add hover handlers to show display name
-    const onNodeMouseEnter = () => {
-      setIsHovered(true);
-      setIsDisplayNameVisible(true);
-    };
-
-    const onNodeMouseLeave = () => {
-      setIsHovered(false);
-      // Start timeout to hide display name
-      setTimeout(() => {
-        if (!isHovered) {
-          setIsDisplayNameVisible(false);
-        }
-      }, DISPLAY_NAME_SHOW_TIMEOUT_MS);
-    };
-
-    // Add event listeners using Cytoscape's event system
-    selectedNodes.on("mouseover", onNodeMouseEnter);
-    selectedNodes.on("mouseout", onNodeMouseLeave);
+    selectedNodes.on("mouseover", () => setIsHovered(true));
+    selectedNodes.on("mouseout", () => setIsHovered(false));
 
     // Clean up
     return () => {
       selectedNodes.removeClass("remotely-selected");
-      selectedNodes.off("mouseover");
-      selectedNodes.off("mouseout");
+      selectedNodes.off("mouseover mouseout");
     };
-  }, [cyRef, selection, actorId, isHovered]);
-
-  // Show display name when selection changes
-  useEffect(() => {
-    setIsDisplayNameVisible(true);
-    const timeout = setTimeout(() => {
-      if (!isHovered) {
-        setIsDisplayNameVisible(false);
-      }
-    }, DISPLAY_NAME_SHOW_TIMEOUT_MS);
-
-    return () => clearTimeout(timeout);
-  }, [selection, isHovered]);
+  }, [cyRef, selection, actorId, setIsHovered]);
 
   // If there's no selection, don't render anything
   if (!selection?.length) return null;
 
+  // Get the rendered position for the display name
   const getDisplayNamePosition = () => {
-    if (!cyRef.current) return { x: 0, y: 0 };
+    if (!cyRef.current || !selection?.length) return { x: 0, y: 0 };
 
     const cy = cyRef.current;
     const selectedNodes = cy
       .nodes()
-      .filter((node) => selection?.includes(getEntityId(node)) ?? false);
-    const bb = selectedNodes.renderedBoundingBox();
+      .filter((node) => selection.includes(getEntityId(node)));
+    const bb = selectedNodes.boundingBox();
 
-    const container = cyRef.current.container();
-    const rect = container?.getBoundingClientRect();
-    const containerLeft = rect?.left ?? 0;
-    const containerTop = rect?.top ?? 0;
-
-    return {
-      x: containerLeft + (bb.x1 + bb.x2) / 2,
-      y: containerTop + bb.y1 - 20, // Position above the selection
-    };
+    // Convert center point of bounding box to rendered coordinates
+    return modelToRenderedPosition(
+      { x: (bb.x1 + bb.x2) / 2, y: bb.y1 - 20 }, // Position above the selection
+      cyRef,
+    );
   };
 
-  const { x, y } = getDisplayNamePosition();
-  console.log({ x, y });
+  const renderedPosition = getDisplayNamePosition();
   return isDisplayNameVisible ? (
     <div
       className="remote-selection-name"
       style={{
         position: "absolute",
-        left: x,
-        top: y,
+        left: renderedPosition.x,
+        top: renderedPosition.y,
         transform: "translate(-50%, -100%)",
         transition: `opacity ${DISPLAY_NAME_FADE_DURATION_MS}ms ease-out`,
       }}
