@@ -31,10 +31,6 @@ export default function WebGraphView({
     setSelectedEntityIds(entityIds);
   }, []);
 
-  const handleResetSelection = useCallback(() => {
-    setSelectedEntityIds([]);
-  }, []);
-
   const handleFocusMediaExcerpt = useCallback((mediaExcerpt: MediaExcerpt) => {
     window.open(mediaExcerpt.urlInfo.url, "_blank");
   }, []);
@@ -73,7 +69,6 @@ export default function WebGraphView({
         outcomes={outcomes}
         logger={logger}
         onSelectEntities={handleSelectEntities}
-        onResetSelection={handleResetSelection}
         onFocusMediaExcerpt={handleFocusMediaExcerpt}
         onToggleCollapse={handleToggleCollapse}
       />

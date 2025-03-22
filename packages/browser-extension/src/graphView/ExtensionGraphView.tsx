@@ -1,7 +1,10 @@
 import React, { CSSProperties, useCallback } from "react";
 
+import { Position } from "cytoscape";
 import { MediaExcerpt } from "@sophistree/common";
 import { GraphView } from "@sophistree/ui-common";
+import { useCollaborativePresence } from "../sync/presence";
+import { getDocHandle } from "../sync/sync";
 
 import { focusMediaExcerpt } from "./focusMediaExcerpt";
 import { useAppDispatch } from "../store";
@@ -10,7 +13,6 @@ import {
   completeDrag,
   deleteEntity,
   DragPayload,
-  resetSelection,
   selectEntities,
   toggleCollapsed,
   useActiveMapAutomergeDocumentId,
@@ -34,17 +36,33 @@ export default function ExtensionGraphView({
   const selectedEntityIds = useSelectedEntityIds();
   const outcomes = useActiveMapEntitiesOutcomes();
 
+  const { presenceState, broadcastCursorPosition, broadcastSelection } =
+    useCollaborativePresence(
+      activeMapId ? getDocHandle(activeMapId) : undefined,
+    );
+
+  const onCursorMove = useCallback(
+    (position: Position) => {
+      if (activeMapId) {
+        broadcastCursorPosition(position);
+      }
+    },
+    [activeMapId, broadcastCursorPosition],
+  );
+
+  const onSelectEntities = useCallback(
+    (ids: string[]) => {
+      dispatch(selectEntities(ids));
+      if (activeMapId) {
+        broadcastSelection(ids);
+      }
+    },
+    [dispatch, activeMapId, broadcastSelection],
+  );
+
   const onFocusMediaExcerpt = useCallback(
     (me: MediaExcerpt) => void focusMediaExcerpt(me),
     [],
-  );
-  const onSelectEntities = useCallback(
-    (ids: string[]) => dispatch(selectEntities(ids)),
-    [dispatch],
-  );
-  const onResetSelection = useCallback(
-    () => dispatch(resetSelection()),
-    [dispatch],
   );
   const onAddNewProposition = useCallback(
     () => dispatch(addNewProposition()),
@@ -81,13 +99,14 @@ export default function ExtensionGraphView({
       logger={appLogger}
       onFocusMediaExcerpt={onFocusMediaExcerpt}
       onSelectEntities={onSelectEntities}
-      onResetSelection={onResetSelection}
       onAddNewProposition={onAddNewProposition}
       onDeleteEntity={onDeleteEntity}
       onCompleteDrag={onCompleteDrag}
       onToggleCollapse={onToggleCollapse}
       onEditEntity={onEditEntity}
       style={style}
+      presenceState={presenceState}
+      onCursorMove={onCursorMove}
     />
   );
 }

@@ -19,6 +19,13 @@ p {
   transition: border 0.1s ease;
 }
 
+.remotely-selected {
+  border-width: 3px;
+  border-color: c.$peterRiver;
+  border-style: dashed;
+  transition: border 0.1s ease;
+}
+
 .dragging {
   opacity: 0.5;
   z-index: 10;
