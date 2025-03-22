@@ -1,6 +1,12 @@
 import { Stylesheet } from "cytoscape";
 
-import { carrot, nephritis, pomegranate, sunflower } from "../colors";
+import {
+  carrot,
+  nephritis,
+  pomegranate,
+  sunflower,
+  peterRiver,
+} from "../colors";
 
 export const stylesheet: Stylesheet[] = [
   {
@@ -158,6 +164,14 @@ export const stylesheet: Stylesheet[] = [
       "line-color": carrot,
       "target-arrow-color": carrot,
       width: 4,
+    },
+  },
+  {
+    selector: ".remotely-selected",
+    style: {
+      "border-width": 3,
+      "border-color": peterRiver,
+      "border-style": "dashed",
     },
   },
 ];

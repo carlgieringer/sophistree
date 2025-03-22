@@ -1,6 +1,13 @@
-import cytoscape, { ElementDataDefinition } from "cytoscape";
+import cytoscape, { ElementDataDefinition, Position } from "cytoscape";
 import elk from "cytoscape-elk";
-import { CSSProperties, useCallback, useEffect, useRef, useState } from "react";
+import {
+  CSSProperties,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  Fragment,
+} from "react";
 import CytoscapeComponent from "react-cytoscapejs";
 import { Portal } from "react-native-paper";
 
@@ -10,6 +17,10 @@ import PropositionAppearanceDialog, {
   OnFocusMediaExcerpt,
 } from "./PropositionAppearanceDialog";
 import { Entity } from "@sophistree/common";
+import { CollaborativePresenceState } from "../presence/types";
+import RemoteCursor from "../presence/RemoteCursor";
+import RemoteSelection from "../presence/RemoteSelection";
+import OffScreenUsersList from "../presence/OffScreenUsersList";
 import { GraphViewLogger, PropositionNodeData } from "./graphTypes";
 import { OnDeleteEntity, useContextMenus } from "./useContextMenus";
 import { useElements } from "./useElements";
@@ -33,6 +44,9 @@ import { stylesheet } from "./graphStyles";
 import { OnToggleCollapse } from "./collapsing";
 
 import "./GraphView.scss";
+import { useCursorMovement } from "./useCursorMovement";
+import { useNavigateToUser } from "./useNavigateToUser";
+import { useViewport } from "./useViewport";
 
 cytoscape.use(elk);
 cytoscape.use(reactNodes);
@@ -54,6 +68,8 @@ interface GraphViewProps {
   onFocusMediaExcerpt: OnFocusMediaExcerpt;
   onToggleCollapse: OnToggleCollapse;
   onEditEntity?: (entityId: string) => void;
+  presenceState?: CollaborativePresenceState;
+  onCursorMove?: (position: Position) => void;
 }
 
 export default function GraphView({
@@ -72,6 +88,8 @@ export default function GraphView({
   onFocusMediaExcerpt,
   onToggleCollapse,
   onEditEntity,
+  presenceState,
+  onCursorMove,
 }: GraphViewProps) {
   const { elements, focusedNodeIds } = useElements(
     entities,
@@ -142,6 +160,11 @@ export default function GraphView({
   useDblTapToCreateNode(cyRef, onAddNewProposition);
   useDragHandlers(cyRef, onCompleteDrag);
 
+  // Copresence
+  useCursorMovement(cyRef, onCursorMove);
+  const handleNavigateToUser = useNavigateToUser(cyRef, presenceState);
+  const viewport = useViewport(cyRef);
+
   useEffect(() => layoutGraph(), [layoutGraph, elements]);
 
   return (
@@ -165,6 +188,29 @@ export default function GraphView({
         maxZoom={10}
       />
       <Portal>
+        {presenceState &&
+          Object.entries(presenceState.presenceByActorId).map(
+            ([actorId, presence]) => (
+              <Fragment key={actorId}>
+                {presence.cursorPosition && (
+                  <RemoteCursor presence={presence} cyRef={cyRef} />
+                )}
+                <RemoteSelection
+                  actorId={actorId}
+                  selection={presence.selection}
+                  displayName={presence.userDisplayName || "Unknown User"}
+                  cyRef={cyRef}
+                />
+              </Fragment>
+            ),
+          )}
+        {presenceState && (
+          <OffScreenUsersList
+            presenceState={presenceState}
+            viewport={viewport}
+            onNavigateToUser={handleNavigateToUser}
+          />
+        )}
         {visitAppearancesDialogProposition && (
           <PropositionAppearanceDialog
             data={visitAppearancesDialogProposition}

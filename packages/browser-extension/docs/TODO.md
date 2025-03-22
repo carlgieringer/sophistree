@@ -1,5 +1,47 @@
 # TODO
 
+Priority:
+
+- Critique. Auth for validation of "quoted" entities?
+
+- Plan identity some (allow per-map pseudonym.)
+
+- With automerge-repo@2 the open of the first map is so slow.
+- undo/redo
+
+- UX for distant actions
+
+- Move to map (new/existing)
+- Add excerpt to different map (new/existing)
+
+- When deleting collapsed, delete all collapsed (with confirmation)
+
+- Kickstart social nature with AI researcher ("what would contradict this proposition? Search for it")
+
+Ideas:
+
+- Try moving compound atoms outside of compounds (removes 'complex')
+- Entity mentions (mention proposition, MediaExcerpt, Justifications)
+
+Bugs:
+
+- Need 'dark contrast' highlights. Determine 'dark' page, then additionally apply classes with -dark
+  to them.
+- Conclusion still a conclusion after being added to PropositionCompound
+- Conclusion with undefined proposition text
+- Missing conclusion (Brendan Carr uses deceptive tactics to achieve a censorial agenda)
+- Deleting a compound's justification should delete the compound
+- When highlighting across page boundaries in PDF, sometimes selects entire page.
+
+QoL:
+
+- Place new node on screen or, if off screen, 'grab' easily?
+- Confirm deleting
+- When deleting collapsed, delete all collapsed (with confirmation)
+- When drag local PDF to PDF viewer, replaces file, but URL does not update.
+- Drag text to make excerpt
+- Edit proposition by double clicking on node
+
 - Improve collapsing to allow collapsing some children
 - When clicking highlight of collapsed entity, focus collapse indicator
 - drag border should supercede selected border
@@ -40,7 +82,8 @@ Automerge:
   - Document sophistree
 - Use RTK query instead of async thunk directly?
 - Update OptionsPage, ApiEndpointOverrideSetting, AuthenticationCard to use react-native-paper
-- Separate options and side panel redux store/reducers.
+- Separate options and side panel redux store/reducers. options page should not be syncing docs!
+  i.e. remove useBroadcastListener.
 - Move user auth into separate table (multiple auth methods for single user)
 - Look into SSR
 

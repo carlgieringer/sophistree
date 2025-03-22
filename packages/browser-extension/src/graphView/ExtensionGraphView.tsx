@@ -1,7 +1,10 @@
 import React, { CSSProperties, useCallback } from "react";
 
+import { Position } from "cytoscape";
 import { MediaExcerpt } from "@sophistree/common";
 import { GraphView } from "@sophistree/ui-common";
+import { useCollaborativePresence } from "../sync/presence";
+import { getDocHandle } from "../sync/sync";
 
 import { focusMediaExcerpt } from "./focusMediaExcerpt";
 import { useAppDispatch } from "../store";
@@ -19,6 +22,7 @@ import {
 import { showEntityEditor } from "../store/uiSlice";
 import * as appLogger from "../logging/appLogging";
 import {
+  useActiveMap,
   useActiveMapEntities,
   useActiveMapEntitiesOutcomes,
 } from "../sync/hooks";
@@ -30,22 +34,46 @@ export default function ExtensionGraphView({
 }) {
   const dispatch = useAppDispatch();
   const activeMapId = useActiveMapAutomergeDocumentId();
+  const map = useActiveMap();
   const entities = useActiveMapEntities();
   const selectedEntityIds = useSelectedEntityIds();
   const outcomes = useActiveMapEntitiesOutcomes();
+
+  // Get collaborative presence state and handlers
+  const { presenceState, broadcastCursorPosition, broadcastSelection } =
+    useCollaborativePresence(
+      activeMapId ? getDocHandle(activeMapId) : undefined,
+    );
+
+  const onCursorMove = useCallback(
+    (position: Position) => {
+      if (activeMapId) {
+        broadcastCursorPosition(position);
+      }
+    },
+    [activeMapId, broadcastCursorPosition],
+  );
+
+  const onSelectEntities = useCallback(
+    (ids: string[]) => {
+      dispatch(selectEntities(ids));
+      if (activeMapId) {
+        broadcastSelection(ids);
+      }
+    },
+    [dispatch, activeMapId, broadcastSelection],
+  );
 
   const onFocusMediaExcerpt = useCallback(
     (me: MediaExcerpt) => void focusMediaExcerpt(me),
     [],
   );
-  const onSelectEntities = useCallback(
-    (ids: string[]) => dispatch(selectEntities(ids)),
-    [dispatch],
-  );
-  const onResetSelection = useCallback(
-    () => dispatch(resetSelection()),
-    [dispatch],
-  );
+  const onResetSelection = useCallback(() => {
+    dispatch(resetSelection());
+    if (activeMapId) {
+      broadcastSelection([]);
+    }
+  }, [dispatch, activeMapId, broadcastSelection]);
   const onAddNewProposition = useCallback(
     () => dispatch(addNewProposition()),
     [dispatch],
@@ -68,7 +96,7 @@ export default function ExtensionGraphView({
     [dispatch],
   );
 
-  if (!activeMapId) {
+  if (!activeMapId || !map) {
     return "loading";
   }
 
@@ -88,6 +116,8 @@ export default function ExtensionGraphView({
       onToggleCollapse={onToggleCollapse}
       onEditEntity={onEditEntity}
       style={style}
+      presenceState={presenceState}
+      onCursorMove={onCursorMove}
     />
   );
 }
