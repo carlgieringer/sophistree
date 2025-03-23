@@ -633,9 +633,13 @@ export const entitiesSlice = createAppSlice({
       const handle = getDocHandle(documentId);
 
       handle.change((map) => {
+        const actorId = getActorId(map);
+        const userDisplayName =
+          map.userInfoByActorId?.[actorId].userDisplayName;
         map.history = [
           {
-            actorId: getActorId(map),
+            actorId,
+            userDisplayName,
             heads: handle.heads(),
             timestamp: new Date().toISOString(),
             changes: [
