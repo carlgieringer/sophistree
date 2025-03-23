@@ -41,7 +41,7 @@ export function modelToRenderedPosition(
   let renderedX = position.x * zoom + pan.x;
   let renderedY = position.y * zoom + pan.y;
 
-  // Add container offset
+  // Account for container offsets
   const { left, top } = getContainerOffset(cyRef);
   renderedX += left + (options?.offsetX || 0);
   renderedY += top + (options?.offsetY || 0);
