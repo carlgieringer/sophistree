@@ -31,7 +31,7 @@ const MapHistory: React.FC<{ style?: StyleProp<ViewStyle> }> = ({ style }) => {
             </DataTable.Cell>
             <DataTable.Cell style={styles.authorCell}>
               <HistoryEntryAuthor
-                actorId={entry.actorId}
+                deviceId={entry.deviceId}
                 userDisplayName={entry.userDisplayName}
               />
             </DataTable.Cell>

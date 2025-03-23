@@ -7,7 +7,7 @@ import type {
 } from "entities";
 
 export interface ArgumentMapHistoryEntry {
-  actorId: string;
+  deviceId: string;
   userDisplayName?: string;
   /** Automerge Heads/Hash[] */
   heads: string[] | undefined;

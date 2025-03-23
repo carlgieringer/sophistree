@@ -3,12 +3,12 @@ import { StyleSheet, Pressable } from "react-native";
 import { Text, Dialog, Button, IconButton, Portal } from "react-native-paper";
 
 interface HistoryEntryAuthorProps {
-  actorId: string;
+  deviceId: string;
   userDisplayName?: string;
 }
 
 export function HistoryEntryAuthor({
-  actorId,
+  deviceId,
   userDisplayName,
 }: HistoryEntryAuthorProps) {
   const [dialogVisible, setDialogVisible] = useState(false);
@@ -56,14 +56,14 @@ export function HistoryEntryAuthor({
           onPress={showDialog}
           style={[styles.infoButton, { opacity: isHovered ? 1 : 0 }]}
         />
-        <Text>{userDisplayName || actorId}</Text>
+        <Text>{userDisplayName || deviceId}</Text>
       </Pressable>
 
       <Portal>
         <Dialog visible={dialogVisible} onDismiss={hideDialog}>
           <Dialog.Title>Author Details</Dialog.Title>
           <Dialog.Content>
-            <Text>Actor ID: {actorId}</Text>
+            <Text>Device ID: {deviceId}</Text>
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={hideDialog}>Close</Button>

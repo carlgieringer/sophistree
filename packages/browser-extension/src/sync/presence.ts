@@ -1,9 +1,9 @@
 import { Position } from "cytoscape";
+import { getDeviceId } from "../deviceId";
 import {
   DocHandle,
   DocHandleEphemeralMessagePayload,
 } from "@automerge/automerge-repo";
-import { getActorId } from "@automerge/automerge/next";
 import { ArgumentMap } from "@sophistree/common";
 import { useCallback, useEffect, useState } from "react";
 
@@ -27,10 +27,10 @@ export function broadcastPresence(handle: DocHandle<ArgumentMap>) {
     appLogger.warn("Cannot broadcast presence: doc is undefined");
     return;
   }
-  const actorId = getActorId(doc);
+  const deviceId = getDeviceId(doc.automergeDocumentId);
   handle.broadcast({
     type: "presence-update",
-    actorId,
+    deviceId,
     presenceTimestampEpochMs: Date.now(),
   });
 }
@@ -44,10 +44,10 @@ export function broadcastCursorPosition(
     appLogger.warn("Cannot broadcast cursor position: doc is undefined");
     return;
   }
-  const actorId = getActorId(doc);
+  const deviceId = getDeviceId(doc.automergeDocumentId);
   handle.broadcast({
     type: "presence-update",
-    actorId,
+    deviceId,
     cursorPosition: position,
     presenceTimestampEpochMs: Date.now(),
   });
@@ -62,10 +62,10 @@ export function broadcastSelection(
     appLogger.warn("Cannot broadcast selection: doc is undefined");
     return;
   }
-  const actorId = getActorId(doc);
+  const deviceId = getDeviceId(doc.automergeDocumentId);
   handle.broadcast({
     type: "presence-update",
-    actorId,
+    deviceId,
     selection,
     presenceTimestampEpochMs: Date.now(),
   });
@@ -88,7 +88,7 @@ export function useCollaborativePresence(
 ) {
   const [presenceState, setPresenceState] =
     useState<CollaborativePresenceState>({
-      presenceByActorId: {},
+      presenceByDeviceId: {},
     });
 
   useEffect(() => {
@@ -104,14 +104,14 @@ export function useCollaborativePresence(
       switch (message.type) {
         case "presence-update": {
           setPresenceState((prev) => {
-            const actorId = message.actorId;
+            const deviceId = message.deviceId;
             const userDisplayName =
-              handle.docSync()?.userInfoByActorId[actorId]?.userDisplayName;
+              handle.docSync()?.userInfoByDeviceId[deviceId]?.userDisplayName;
             return {
-              presenceByActorId: {
-                ...prev.presenceByActorId,
-                [actorId]: {
-                  ...prev.presenceByActorId[actorId],
+              presenceByDeviceId: {
+                ...prev.presenceByDeviceId,
+                [deviceId]: {
+                  ...prev.presenceByDeviceId[deviceId],
                   ...message,
                   userDisplayName,
                 },

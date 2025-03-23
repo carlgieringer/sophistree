@@ -1,7 +1,7 @@
 import { Position } from "cytoscape";
 
 export interface UserPresence {
-  actorId: string;
+  deviceId: string;
   userDisplayName?: string;
   cursorPosition?: Position;
   selection?: string[]; // Entity IDs
@@ -9,7 +9,7 @@ export interface UserPresence {
 }
 
 export interface CollaborativePresenceState {
-  presenceByActorId: Record<string, UserPresence>;
+  presenceByDeviceId: Record<string, UserPresence>;
 }
 
 // Configuration constants

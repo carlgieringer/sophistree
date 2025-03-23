@@ -32,10 +32,10 @@ export function useNavigateToUser(
   );
 
   return useCallback(
-    (actorId: string) => {
+    (deviceId: string) => {
       if (!presenceState) return;
 
-      const presence = presenceState.presenceByActorId[actorId];
+      const presence = presenceState.presenceByDeviceId[deviceId];
       if (presence?.cursorPosition) {
         navigateToPosition(presence.cursorPosition);
       }
