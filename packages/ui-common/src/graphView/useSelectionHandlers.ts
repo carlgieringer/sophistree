@@ -1,5 +1,5 @@
 import { MutableRefObject } from "react";
-import cytoscape, { EventObject, EventObjectNode } from "cytoscape";
+import cytoscape from "cytoscape";
 import { useEffect } from "react";
 
 import { getEntityId } from "./entityIds";
@@ -8,14 +8,9 @@ export interface OnSelectEntities {
   (entityIds: string[]): void;
 }
 
-export interface OnResetSelection {
-  (): void;
-}
-
 export function useSelectionHandlers(
   cyRef: MutableRefObject<cytoscape.Core | undefined>,
   onSelectEntities: OnSelectEntities,
-  onResetSelection: OnResetSelection,
 ) {
   useEffect(() => {
     if (!cyRef.current) {
@@ -23,28 +18,13 @@ export function useSelectionHandlers(
     }
     const cy = cyRef.current;
 
-    const tapNodeHandler = (event: EventObjectNode) => {
-      const entityId = getEntityId(event.target);
-      onSelectEntities([entityId]);
+    const onSelectionChange = () => {
+      const ids = cy.elements().filter(":selected").map(getEntityId);
+      onSelectEntities(ids);
     };
-    cy.on("tap", "node", tapNodeHandler);
-
-    const tapEdgeHandler = (event: EventObjectNode) => {
-      const entityId = getEntityId(event.target);
-      onSelectEntities([entityId]);
-    };
-    cy.on("tap", "edge", tapEdgeHandler);
-
-    const tapHandler = (event: EventObject) => {
-      if (event.target === cy) {
-        onResetSelection();
-      }
-    };
-    cy.on("tap", tapHandler);
+    cy.on("select unselect", "node,edge", onSelectionChange);
     return () => {
-      cy.off("tap", "node", tapNodeHandler);
-      cy.off("tap", "edge", tapEdgeHandler);
-      cy.off("tap", tapHandler);
+      cy.off("select unselect", "node,edge", onSelectionChange);
     };
-  }, [cyRef, onResetSelection, onSelectEntities]);
+  }, [cyRef, onSelectEntities]);
 }

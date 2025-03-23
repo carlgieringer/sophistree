@@ -59,8 +59,6 @@ const initialState = {
 
 type State = typeof initialState;
 
-const emptySelection: string[] = [];
-
 export interface AddMediaExcerptData {
   id: string;
   quotation: string;
@@ -475,9 +473,6 @@ export const entitiesSlice = createAppSlice({
         ...selectedEntityIds,
         ...appearances.map((a) => a.id),
       ];
-    }),
-    resetSelection: create.reducer((state) => {
-      state.selectedEntityIds = emptySelection;
     }),
     deleteEntity: create.reducer<string>((state, action) => {
       const documentId = state.activeMapAutomergeDocumentId;
@@ -1159,7 +1154,6 @@ export const {
   openSyncedMap,
   renameActiveMap,
   resetActiveMapsHistory,
-  resetSelection,
   selectEntities,
   setActiveMap,
   showEntity,

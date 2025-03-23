@@ -166,4 +166,9 @@ export function useReactNodes(
   ]);
 }
 
-const syncClasses = ["hover-highlight", "dragging", ...nodeOutcomeClasses];
+const syncClasses = [
+  "hover-highlight",
+  "dragging",
+  "remotely-selected",
+  ...nodeOutcomeClasses,
+];

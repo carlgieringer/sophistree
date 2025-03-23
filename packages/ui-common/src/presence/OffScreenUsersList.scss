@@ -1,0 +1,56 @@
+.off-screen-users-list {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  min-width: 200px;
+  max-width: 300px;
+  z-index: 1000;
+
+  h4 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    color: #666;
+  }
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .off-screen-user {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    margin: 4px 0;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: #f5f5f5;
+
+      .click-hint {
+        opacity: 1;
+      }
+    }
+
+    .user-name {
+      font-size: 13px;
+      color: #333;
+      margin-right: 8px;
+    }
+
+    .click-hint {
+      font-size: 11px;
+      color: #999;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+  }
+}
