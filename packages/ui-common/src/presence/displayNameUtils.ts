@@ -4,9 +4,7 @@ import { DISPLAY_NAME_SHOW_TIMEOUT_MS } from "./types";
 /**
  * Custom hook to manage display name visibility with timeouts
  */
-export function useDisplayNameVisibility(
-  triggerTimestamp?: number
-): {
+export function useDisplayNameVisibility(triggerTimestamp?: number): {
   isDisplayNameVisible: boolean;
   setIsHovered: (value: boolean) => void;
 } {

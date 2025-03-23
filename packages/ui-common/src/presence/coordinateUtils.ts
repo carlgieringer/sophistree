@@ -5,7 +5,7 @@ import cytoscape, { Position } from "cytoscape";
  * Gets the offset of the cytoscape container
  */
 export function getContainerOffset(
-  cyRef: MutableRefObject<cytoscape.Core | undefined>
+  cyRef: MutableRefObject<cytoscape.Core | undefined>,
 ): { left: number; top: number } {
   if (!cyRef.current) return { left: 0, top: 0 };
 
@@ -15,7 +15,7 @@ export function getContainerOffset(
   const rect = container.getBoundingClientRect();
   return {
     left: rect.left,
-    top: rect.top
+    top: rect.top,
   };
 }
 
@@ -29,7 +29,7 @@ export function modelToRenderedPosition(
   options?: {
     offsetX?: number;
     offsetY?: number;
-  }
+  },
 ): Position {
   if (!cyRef.current) return position;
 

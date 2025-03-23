@@ -21,16 +21,20 @@ const materialCommunityIconsCursorYOffset = 8;
 export default function RemoteCursor({ presence, cyRef }: RemoteCursorProps) {
   const isActive = Date.now() - presence.presenceTimestampEpochMs < 5000;
   const { isDisplayNameVisible, setIsHovered } = useDisplayNameVisibility(
-    presence.presenceTimestampEpochMs
+    presence.presenceTimestampEpochMs,
   );
 
   if (!isActive || !presence.cursorPosition) return null;
 
   // Calculate the rendered position using utility function
-  const renderedPosition = modelToRenderedPosition(presence.cursorPosition, cyRef, {
-    offsetX: iconSize / 2 - materialCommunityIconsCursorXOffset,
-    offsetY: iconSize / 2 - materialCommunityIconsCursorYOffset,
-  });
+  const renderedPosition = modelToRenderedPosition(
+    presence.cursorPosition,
+    cyRef,
+    {
+      offsetX: iconSize / 2 - materialCommunityIconsCursorXOffset,
+      offsetY: iconSize / 2 - materialCommunityIconsCursorYOffset,
+    },
+  );
 
   return (
     <div
