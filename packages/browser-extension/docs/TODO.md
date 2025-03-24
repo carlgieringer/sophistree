@@ -7,6 +7,7 @@ Priority:
 - Plan identity some (allow per-map pseudonym.)
 
 - With automerge-repo@2 the open of the first map is so slow.
+  - If upgrading, include migration await in doc await.
 - undo/redo
 
 - UX for distant actions
@@ -32,6 +33,9 @@ Bugs:
 - Missing conclusion (Brendan Carr uses deceptive tactics to achieve a censorial agenda)
 - Deleting a compound's justification should delete the compound
 - When highlighting across page boundaries in PDF, sometimes selects entire page.
+- Windows:
+  - Remote cursor is off
+  - Right click overlaps our own. (long press to work around)
 
 QoL:
 
