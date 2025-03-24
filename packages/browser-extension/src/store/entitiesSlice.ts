@@ -1,4 +1,5 @@
-import { deleteAt, getActorId, Heads } from "@automerge/automerge/next";
+import { deleteAt, Heads } from "@automerge/automerge/next";
+import { getDeviceId } from "../deviceId";
 import deepEqual from "deep-equal";
 import { v4 as uuidv4 } from "uuid";
 
@@ -90,7 +91,7 @@ export const entitiesSlice = createAppSlice({
         id: uuidv4(),
         sourceNameOverrides: {},
         history: [],
-        userInfoByActorId: {},
+        userInfoByDeviceId: {},
       };
       const handle = createDoc(newMap);
       state.activeMapAutomergeDocumentId = handle.documentId;
@@ -604,18 +605,14 @@ export const entitiesSlice = createAppSlice({
 
         const handle = getDocHandle(state.activeMapAutomergeDocumentId);
         handle.change((map) => {
-          if (!map.userInfoByActorId) {
-            map.userInfoByActorId = {};
-          }
+          const deviceId = getDeviceId(map.automergeDocumentId);
 
-          const actorId = getActorId(map);
-
-          if (!map.userInfoByActorId[actorId]) {
-            map.userInfoByActorId[actorId] = {};
+          if (!map.userInfoByDeviceId[deviceId]) {
+            map.userInfoByDeviceId[deviceId] = {};
           }
 
           if (userInfo.userDisplayName) {
-            map.userInfoByActorId[actorId].userDisplayName =
+            map.userInfoByDeviceId[deviceId].userDisplayName =
               userInfo.userDisplayName;
           }
         });
@@ -633,12 +630,12 @@ export const entitiesSlice = createAppSlice({
       const handle = getDocHandle(documentId);
 
       handle.change((map) => {
-        const actorId = getActorId(map);
+        const deviceId = getDeviceId(map.automergeDocumentId);
         const userDisplayName =
-          map.userInfoByActorId?.[actorId].userDisplayName;
+          map.userInfoByDeviceId?.[deviceId].userDisplayName;
         map.history = [
           {
-            actorId,
+            deviceId,
             userDisplayName,
             heads: handle.heads(),
             timestamp: new Date().toISOString(),

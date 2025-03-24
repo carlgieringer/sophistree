@@ -1,4 +1,5 @@
-import { getActorId, Heads } from "@automerge/automerge/next";
+import { Heads } from "@automerge/automerge/next";
+import { getDeviceId } from "../deviceId";
 
 import { ArgumentMap, ArgumentMapHistoryChange } from "@sophistree/common";
 
@@ -41,14 +42,14 @@ export function addHistoryEntry<C extends ArgumentMapHistoryChange>(
   changeOrType: ArgumentMapHistoryChange | C["type"],
   changeFn?: (lastChange: C | undefined) => C,
 ): void {
-  const actorId = getActorId(map);
+  const deviceId = getDeviceId(map.automergeDocumentId);
   const timestamp = new Date().toISOString();
-  const userDisplayName = map.userInfoByActorId[actorId]?.userDisplayName;
+  const userDisplayName = map.userInfoByDeviceId[deviceId]?.userDisplayName;
 
   // Direct change case
   if (typeof changeOrType !== "string") {
     map.history.push({
-      actorId,
+      deviceId,
       userDisplayName,
       heads,
       timestamp,
@@ -67,12 +68,12 @@ export function addHistoryEntry<C extends ArgumentMapHistoryChange>(
     const lastEntry = map.history[map.history.length - 1];
     if (lastEntry.changes.length === 1) {
       const lastChange = lastEntry.changes[0];
-      if (lastChange.type === changeOrType && lastEntry.actorId === actorId) {
+      if (lastChange.type === changeOrType && lastEntry.deviceId === deviceId) {
         // Type assertion is safe here because we've verified the types match
         const newChange = changeFn(lastChange as C);
         if (canCombineHistoryChanges(lastChange, newChange)) {
           map.history.splice(map.history.length - 1, 1, {
-            actorId: getActorId(map),
+            deviceId,
             userDisplayName,
             heads,
             timestamp,
@@ -87,7 +88,7 @@ export function addHistoryEntry<C extends ArgumentMapHistoryChange>(
   // Create new entry
   const change = changeFn(undefined);
   map.history.push({
-    actorId,
+    deviceId,
     userDisplayName,
     heads,
     timestamp,

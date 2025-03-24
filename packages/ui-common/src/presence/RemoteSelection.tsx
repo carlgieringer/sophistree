@@ -7,14 +7,12 @@ import { useDisplayNameVisibility } from "./displayNameUtils";
 import "./RemoteSelection.scss";
 
 interface RemoteSelectionProps {
-  actorId: string;
   selection: string[] | undefined;
   displayName: string;
   cyRef: React.MutableRefObject<cytoscape.Core | undefined>;
 }
 
 export default function RemoteSelection({
-  actorId,
   selection,
   displayName,
   cyRef,
@@ -51,7 +49,7 @@ export default function RemoteSelection({
       selectedNodes.removeClass("remotely-selected");
       selectedNodes.off("mouseover mouseout");
     };
-  }, [cyRef, selection, actorId, setIsHovered]);
+  }, [cyRef, selection, setIsHovered]);
 
   // If there's no selection, don't render anything
   if (!selection?.length) return null;

@@ -11,9 +11,10 @@ import {
 
 import { updateConclusions } from "./conclusions";
 import { createDoc } from "../sync";
-import { getActorId, Heads } from "@automerge/automerge/next";
+import { Heads } from "@automerge/automerge/next";
+import { getDeviceId } from "../deviceId";
 
-export const persistedStateVersion = 13;
+export const persistedStateVersion = 14;
 
 type MapsState =
   | {
@@ -162,11 +163,12 @@ export const mapMigrations = {
   },
   11: (map: ArgumentMap, heads: Heads | undefined) => {
     if (!("history" in map) || !map.history.length) {
-      const actorId = getActorId(map);
-      const userDisplayName = map.userInfoByActorId?.[actorId].userDisplayName;
+      const deviceId = getDeviceId(map.automergeDocumentId);
+      const userDisplayName =
+        map.userInfoByDeviceId?.[deviceId].userDisplayName;
       map.history = [
         {
-          actorId,
+          deviceId,
           userDisplayName,
           heads,
           timestamp: new Date().toISOString(),
@@ -175,9 +177,9 @@ export const mapMigrations = {
       ];
     }
   },
-  12: (map: ArgumentMap) => {
-    if (!map.userInfoByActorId) {
-      map.userInfoByActorId = {};
+  14: (map: ArgumentMap) => {
+    if (!map.userInfoByDeviceId) {
+      map.userInfoByDeviceId = {};
     }
   },
 };

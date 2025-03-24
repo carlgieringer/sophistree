@@ -3,7 +3,7 @@ import {
   DocumentId,
   isValidDocumentId,
 } from "@automerge/automerge-repo";
-import { getActorId } from "@automerge/automerge/next";
+import { getDeviceId } from "../deviceId";
 
 import { ArgumentMap } from "@sophistree/common";
 
@@ -22,7 +22,7 @@ export function createDoc(map: NewArgumentMap) {
     map.automergeDocumentId = handle.documentId;
     map.history = [
       {
-        actorId: getActorId(map),
+        deviceId: getDeviceId(map.automergeDocumentId),
         heads: handle.heads(),
         timestamp: new Date().toISOString(),
         changes: [
@@ -82,11 +82,11 @@ export function setDocSyncServerAddresses(
   handle.change((map) => {
     map.automergeDocumentId = newId;
 
-    const actorId = getActorId(map);
-    const userDisplayName = map.userInfoByActorId?.[actorId].userDisplayName;
+    const deviceId = getDeviceId(map.automergeDocumentId);
+    const userDisplayName = map.userInfoByDeviceId?.[deviceId].userDisplayName;
 
     map.history.push({
-      actorId,
+      deviceId,
       userDisplayName,
       heads: handle.heads(),
       timestamp: new Date().toISOString(),

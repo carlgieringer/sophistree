@@ -1,4 +1,4 @@
-import { getActorId } from "@automerge/automerge/next";
+import { getDeviceId } from "./deviceId";
 import { useEffect } from "react";
 import {
   Config,
@@ -83,8 +83,8 @@ function useUserDisplayName() {
   if (!map) {
     return undefined;
   }
-  const actorId = getActorId(map);
-  return map?.userInfoByActorId?.[actorId]?.userDisplayName;
+  const deviceId = getDeviceId(map.automergeDocumentId);
+  return map?.userInfoByDeviceId?.[deviceId]?.userDisplayName;
 }
 
 // Hook to ensure a user display name exists

@@ -183,14 +183,13 @@ export default function GraphView({
       />
       <Portal>
         {presenceState &&
-          Object.entries(presenceState.presenceByActorId).map(
-            ([actorId, presence]) => (
-              <Fragment key={actorId}>
+          Object.entries(presenceState.presenceByDeviceId).map(
+            ([deviceId, presence]) => (
+              <Fragment key={deviceId}>
                 {presence.cursorPosition && (
                   <RemoteCursor presence={presence} cyRef={cyRef} />
                 )}
                 <RemoteSelection
-                  actorId={actorId}
                   selection={presence.selection}
                   displayName={presence.userDisplayName || "Unknown User"}
                   cyRef={cyRef}
