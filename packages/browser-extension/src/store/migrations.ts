@@ -14,7 +14,7 @@ import { createDoc } from "../sync";
 import { Heads } from "@automerge/automerge/next";
 import { getDeviceId } from "../deviceId";
 
-export const persistedStateVersion = 13;
+export const persistedStateVersion = 14;
 
 type MapsState =
   | {
@@ -177,7 +177,7 @@ export const mapMigrations = {
       ];
     }
   },
-  12: (map: ArgumentMap) => {
+  14: (map: ArgumentMap) => {
     if (!map.userInfoByDeviceId) {
       map.userInfoByDeviceId = {};
     }

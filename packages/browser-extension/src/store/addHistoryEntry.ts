@@ -73,7 +73,7 @@ export function addHistoryEntry<C extends ArgumentMapHistoryChange>(
         const newChange = changeFn(lastChange as C);
         if (canCombineHistoryChanges(lastChange, newChange)) {
           map.history.splice(map.history.length - 1, 1, {
-            deviceId: getDeviceId(map.automergeDocumentId),
+            deviceId,
             userDisplayName,
             heads,
             timestamp,

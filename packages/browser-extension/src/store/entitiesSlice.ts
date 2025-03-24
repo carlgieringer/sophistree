@@ -607,10 +607,6 @@ export const entitiesSlice = createAppSlice({
         handle.change((map) => {
           const deviceId = getDeviceId(map.automergeDocumentId);
 
-          if (!map.userInfoByDeviceId) {
-            map.userInfoByDeviceId = {};
-          }
-
           if (!map.userInfoByDeviceId[deviceId]) {
             map.userInfoByDeviceId[deviceId] = {};
           }
