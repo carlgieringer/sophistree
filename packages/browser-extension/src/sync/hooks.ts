@@ -93,12 +93,20 @@ export const useAllMaps = () => {
         if (!docChangeListeners.has(handle.documentId)) {
           addDocChangeListener(handle);
         }
-        void handle.doc().then((doc) => {
-          if (!doc) {
-            return;
-          }
-          updateMapInList(doc);
-        });
+        handle
+          .doc()
+          .then((doc) => {
+            if (!doc) {
+              return;
+            }
+            updateMapInList(doc);
+          })
+          .catch((reason) => {
+            appLogger.error(
+              `Failed to update map in list: ${handle.documentId}`,
+              reason,
+            );
+          });
       }
     }
 
@@ -135,7 +143,12 @@ export const useActiveMap = () => {
     }
     const handle = getDocHandle(documentId);
 
-    void handle.doc().then(setMap);
+    handle
+      .doc()
+      .then(setMap)
+      .catch((reason) => {
+        appLogger.error(`Failed to set active map`, reason);
+      });
 
     const onDocChange = ({ doc }: DocHandleChangePayload<ArgumentMap>) =>
       setMap(doc);

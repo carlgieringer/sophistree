@@ -280,7 +280,7 @@ export const entitiesSlice = createAppSlice({
         );
         if (extantMediaExcerpt) {
           appLogger.warn("Declining to create a duplicative MediaExcerpt.");
-          return extantMediaExcerpt;
+          return;
         }
 
         const sourceNameOverride = getSourceNameOverride(
@@ -489,7 +489,10 @@ export const entitiesSlice = createAppSlice({
     deleteEntity: create.reducer<string>((state, action) => {
       const documentId = state.activeMapAutomergeDocumentId;
       if (!documentId) {
-        throw new Error("Cannot delete entity because there is no active map.");
+        appLogger.error(
+          "Cannot update an entity of the active map because there is no active map.",
+        );
+        return;
       }
 
       const handle = getDocHandle(documentId);
@@ -497,7 +500,10 @@ export const entitiesSlice = createAppSlice({
       handle.change((map) => {
         const entity = map.entities.find((e) => e.id === entityIdToDelete);
         if (!entity) {
-          throw new Error(`Entity with ID ${entityIdToDelete} not found.`);
+          appLogger.error(
+            `Cannot delete entity that wasn't found: ${entityIdToDelete}`,
+          );
+          return;
         }
         switch (entity.type) {
           case "Proposition":
@@ -606,9 +612,10 @@ export const entitiesSlice = createAppSlice({
         const userInfo = action.payload;
         const documentId = state.activeMapAutomergeDocumentId;
         if (!documentId) {
-          throw new Error(
+          appLogger.warn(
             "Cannot update user info because there is no active map.",
           );
+          return;
         }
 
         const handle = getDocHandle(documentId);
