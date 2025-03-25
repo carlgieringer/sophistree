@@ -8,7 +8,6 @@ import {
 } from "unique-names-generator";
 import { v4 as uuidv4 } from "uuid";
 
-import * as appLogger from "./logging/appLogging";
 import { useAppDispatch } from "./store";
 import {
   updateUserInfoInMaps,
@@ -57,25 +56,21 @@ function useUserDisplayNameSync() {
 function useSetActiveMapUserDisplayName() {
   const dispatch = useAppDispatch();
   const map = useActiveMap();
-  const displayName = useUserDisplayName();
+  const currentDisplayName = useUserDisplayName();
   useEffect(() => {
     if (!map) return;
 
-    async function setActiveMapUserDisplayName() {
-      const userDisplayName = await getUserDisplayName();
-      if (!displayName && userDisplayName) {
-        dispatch(
-          updateUserInfoInMaps({
-            userDisplayName,
-          }),
-        );
-      }
+    const userDisplayName = getUserDisplayName();
+    if (!currentDisplayName && userDisplayName) {
+      dispatch(
+        updateUserInfoInMaps({
+          userDisplayName,
+        }),
+      );
     }
 
-    void setActiveMapUserDisplayName();
-
     // Only update if there's no existing display name
-  }, [dispatch, map, displayName]);
+  }, [dispatch, map, currentDisplayName]);
 }
 
 function useUserDisplayName() {
@@ -112,45 +107,29 @@ function generateDisplayName(): string {
 }
 
 // Get the current display name from storage
-export async function getUserDisplayName(): Promise<string | undefined> {
-  try {
-    const result = (await chrome.storage.local.get(STORAGE_KEY)) as {
-      [key: string]: string | undefined;
-    };
-    return result[STORAGE_KEY];
-  } catch (error) {
-    appLogger.error("Failed to get user display name from storage", error);
-    return undefined;
-  }
+export function getUserDisplayName(): string | undefined {
+  return window.localStorage.getItem(STORAGE_KEY) ?? undefined;
 }
 
 // Ensure a user display name exists, generating one if needed
-async function ensureUserDisplayName(): Promise<string> {
-  try {
-    let displayName = await getUserDisplayName();
+function ensureUserDisplayName(): string {
+  let displayName = getUserDisplayName();
 
-    if (!displayName) {
-      displayName = generateDisplayName();
-      await chrome.storage.local.set({ [STORAGE_KEY]: displayName });
-    }
-
-    return displayName;
-  } catch (error) {
-    appLogger.error("Failed to ensure user display name", error);
-    // Return a fallback name in case of error
-    return "Unknown User";
+  if (!displayName) {
+    displayName = generateDisplayName();
+    window.localStorage.setItem(STORAGE_KEY, displayName);
   }
+
+  return displayName;
 }
 
 // Update the user display name in storage
-export async function updateUserDisplayName(
-  displayName: string,
-): Promise<void> {
+export function updateUserDisplayName(displayName: string): void {
   if (displayName.length > USER_DISPLAY_LENGTH_MAX_LENGTH) {
     throw new Error(
       `Display name must be less than ${USER_DISPLAY_LENGTH_MAX_LENGTH} characters`,
     );
   }
 
-  await chrome.storage.local.set({ [STORAGE_KEY]: displayName });
+  window.localStorage.setItem(STORAGE_KEY, displayName);
 }

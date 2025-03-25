@@ -58,6 +58,7 @@ export function useContextMenus({
   const handleContextMenu = useCallback(
     (e: ContextMenuEvent) => {
       e.preventDefault();
+
       const position = e.renderedPosition || { x: 0, y: 0 };
       setMenuPosition(position);
 

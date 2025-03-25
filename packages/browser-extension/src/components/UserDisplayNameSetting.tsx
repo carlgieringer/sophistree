@@ -16,8 +16,8 @@ export function UserDisplayNameSetting() {
 
   useEffect(() => {
     // Load the current display name
-    void (async () => {
-      const name = await getUserDisplayName();
+    void (() => {
+      const name = getUserDisplayName();
       setDisplayName(name);
       if (name) {
         setEditedName(name);
@@ -34,11 +34,11 @@ export function UserDisplayNameSetting() {
     setEditedName(displayName || "");
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     setIsLoading(true);
     setError(undefined);
     try {
-      await updateUserDisplayName(editedName);
+      updateUserDisplayName(editedName);
       setDisplayName(editedName);
       setIsEditing(false);
     } catch (_error) {

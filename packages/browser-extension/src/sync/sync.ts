@@ -7,22 +7,30 @@ import { getDeviceId } from "../deviceId";
 
 import { ArgumentMap } from "@sophistree/common";
 
-import { triggerMigrationIfNecessary } from "./migrations";
+import { ensureMapMigrationsAsync } from "./migrations";
 import { getRepo } from "./repos";
 import {
   getSyncServerAddresses,
   setSyncServerAddresses,
 } from "./syncServerStorage";
 import { broadcastDocDeletion } from "./broadcast";
+import { getUserDisplayName } from "../userDisplayName";
 
 export function createDoc(map: NewArgumentMap) {
   const repo = getRepo([]);
   const handle = repo.create(map);
   handle.change((map) => {
-    map.automergeDocumentId = handle.documentId;
+    const automergeDocumentId = handle.documentId;
+    map.automergeDocumentId = automergeDocumentId;
+    const deviceId = getDeviceId(automergeDocumentId);
+    const userDisplayName = getUserDisplayName();
+    map.userInfoByDeviceId[deviceId] = {
+      userDisplayName,
+    };
     map.history = [
       {
-        deviceId: getDeviceId(map.automergeDocumentId),
+        deviceId,
+        userDisplayName,
         heads: handle.heads(),
         timestamp: new Date().toISOString(),
         changes: [
@@ -44,7 +52,7 @@ export function getDocHandle(id: DocumentId): DocHandle<ArgumentMap> {
   const syncServerAddresses = getSyncServerAddresses(id);
   const handle = getRepo(syncServerAddresses).find<ArgumentMap>(id);
 
-  triggerMigrationIfNecessary(handle);
+  ensureMapMigrationsAsync(handle);
 
   return handle;
 }
@@ -60,7 +68,7 @@ export function openDoc(
   setSyncServerAddresses(id, syncServerAddresses);
   const handle = getRepo(syncServerAddresses).find<ArgumentMap>(id);
 
-  triggerMigrationIfNecessary(handle);
+  ensureMapMigrationsAsync(handle);
 
   return handle;
 }
@@ -71,7 +79,7 @@ export function setDocSyncServerAddresses(
 ) {
   const oldRepo = getRepoForDoc(oldId);
   const oldHandle = oldRepo.find<ArgumentMap>(oldId);
-  triggerMigrationIfNecessary(oldHandle);
+  ensureMapMigrationsAsync(oldHandle);
   const doc = oldHandle.docSync();
   oldRepo.delete(oldId);
   broadcastDocDeletion(oldId);
@@ -83,7 +91,10 @@ export function setDocSyncServerAddresses(
     map.automergeDocumentId = newId;
 
     const deviceId = getDeviceId(map.automergeDocumentId);
-    const userDisplayName = map.userInfoByDeviceId?.[deviceId].userDisplayName;
+    const userDisplayName = getUserDisplayName();
+    map.userInfoByDeviceId[deviceId] = {
+      userDisplayName,
+    };
 
     map.history.push({
       deviceId,

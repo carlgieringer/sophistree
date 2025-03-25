@@ -12,19 +12,55 @@ import * as appLogger from "../logging/appLogging";
 // are implied to have this version.
 const minAutomergeMapVersion = 8;
 
-export function triggerMigrationIfNecessary(handle: DocHandle<ArgumentMap>) {
-  ensureMapMigrations(handle).catch((reason) =>
-    appLogger.error("Failed to migrate doc", reason),
-  );
+const migratingDocumentIds = new Set<string>();
+const MIGRATE_CHECK_INTERVAL_MS = 100;
+const MIGRATE_TIMEOUT_MS = 10_000;
+
+export function ensureMapMigrationsAsync(handle: DocHandle<ArgumentMap>) {
+  ensureMapMigrations(handle).catch((reason) => {
+    appLogger.error(`Failed to migration map ${handle.documentId}: ${reason}`);
+  });
 }
 
-async function ensureMapMigrations(handle: DocHandle<ArgumentMap>) {
-  const doc = await handle.doc();
+function ensureMapMigrations(handle: DocHandle<ArgumentMap>) {
+  // Try not to migrate multiple times, although there is a race condition if ensureMapMigrations
+  // is called simultaneously.
+  if (migratingDocumentIds.has(handle.documentId)) {
+    return Promise.resolve();
+  }
+  migratingDocumentIds.add(handle.documentId);
+  return new Promise<void>((resolve, reject) => {
+    applyMigrationIfReady(handle, resolve);
+    rejectAfterTimeout(reject, handle.documentId);
+  });
+}
+
+function applyMigrationIfReady(
+  handle: DocHandle<ArgumentMap>,
+  resolve: (value: void) => void,
+) {
+  if (handle.isReady()) {
+    applyMigrations(handle);
+    migratingDocumentIds.delete(handle.documentId);
+    resolve();
+  } else {
+    setTimeout(() => {
+      applyMigrationIfReady(handle, resolve);
+    }, MIGRATE_CHECK_INTERVAL_MS);
+  }
+}
+
+function applyMigrations(handle: DocHandle<ArgumentMap>) {
+  const doc = handle.docSync();
   if (!doc) {
     throw new Error(`Unable to get doc for migration: ${handle.documentId}`);
   }
+  appLogger.info(`applyMigrations ${handle.documentId}`);
   let currentVersion = doc.version || minAutomergeMapVersion;
   if (currentVersion < persistedStateVersion) {
+    appLogger.info(
+      `Migrating ${handle.documentId} from ${currentVersion} to persistedStateVersion`,
+    );
     handle.change((map) => {
       while (currentVersion <= persistedStateVersion) {
         mapMigrations[currentVersion as MapMigrationIndex]?.(
@@ -36,4 +72,18 @@ async function ensureMapMigrations(handle: DocHandle<ArgumentMap>) {
       }
     });
   }
+}
+
+function rejectAfterTimeout(
+  reject: (reason: unknown) => void,
+  documentId: string,
+) {
+  setTimeout(() => {
+    reject(
+      new Error(
+        `Failed to migrate document ${documentId} after ${MIGRATE_TIMEOUT_MS} ms`,
+      ),
+    );
+    migratingDocumentIds.delete(documentId);
+  }, MIGRATE_TIMEOUT_MS);
 }

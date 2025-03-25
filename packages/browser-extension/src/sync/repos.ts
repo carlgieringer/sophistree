@@ -13,7 +13,7 @@ import {
   Repo,
 } from "@automerge/automerge-repo";
 import { ArgumentMap } from "@sophistree/common";
-import { triggerMigrationIfNecessary } from "./migrations";
+import { ensureMapMigrationsAsync } from "./migrations";
 
 /** A cache of repos we have opened keyed based on their sync server addresses. */
 const reposBySyncServers = new Map<string, Repo>();
@@ -51,7 +51,7 @@ export async function getAllDocHandles(): Promise<DocHandle<ArgumentMap>[]> {
   return await Promise.all(
     docIds.map((id) => {
       const handle = localRepo.find<ArgumentMap>(id);
-      triggerMigrationIfNecessary(handle);
+      ensureMapMigrationsAsync(handle);
       return handle;
     }),
   );
