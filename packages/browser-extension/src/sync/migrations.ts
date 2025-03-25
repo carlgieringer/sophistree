@@ -18,7 +18,7 @@ const MIGRATE_TIMEOUT_MS = 10_000;
 
 export function ensureMapMigrationsAsync(handle: DocHandle<ArgumentMap>) {
   ensureMapMigrations(handle).catch((reason) => {
-    appLogger.error(`Failed to migration map ${handle.documentId}: ${reason}`);
+    appLogger.error(`Failed to migrate map ${handle.documentId}: ${reason}`);
   });
 }
 
