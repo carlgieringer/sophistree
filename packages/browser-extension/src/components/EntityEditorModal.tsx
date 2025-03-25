@@ -21,7 +21,7 @@ const EntityEditorModal: React.FC<EntityEditorModalProps> = ({
 
   useEffect(() => {
     if (entityId) {
-      dispatch(selectEntities([entityId]));
+      void dispatch(selectEntities([entityId]));
     }
   }, [dispatch, entityId]);
 

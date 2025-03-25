@@ -22,7 +22,7 @@ export function ensureMapMigrationsAsync(handle: DocHandle<ArgumentMap>) {
   });
 }
 
-function ensureMapMigrations(handle: DocHandle<ArgumentMap>) {
+export function ensureMapMigrations(handle: DocHandle<ArgumentMap>) {
   // Try not to migrate multiple times, although there is a race condition if ensureMapMigrations
   // is called simultaneously.
   if (migratingDocumentIds.has(handle.documentId)) {

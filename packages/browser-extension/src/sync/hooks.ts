@@ -90,14 +90,15 @@ export const useAllMaps = () => {
         );
       } else {
         const handle = payload.handle as DocHandle<ArgumentMap>;
-        const doc = handle.docSync();
-        if (!doc) {
-          return;
-        }
         if (!docChangeListeners.has(handle.documentId)) {
           addDocChangeListener(handle);
         }
-        updateMapInList(doc);
+        void handle.doc().then((doc) => {
+          if (!doc) {
+            return;
+          }
+          updateMapInList(doc);
+        });
       }
     }
 
@@ -134,7 +135,7 @@ export const useActiveMap = () => {
     }
     const handle = getDocHandle(documentId);
 
-    setMap(handle.docSync());
+    void handle.doc().then(setMap);
 
     const onDocChange = ({ doc }: DocHandleChangePayload<ArgumentMap>) =>
       setMap(doc);

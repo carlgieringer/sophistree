@@ -7,7 +7,7 @@ import { getDeviceId } from "../deviceId";
 
 import { ArgumentMap } from "@sophistree/common";
 
-import { ensureMapMigrationsAsync } from "./migrations";
+import { ensureMapMigrations, ensureMapMigrationsAsync } from "./migrations";
 import { getRepo } from "./repos";
 import {
   getSyncServerAddresses,
@@ -57,8 +57,8 @@ export function getDocHandle(id: DocumentId): DocHandle<ArgumentMap> {
   return handle;
 }
 
-export function getDoc(id: DocumentId) {
-  return getDocHandle(id).docSync();
+export async function getDoc(id: DocumentId) {
+  return await getDocHandle(id).doc();
 }
 
 export function openDoc(
@@ -73,14 +73,19 @@ export function openDoc(
   return handle;
 }
 
-export function setDocSyncServerAddresses(
+export async function setDocSyncServerAddresses(
   oldId: DocumentId,
   syncServerAddresses: string[],
 ) {
   const oldRepo = getRepoForDoc(oldId);
   const oldHandle = oldRepo.find<ArgumentMap>(oldId);
-  ensureMapMigrationsAsync(oldHandle);
-  const doc = oldHandle.docSync();
+  await ensureMapMigrations(oldHandle);
+  const doc = await oldHandle.doc();
+  if (!doc) {
+    throw new Error(`Failed to get doc for ID ${oldId}`, {
+      cause: "Document not found",
+    });
+  }
   oldRepo.delete(oldId);
   broadcastDocDeletion(oldId);
 

@@ -109,41 +109,58 @@ export const entitiesSlice = createAppSlice({
         state.activeMapAutomergeDocumentId = undefined;
       }
     }),
-    syncActiveMapRemotely: create.reducer<string[]>((state, action) => {
-      const documentId = state.activeMapAutomergeDocumentId;
-      if (!documentId) {
-        appLogger.error(
-          "Cannot sync active map because there is no active map.",
+    syncActiveMapRemotely: create.asyncThunk(
+      async (addresses: string[], thunkAPI) => {
+        const state = thunkAPI.getState() as { entities: State };
+        const documentId = state.entities.activeMapAutomergeDocumentId;
+        if (!documentId) {
+          throw new Error(
+            "Cannot sync active map because there is no active map.",
+          );
+        }
+        if (!addresses?.length) {
+          throw new Error(
+            "Cannot sync active map because no sync server addresses provided.",
+          );
+        }
+        const newDocumentId = await setDocSyncServerAddresses(
+          documentId,
+          addresses,
         );
-        return;
-      }
-      const addresses = action.payload;
-      if (!addresses?.length) {
-        appLogger.error(
-          "Cannot sync active map because no sync server addresses provided.",
-        );
-        return;
-      }
-      state.activeMapAutomergeDocumentId = setDocSyncServerAddresses(
-        documentId,
-        addresses,
-      );
-      broadcastMapActivation(state.activeMapAutomergeDocumentId);
-    }),
-    syncActiveMapLocally: create.reducer((state) => {
-      const documentId = state.activeMapAutomergeDocumentId;
-      if (!documentId) {
-        appLogger.error(
-          "Cannot sync active map because there is no active map.",
-        );
-        return;
-      }
-      state.activeMapAutomergeDocumentId = setDocSyncServerAddresses(
-        documentId,
-        [],
-      );
-      broadcastMapActivation(state.activeMapAutomergeDocumentId);
-    }),
+        return newDocumentId;
+      },
+      {
+        fulfilled: (state, action) => {
+          state.activeMapAutomergeDocumentId = action.payload;
+          broadcastMapActivation(state.activeMapAutomergeDocumentId);
+        },
+        rejected: (_, error) => {
+          appLogger.error("Failed to sync map remotely:", error);
+        },
+      },
+    ),
+    syncActiveMapLocally: create.asyncThunk(
+      async (_, thunkAPI) => {
+        const state = thunkAPI.getState() as { entities: State };
+        const documentId = state.entities.activeMapAutomergeDocumentId;
+        if (!documentId) {
+          throw new Error(
+            "Cannot sync active map because there is no active map.",
+          );
+        }
+        const newDocumentId = await setDocSyncServerAddresses(documentId, []);
+        return newDocumentId;
+      },
+      {
+        fulfilled: (state, action) => {
+          state.activeMapAutomergeDocumentId = action.payload;
+          broadcastMapActivation(state.activeMapAutomergeDocumentId);
+        },
+        rejected: (_, error) => {
+          appLogger.error("Failed to sync map locally:", error);
+        },
+      },
+    ),
     openSyncedMap: create.asyncThunk(
       async (
         {
@@ -214,23 +231,17 @@ export const entitiesSlice = createAppSlice({
       }
 
       const handle = getDocHandle(documentId);
-      const doc = handle.docSync();
-      if (!doc) {
-        appLogger.error(`Doc ID ${documentId} did not have a doc.`);
-        return;
-      }
 
-      const nextNewPropositionNumber = getNextNewPropositionNumber(doc);
-      const proposition: Proposition = {
-        id: uuidv4(),
-        type: "Proposition",
-        text: `New Proposition ${nextNewPropositionNumber}`,
-        ...defaultVisibilityProps,
-      };
-
-      handle.change((doc) => {
-        doc.entities.push(proposition);
-        addHistoryEntry(handle.heads(), doc, {
+      handle.change((map) => {
+        const nextNewPropositionNumber = getNextNewPropositionNumber(map);
+        const proposition: Proposition = {
+          id: uuidv4(),
+          type: "Proposition",
+          text: `New Proposition ${nextNewPropositionNumber}`,
+          ...defaultVisibilityProps,
+        };
+        map.entities.push(proposition);
+        addHistoryEntry(handle.heads(), map, {
           type: "AddProposition",
           id: proposition.id,
           text: proposition.text,
@@ -257,49 +268,45 @@ export const entitiesSlice = createAppSlice({
       } = action.payload;
 
       const handle = getDocHandle(documentId);
-      const activeMap = handle.docSync();
-      if (!activeMap) {
-        appLogger.error(`Doc ID ${documentId} did not have a doc.`);
-        return;
-      }
 
-      const extantMediaExcerpt = activeMap.entities.find((e) =>
-        isEquivalentMediaExcerpt(e, {
-          url,
-          canonicalUrl,
-          pdfFingerprint,
-          domAnchor,
-        }),
-      );
-      if (extantMediaExcerpt) {
-        appLogger.warn("Declining to create a duplicative MediaExcerpt.");
-        return;
-      }
-
-      const sourceNameOverride = getSourceNameOverride(
-        activeMap.sourceNameOverrides,
-        {
-          url,
-          canonicalUrl,
-          pdfFingerprint,
-        },
-      );
-
-      // Automerge's IndexedDB storage does not support undefined values.
-      const urlInfo: UrlInfo = { url };
-      if (canonicalUrl !== undefined) urlInfo.canonicalUrl = canonicalUrl;
-      if (pdfFingerprint !== undefined) urlInfo.pdfFingerprint = pdfFingerprint;
-
-      const mediaExcerpt: MediaExcerpt = {
-        type: "MediaExcerpt",
-        ...defaultVisibilityProps,
-        id,
-        quotation,
-        urlInfo,
-        sourceInfo: { name: sourceNameOverride ?? sourceName },
-        domAnchor,
-      };
       handle.change((map) => {
+        const extantMediaExcerpt = map.entities.find((e) =>
+          isEquivalentMediaExcerpt(e, {
+            url,
+            canonicalUrl,
+            pdfFingerprint,
+            domAnchor,
+          }),
+        );
+        if (extantMediaExcerpt) {
+          appLogger.warn("Declining to create a duplicative MediaExcerpt.");
+          return extantMediaExcerpt;
+        }
+
+        const sourceNameOverride = getSourceNameOverride(
+          map.sourceNameOverrides,
+          {
+            url,
+            canonicalUrl,
+            pdfFingerprint,
+          },
+        );
+
+        // Automerge's IndexedDB storage does not support undefined values.
+        const urlInfo: UrlInfo = { url };
+        if (canonicalUrl !== undefined) urlInfo.canonicalUrl = canonicalUrl;
+        if (pdfFingerprint !== undefined)
+          urlInfo.pdfFingerprint = pdfFingerprint;
+
+        const mediaExcerpt: MediaExcerpt = {
+          type: "MediaExcerpt",
+          ...defaultVisibilityProps,
+          id,
+          quotation,
+          urlInfo,
+          sourceInfo: { name: sourceNameOverride ?? sourceName },
+          domAnchor,
+        };
         map.entities.push(mediaExcerpt);
         addHistoryEntry(handle.heads(), map, {
           type: "AddMediaExcerpt",
@@ -423,11 +430,6 @@ export const entitiesSlice = createAppSlice({
       }
 
       const handle = getDocHandle(documentId);
-      const activeMap = handle.docSync();
-      if (!activeMap) {
-        appLogger.error(`Doc ID ${documentId} did not have a doc.`);
-        return;
-      }
 
       const { sourceId, targetId, polarity: actionPolarity } = action.payload;
 
@@ -446,119 +448,124 @@ export const entitiesSlice = createAppSlice({
         updateConclusions(map);
       });
     }),
-    selectEntities: create.reducer<string[]>((state, action) => {
-      const documentId = state.activeMapAutomergeDocumentId;
-      if (!documentId) {
-        appLogger.error(
-          "Cannot update an entity of the active map because there is no active map.",
+    selectEntities: create.asyncThunk(
+      async (selectedEntityIds: string[], thunkAPI) => {
+        const state = thunkAPI.getState() as { entities: State };
+        const documentId = state.entities.activeMapAutomergeDocumentId;
+        if (!documentId) {
+          throw new Error(
+            "Cannot select entities because there is no active map.",
+          );
+        }
+
+        const handle = getDocHandle(documentId);
+        const activeMap = await handle.doc();
+        if (!activeMap) {
+          throw new Error(`Doc ID ${documentId} did not have a doc.`);
+        }
+
+        // Whenever we select a MediaExcerpt, also select its Appearances
+        const appearances = activeMap.entities.filter(
+          (e) =>
+            e.type === "Appearance" &&
+            selectedEntityIds.includes(e.mediaExcerptId),
         );
-        return;
-      }
+        const allSelectedIds = [
+          ...selectedEntityIds,
+          ...appearances.map((a) => a.id),
+        ];
 
-      const handle = getDocHandle(documentId);
-      const activeMap = handle.docSync();
-      if (!activeMap) {
-        appLogger.error(`Doc ID ${documentId} did not have a doc.`);
-        return;
-      }
-
-      const selectedEntityIds = action.payload;
-
-      // Whenever we select a MediaExcerpt, also select its Appearances
-      const appearances = activeMap.entities.filter(
-        (e) =>
-          e.type === "Appearance" &&
-          selectedEntityIds.includes(e.mediaExcerptId),
-      );
-      state.selectedEntityIds = [
-        ...selectedEntityIds,
-        ...appearances.map((a) => a.id),
-      ];
-    }),
+        return allSelectedIds;
+      },
+      {
+        fulfilled: (state, action) => {
+          state.selectedEntityIds = action.payload;
+        },
+        rejected: (_, error) => {
+          appLogger.error("Failed to select entities:", error);
+        },
+      },
+    ),
     deleteEntity: create.reducer<string>((state, action) => {
       const documentId = state.activeMapAutomergeDocumentId;
       if (!documentId) {
-        appLogger.error(
-          "Cannot update an entity of the active map because there is no active map.",
-        );
-        return;
+        throw new Error("Cannot delete entity because there is no active map.");
       }
 
       const handle = getDocHandle(documentId);
-
+      const entityIdToDelete = action.payload;
       handle.change((map) => {
-        const entityIdToDelete = action.payload;
         const entity = map.entities.find((e) => e.id === entityIdToDelete);
-
-        if (entity) {
-          switch (entity.type) {
-            case "Proposition":
+        if (!entity) {
+          throw new Error(`Entity with ID ${entityIdToDelete} not found.`);
+        }
+        switch (entity.type) {
+          case "Proposition":
+            addHistoryEntry(handle.heads(), map, {
+              type: "RemoveProposition",
+              id: entity.id,
+              text: entity.text,
+            });
+            break;
+          case "MediaExcerpt":
+            addHistoryEntry(handle.heads(), map, {
+              type: "RemoveMediaExcerpt",
+              id: entity.id,
+              quotation: entity.quotation,
+              urlInfo: entity.urlInfo,
+              sourceInfo: entity.sourceInfo,
+              domAnchor: entity.domAnchor,
+            });
+            break;
+          case "Justification":
+            {
+              const { basisId, polarity, targetId } = entity;
               addHistoryEntry(handle.heads(), map, {
-                type: "RemoveProposition",
+                type: "RemoveJustification",
                 id: entity.id,
-                text: entity.text,
+                basisId,
+                basisInfo: getJustificationBasisHistoryInfo(map, basisId),
+                polarity,
+                targetId,
+                targetInfo: getJustificationTargetHistoryInfo(
+                  map,
+                  entity.targetId,
+                ),
               });
-              break;
-            case "MediaExcerpt":
+            }
+            break;
+          case "PropositionCompound":
+            // No history entry since PropositionCompounds are synthetic
+            break;
+          case "Appearance":
+            {
+              const apparitionId = entity.apparitionId;
+              const mediaExcerptId = entity.mediaExcerptId;
               addHistoryEntry(handle.heads(), map, {
-                type: "RemoveMediaExcerpt",
+                type: "RemoveAppearance",
                 id: entity.id,
-                quotation: entity.quotation,
-                urlInfo: entity.urlInfo,
-                sourceInfo: entity.sourceInfo,
-                domAnchor: entity.domAnchor,
-              });
-              break;
-            case "Justification":
-              {
-                const { basisId, polarity, targetId } = entity;
-                addHistoryEntry(handle.heads(), map, {
-                  type: "RemoveJustification",
-                  id: entity.id,
-                  basisId,
-                  basisInfo: getJustificationBasisHistoryInfo(map, basisId),
-                  polarity,
-                  targetId,
-                  targetInfo: getJustificationTargetHistoryInfo(
-                    map,
-                    entity.targetId,
-                  ),
-                });
-              }
-              break;
-            case "PropositionCompound":
-              // No history entry since PropositionCompounds are synthetic
-              break;
-            case "Appearance":
-              {
-                const apparitionId = entity.apparitionId;
-                const mediaExcerptId = entity.mediaExcerptId;
-                addHistoryEntry(handle.heads(), map, {
-                  type: "RemoveAppearance",
-                  id: entity.id,
+                apparitionId,
+                apparitionInfo: toHistoryInfo(
+                  map,
                   apparitionId,
-                  apparitionInfo: toHistoryInfo(
-                    map,
-                    apparitionId,
-                  ) as PropositionHistoryInfo,
+                ) as PropositionHistoryInfo,
+                mediaExcerptId,
+                mediaExcerpt: toHistoryInfo(
+                  map,
                   mediaExcerptId,
-                  mediaExcerpt: toHistoryInfo(
-                    map,
-                    mediaExcerptId,
-                  ) as MediaExcerptHistoryInfo,
-                });
-              }
-              break;
-          }
+                ) as MediaExcerptHistoryInfo,
+              });
+            }
+            break;
         }
 
         applyDeleteOperation(state, map, entityIdToDelete);
         updateConclusions(map);
 
-        if (entity?.type === "MediaExcerpt") {
+        if (entity.type === "MediaExcerpt") {
           // TODO: #3 - remove this side effect. Maybe detect the removal via useState in a component?
           void notifyTabsOfDeletedMediaExcerpt(entityIdToDelete);
-        } else if (entity?.type === "Appearance") {
+        } else if (entity.type === "Appearance") {
           updateMediaExcerptAutoVisibility(map, entity.mediaExcerptId);
         }
       });
@@ -581,8 +588,10 @@ export const entitiesSlice = createAppSlice({
         return;
       }
 
-      getDocHandle(documentId).change((map) => {
-        const entity = map.entities.find((e) => e.id === action.payload);
+      const handle = getDocHandle(documentId);
+      const entityId = action.payload;
+      handle.change((map) => {
+        const entity = map.entities.find((e) => e.id === entityId);
         if (!entity) {
           appLogger.error(
             `Cannot toggle entity collapsed because there is no entity with id ${action.payload}`,
@@ -595,15 +604,15 @@ export const entitiesSlice = createAppSlice({
     updateUserInfoInMaps: create.reducer<ArgumentMapUserInfo>(
       (state, action) => {
         const userInfo = action.payload;
-
-        if (!state.activeMapAutomergeDocumentId) {
-          appLogger.warn(
+        const documentId = state.activeMapAutomergeDocumentId;
+        if (!documentId) {
+          throw new Error(
             "Cannot update user info because there is no active map.",
           );
-          return;
         }
 
-        const handle = getDocHandle(state.activeMapAutomergeDocumentId);
+        const handle = getDocHandle(documentId);
+
         handle.change((map) => {
           const deviceId = getDeviceId(map.automergeDocumentId);
 
@@ -666,22 +675,15 @@ function updateEntity<E extends Entity>(
   }
 
   const handle = getDocHandle(documentId);
-  const activeMap = handle.docSync();
-  if (!activeMap) {
-    appLogger.error(`Doc ID ${documentId} did not have a doc.`);
-    return;
-  }
 
-  const index = activeMap.entities.findIndex(
-    (entity) => entity.id === entityId,
-  );
-  if (index < 0) {
-    appLogger.error(
-      `Cannot update entity ${entityId} because it is not present in the active map ${documentId}`,
-    );
-    return;
-  }
   handle.change((map) => {
+    const index = map.entities.findIndex((entity) => entity.id === entityId);
+    if (index < 0) {
+      appLogger.error(
+        `Cannot update entity ${entityId} because it is not present in the active map ${documentId}`,
+      );
+      return;
+    }
     const entity = map.entities[index];
     // Apply callback before updates so that entity contains previous values.
     callback(handle.heads(), map, entity as E);
