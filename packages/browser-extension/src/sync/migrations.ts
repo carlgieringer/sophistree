@@ -18,11 +18,11 @@ const MIGRATE_TIMEOUT_MS = 10_000;
 
 export function ensureMapMigrationsAsync(handle: DocHandle<ArgumentMap>) {
   ensureMapMigrations(handle).catch((reason) => {
-    appLogger.error(`Failed to migration map ${handle.documentId}: ${reason}`);
+    appLogger.error(`Failed to migrate map ${handle.documentId}: ${reason}`);
   });
 }
 
-function ensureMapMigrations(handle: DocHandle<ArgumentMap>) {
+export function ensureMapMigrations(handle: DocHandle<ArgumentMap>) {
   // Try not to migrate multiple times, although there is a race condition if ensureMapMigrations
   // is called simultaneously.
   if (migratingDocumentIds.has(handle.documentId)) {
