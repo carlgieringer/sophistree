@@ -12,7 +12,6 @@ import {
   MediaExcerptHistoryInfo,
   Polarity,
   Proposition,
-  PropositionCompound,
   PropositionHistoryInfo,
   UrlInfo,
   Visibility,
@@ -740,44 +739,45 @@ function applyDeleteOperation(
     activeMap.entities.map((entity) => [entity.id, entity]),
   );
   const allEntityIdsToDelete = new Set([entityIdToDelete]);
-  activeMap.entities.forEach((entity) => {
-    // Process PropositionCompounds first since they may delete justifications
-    if (entity.type === "PropositionCompound") {
-      updatePropositionCompound(entity, entityIdToDelete, allEntityIdsToDelete);
-    }
-    // Delete justifications if either their basis or target will be deleted.
-    if (
-      entity.type === "Justification" &&
-      (allEntityIdsToDelete.has(entity.basisId) ||
-        allEntityIdsToDelete.has(entity.targetId))
-    ) {
-      allEntityIdsToDelete.add(entity.id);
-      const basis = entitiesById.get(entity.basisId);
-      // The point of PropositionCompounds is to wrap propositions in a justification.
-      // So if the justification is going away, we should delete the PropositionCompound too.
-      if (basis && basis.type === "PropositionCompound") {
-        // If no other justifications are using the proposition compound, delete it
-        const otherJustificationsUsingCompound = activeMap.entities.some(
-          (e) =>
-            e.type === "Justification" &&
-            e.basisId === basis.id &&
-            !allEntityIdsToDelete.has(e.id),
-        );
-        if (!otherJustificationsUsingCompound) {
-          allEntityIdsToDelete.add(basis.id);
-        }
-      }
-    }
-  });
+  const propositionCompoundToJustificationIds = new Map<string, string[]>();
   activeMap.entities.forEach((entity) => {
     switch (entity.type) {
       case "PropositionCompound": {
-        // delete proposition compounds if their last justification was deleted.
-        const hasJustification = activeMap.entities.some(
-          (e) => e.type === "Justification" && e.basisId === entity.id,
-        );
-        if (!hasJustification) {
+        entity.atomIds = entity.atomIds.filter((id) => id !== entityIdToDelete);
+        if (entity.atomIds.length === 0) {
           allEntityIdsToDelete.add(entity.id);
+        }
+        break;
+      }
+      case "Justification": {
+        const basis = entitiesById.get(entity.basisId);
+        if (basis?.type === "PropositionCompound") {
+          if (!propositionCompoundToJustificationIds.has(basis.id)) {
+            propositionCompoundToJustificationIds.set(basis.id, []);
+          }
+          propositionCompoundToJustificationIds.get(basis.id)?.push(entity.id);
+        }
+
+        // Delete justifications if either their basis or target will be deleted.
+        if (
+          allEntityIdsToDelete.has(entity.basisId) ||
+          allEntityIdsToDelete.has(entity.targetId)
+        ) {
+          allEntityIdsToDelete.add(entity.id);
+          // The point of PropositionCompounds is to wrap propositions in a justification.
+          // So if the justification is going away, we should delete the PropositionCompound too.
+          if (basis && basis.type === "PropositionCompound") {
+            // If no other justifications are using the proposition compound, delete it
+            const otherJustificationsUsingCompound = activeMap.entities.some(
+              (e) =>
+                e.type === "Justification" &&
+                e.basisId === basis.id &&
+                !allEntityIdsToDelete.has(e.id),
+            );
+            if (!otherJustificationsUsingCompound) {
+              allEntityIdsToDelete.add(basis.id);
+            }
+          }
         }
         break;
       }
@@ -791,10 +791,20 @@ function applyDeleteOperation(
         }
         break;
       }
-      default:
+      case "Proposition":
+      case "MediaExcerpt":
+        // Nothing to do for non-relations.
         break;
     }
   });
+
+  propositionCompoundToJustificationIds.forEach(
+    (justificationIds, propositionCompoundId) => {
+      if (justificationIds.every((id) => allEntityIdsToDelete.has(id))) {
+        allEntityIdsToDelete.add(propositionCompoundId);
+      }
+    },
+  );
 
   // Remove all the collected entities
   const allIndexesToDelete = [] as number[];
@@ -1052,17 +1062,6 @@ function removeEntityExplicitVisibility(state: State, entityId: string) {
     }
     delete entity.explicitVisibility;
   });
-}
-
-function updatePropositionCompound(
-  entity: PropositionCompound,
-  entityIdToDelete: string,
-  allEntityIdsToDelete: Set<string>,
-) {
-  entity.atomIds = entity.atomIds.filter((id) => id !== entityIdToDelete);
-  if (entity.atomIds.length === 0) {
-    allEntityIdsToDelete.add(entity.id);
-  }
 }
 
 function updateMediaExcerptAutoVisibility(
