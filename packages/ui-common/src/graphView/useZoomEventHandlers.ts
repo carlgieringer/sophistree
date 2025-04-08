@@ -71,16 +71,16 @@ export function useZoomEventHandlers(
       if (!cyRef.current) return;
 
       const cy = cyRef.current;
-      const delta = event.deltaY;
+      const deltaY = event.deltaY;
       const deltaX = event.deltaX;
 
       if (event.ctrlKey || event.metaKey) {
         // Pinch zoom
-        const zoomFactor = delta > 0 ? zoomOutFactor : zoomInFactor;
+        const zoomFactor = deltaY > 0 ? zoomOutFactor : zoomInFactor;
         zoomByFactor(zoomFactor, { x: event.offsetX, y: event.offsetY });
       } else {
         // Pan
-        cy.panBy({ x: -deltaX, y: -delta });
+        cy.panBy({ x: -deltaX, y: -deltaY });
       }
     },
     [cyRef, zoomByFactor],

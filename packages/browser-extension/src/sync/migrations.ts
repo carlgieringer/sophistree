@@ -55,7 +55,6 @@ function applyMigrations(handle: DocHandle<ArgumentMap>) {
   if (!doc) {
     throw new Error(`Unable to get doc for migration: ${handle.documentId}`);
   }
-  appLogger.info(`applyMigrations ${handle.documentId}`);
   let currentVersion = doc.version || minAutomergeMapVersion;
   if (currentVersion < persistedStateVersion) {
     appLogger.info(

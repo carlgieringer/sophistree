@@ -1,5 +1,16 @@
 # TODO
 
+From Bobby:
+
+- Prevent scrolling too far away
+- Double click to edit, confirmation button
+- Buttons for:
+  - Add proposition (FAB)
+  - Zooming in/out
+  - Fit to contents
+- Minimap
+  - Enlarge minimap and click to move view (overview vs. near view)
+
 Priority:
 
 - Critique. Auth for validation of "quoted" entities?

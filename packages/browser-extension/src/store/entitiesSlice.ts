@@ -950,6 +950,14 @@ function applyDragOperation(
       basisId = source.id;
       break;
     }
+    case "PropositionCompound":
+    // Don't allow creating justifications by dragging PropositionCompounds: we don't want to
+    // reuse a single PropositionCompound for multiple Justifications, because if the user then
+    // modifies that PropositionCompound, it will affect the basis of all Justifications. And if
+    // we won't reuse the same PropositionCompound node for a Justification basis, then using
+    // it as a drag source would just be a short cut for dragging the propositions individually.
+
+    // falls through
     default:
       appLogger.error(`Invalid drag source type type: ${source.type}`);
       return;
