@@ -147,7 +147,7 @@ function HeaderBar() {
       leadingIcon="sync"
       key="sync-map-locally"
       onPress={() => {
-        dispatch(syncActiveMapLocally());
+        void dispatch(syncActiveMapLocally());
         hideMenu();
       }}
     />
@@ -165,7 +165,7 @@ function HeaderBar() {
           hideMenu();
           return;
         }
-        dispatch(syncActiveMapRemotely(defaultSyncServerAddresses));
+        void dispatch(syncActiveMapRemotely(defaultSyncServerAddresses));
         hideMenu();
       }}
     />

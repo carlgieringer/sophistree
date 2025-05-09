@@ -21,8 +21,8 @@ interface PresenceUpdateMessage extends UserPresence {
 
 type EphemeralMessage = PresenceUpdateMessage;
 
-export function broadcastPresence(handle: DocHandle<ArgumentMap>) {
-  const doc = handle.docSync();
+export async function broadcastPresence(handle: DocHandle<ArgumentMap>) {
+  const doc = await handle.doc();
   if (!doc) {
     appLogger.warn("Cannot broadcast presence: doc is undefined");
     return;
@@ -35,11 +35,11 @@ export function broadcastPresence(handle: DocHandle<ArgumentMap>) {
   });
 }
 
-export function broadcastCursorPosition(
+export async function broadcastCursorPosition(
   handle: DocHandle<ArgumentMap>,
   position: Position,
 ) {
-  const doc = handle.docSync();
+  const doc = await handle.doc();
   if (!doc) {
     appLogger.warn("Cannot broadcast cursor position: doc is undefined");
     return;
@@ -53,11 +53,11 @@ export function broadcastCursorPosition(
   });
 }
 
-export function broadcastSelection(
+export async function broadcastSelection(
   handle: DocHandle<ArgumentMap>,
   selection: string[],
 ) {
-  const doc = handle.docSync();
+  const doc = await handle.doc();
   if (!doc) {
     appLogger.warn("Cannot broadcast selection: doc is undefined");
     return;
@@ -72,10 +72,10 @@ export function broadcastSelection(
 }
 
 export function startPresenceBroadcasting(handle: DocHandle<ArgumentMap>) {
-  broadcastPresence(handle);
+  void broadcastPresence(handle);
 
   const intervalId = setInterval(() => {
-    broadcastPresence(handle);
+    void broadcastPresence(handle);
   }, PRESENCE_BROADCAST_INTERVAL_MS);
 
   return () => {
@@ -141,7 +141,7 @@ export function useCollaborativePresence(
   const broadcastCursorPositionCallback = useCallback(
     (position: Position) => {
       if (handle) {
-        broadcastCursorPosition(handle, position);
+        void broadcastCursorPosition(handle, position);
       }
     },
     [handle],
@@ -150,7 +150,7 @@ export function useCollaborativePresence(
   const broadcastSelectionCallback = useCallback(
     (selection: string[]) => {
       if (handle) {
-        broadcastSelection(handle, selection);
+        void broadcastSelection(handle, selection);
       }
     },
     [handle],

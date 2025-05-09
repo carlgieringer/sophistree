@@ -249,7 +249,7 @@ function useHandleChromeRuntimeMessage() {
             void notifyTabsOfNewMediaExcerpt(sender.tab, message.data);
             break;
           case "selectMediaExcerpt":
-            dispatch(selectEntities([message.data.mediaExcerptId]));
+            void dispatch(selectEntities([message.data.mediaExcerptId]));
             break;
           case "getMediaExcerpt": {
             sendResponse(

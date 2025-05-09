@@ -21,8 +21,8 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@automerge/automerge-repo": "^1.1.0",
-    "@automerge/automerge-repo-network-websocket": "^1.1.0",
+    "@automerge/automerge-repo": "^2.0.0-alpha.23",
+    "@automerge/automerge-repo-network-websocket": "^2.0.0-alpha.23",
     "automerge-repo-storage-postgres": "^0.0.1",
     "dotenv": "^16.4.7",
     "express": "^4.18.2",

@@ -52,7 +52,7 @@ export default function ExtensionGraphView({
 
   const onSelectEntities = useCallback(
     (ids: string[]) => {
-      dispatch(selectEntities(ids));
+      void dispatch(selectEntities(ids));
       if (activeMapId) {
         broadcastSelection(ids);
       }
