@@ -37,6 +37,7 @@ fi
 
 # Set deployment target based on environment
 if [[ "$ENVIRONMENT" == "dev" ]]; then
+    error "The dev environment is turned off; see infrastructure/README.md"
     TARGET="dev.sophistree.app"
     URL="https://dev.sophistree.app"
 else
