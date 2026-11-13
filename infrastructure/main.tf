@@ -23,7 +23,7 @@ module "sophistree_prod" {
 
 module "sophistree_dev" {
   source = "./modules/sophistree_env"
-  count  = 1 # Set to 0 to prevent resource creation while keeping the module
+  count  = 0 # Set to 0 to prevent resource creation while keeping the module
 
   aws_region                                 = var.aws_region
   environment                                = "dev"
