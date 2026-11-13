@@ -1,5 +1,12 @@
 # Infrastructure
 
+> **The dev environment is turned off** (`count = 0` on `module.sophistree_dev` in `main.tf`) to save
+> costs, so the dev-specific instructions below don't currently apply. To turn it back on:
+>
+> - set `count = 1`;
+> - delete the leftover `sophistree-caddy-certs-dev` bucket, or `tofu import` it;
+> - keep the `/sophistree/dev/db_password` SSM parameter, which `main.tf` still reads.
+
 ```shell
 cd infrastructure
 aws-vault exec <profile> -- tofu apply
